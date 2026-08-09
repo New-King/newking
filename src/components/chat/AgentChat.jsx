@@ -25,11 +25,15 @@ function runSlide(el, fromTop) {
   el.getBoundingClientRect(); // 强制回流
   el.style.transition = 'transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1)';
   el.style.transform = 'translateY(0)';
-  const clear = () => {
+  // transitionend 会从子元素冒泡上来（如输入框容器的 max-width 过渡），
+  // 必须只认本元素自身 transform 的结束事件，否则动画会被提前打断、瞬移到底。
+  const onTransitionEnd = (e) => {
+    if (e.propertyName !== 'transform' || e.target !== el) return;
     el.style.transition = '';
     el.style.transform = '';
+    el.removeEventListener('transitionend', onTransitionEnd);
   };
-  el.addEventListener('transitionend', clear, { once: true });
+  el.addEventListener('transitionend', onTransitionEnd);
 }
 
 export default function AgentChat() {

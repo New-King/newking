@@ -16,6 +16,9 @@ export default {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       transitionTimingFunction: {
+        // 统一缓动曲线：快动缓停（ease-out）。设为 DEFAULT 后，
+        // 所有 transition-* / transition-all 默认都使用它；如需显式引用可用 ease-smooth。
+        DEFAULT: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
         smooth: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
       },
       keyframes: {
