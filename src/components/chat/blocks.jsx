@@ -93,7 +93,8 @@ function TextBlock({ block, paused, onDone }) {
   if (block.status === 'streaming') {
     return (
       <div className={`${textBubble} animate-fade-in-up`}>
-        <Typewriter text={block.content} onDone={onDone} active={!paused} />
+        {/* 必须把 block.id 传给 onDone，驱动才能按 id 找到完成回调继续往下走 */}
+        <Typewriter text={block.content} onDone={() => onDone(block.id)} active={!paused} />
       </div>
     );
   }
