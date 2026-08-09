@@ -76,7 +76,7 @@ function ToolCallCard({ block }) {
 /* ---------- 流式文字 ---------- */
 
 const textBubble =
-  'w-full max-w-md whitespace-pre-wrap rounded-2xl rounded-tl-md bg-neutral-100 px-4 py-3 text-[15px] leading-7 text-neutral-800';
+  'w-full max-w-md whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-neutral-100 px-4 py-3 text-[15px] leading-7 text-neutral-800';
 
 function TextSkeleton() {
   return (
