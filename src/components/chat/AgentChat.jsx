@@ -43,6 +43,8 @@ export default function AgentChat() {
   const [paused, setPaused] = useState(false);
   const [input, setInput] = useState('');
   const [atBottom, setAtBottom] = useState(true);
+  const [navHidden, setNavHidden] = useState(false);
+  const [nearTop, setNearTop] = useState(true);
 
   const formRef = useRef(null);
   const inputElRef = useRef(null);
@@ -117,6 +119,13 @@ export default function AgentChat() {
     return () => window.dispatchEvent(new CustomEvent('nav-autohide-off'));
   }, []);
 
+  /* 导航显示/隐藏：仅记录状态，预留条高度据此塌缩/恢复（不操作滚动，不与自动滚动冲突） */
+  useEffect(() => {
+    const onNavVisibility = (e) => setNavHidden(e.detail.hidden);
+    window.addEventListener('nav-visibility', onNavVisibility);
+    return () => window.removeEventListener('nav-visibility', onNavVisibility);
+  }, []);
+
   /* 发送后：输入框从页面中央平滑移动到页面底部 */
   useLayoutEffect(() => {
     if (!started) return;
@@ -150,6 +159,7 @@ export default function AgentChat() {
     if (!el) return;
     stuckRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 40);
+    setNearTop(el.scrollTop < 55);
   };
 
   /* 跳转到指定轮次 */
@@ -343,6 +353,14 @@ export default function AgentChat() {
           className="h-full overflow-y-auto px-5 pb-6 pt-6 sm:px-6"
         >
           <div className="mx-auto flex max-w-2xl flex-col gap-6">
+            {/* 顶部预留条：导航显示时垫在导航下方，保证第一条消息完整可见；
+                导航隐藏且停在顶部附近时塌缩为 0，第一条消息自然上移 30px，不留空白。
+                不在顶部时保持 30px（不可见，避免中段阅读被上下移动打扰） */}
+            <div
+              aria-hidden="true"
+              className="shrink-0 transition-[height] duration-300 ease-smooth"
+              style={{ height: navHidden && nearTop ? 0 : 20 }}
+            />
             {turns.map((turn, i) => (
               <div
                 key={turn[0].id}

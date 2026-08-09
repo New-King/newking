@@ -79,6 +79,11 @@ export default function Navbar() {
     setOpen(null);
   }, [location.pathname]);
 
+  // 导航可见性变化时通知页面（聊天区据此调整顶部预留条与滚动位置）
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('nav-visibility', { detail: { hidden } }));
+  }, [hidden]);
+
   // 显示导航：鼠标交互立即恢复，并重置闲置计时（到时仅在启用自动隐藏时隐藏）
   const show = useCallback(() => {
     clearTimeout(idleTimerRef.current);
