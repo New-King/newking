@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { contact, formatDateShort, latestGroups, notes, posts, projects, SITE_QUOTE } from '../data/mockData';
-import { IconMail, IconPhone } from './icons';
+import { IconMail, IconMenu, IconPhone, IconX } from './icons';
 
 const IDLE_MS = 5000; // 鼠标闲置多久后隐藏导航
 
@@ -71,12 +71,25 @@ export default function Navbar() {
   const [open, setOpen] = useState(null);
   const [hidden, setHidden] = useState(false);
   const [autoHide, setAutoHide] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const idleTimerRef = useRef(null);
   const autoHideRef = useRef(false);
 
-  // 路由切换后强制关闭所有下拉面板
+  // 触屏/移动端（无悬停指针）不启用自动隐藏，导航常显，避免隐藏后无法唤出
+  const [canAutoHide, setCanAutoHide] = useState(
+    () => window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const onChange = () => setCanAutoHide(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // 路由切换后强制关闭所有下拉面板与移动端抽屉
   useEffect(() => {
     setOpen(null);
+    setDrawerOpen(false);
   }, [location.pathname]);
 
   // 导航可见性变化时通知页面（聊天区据此调整顶部预留条与滚动位置）
@@ -94,6 +107,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (!canAutoHide) return; // 触屏/移动端：导航常显，不做闲置隐藏
     // 对话发出后立即隐藏导航
     const onNavHide = () => {
       clearTimeout(idleTimerRef.current);
@@ -125,15 +139,16 @@ export default function Navbar() {
       window.removeEventListener('nav-autohide-off', onAutoOff);
       WAKERS.forEach((ev) => window.removeEventListener(ev, show));
     };
-  }, [show]);
+  }, [show, canAutoHide]);
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b border-neutral-200/70 bg-white/70 backdrop-blur-md transition-all duration-300 ease-smooth ${
+      className={`fixed inset-x-0 top-0 z-50 border-b border-neutral-200/70 bg-white transition-all duration-300 ease-smooth md:bg-white/70 md:backdrop-blur-md ${
         hidden ? 'pointer-events-none -translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
     >
-      <nav aria-label="主导航" className="mx-auto flex max-w-4xl justify-center px-4">
+      {/* 桌面端：居中菜单 */}
+      <nav aria-label="主导航" className="mx-auto hidden h-14 max-w-4xl items-center justify-center px-4 md:flex">
         <ul className="flex items-center">
           {NAV.map((item) => {
             const hasPanel = item.groups || item.contact || item.quote;
@@ -190,6 +205,43 @@ export default function Navbar() {
           })}
         </ul>
       </nav>
+
+      {/* 移动端：右上角抽屉按钮 */}
+      <div className="relative flex h-14 items-center justify-end px-4 md:hidden">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen((v) => !v)}
+          aria-label={drawerOpen ? '关闭菜单' : '打开菜单'}
+          aria-expanded={drawerOpen}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+        >
+          {drawerOpen ? <IconX className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* 移动端：抽屉面板（实心白，无毛玻璃，省移动端 GPU） */}
+      <div
+        className={`absolute inset-x-0 top-full z-50 border-b border-neutral-200/70 bg-white transition-all duration-200 ease-smooth md:hidden ${
+          drawerOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
+        }`}
+      >
+        <nav aria-label="移动端导航" className="px-4 py-2">
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setDrawerOpen(false)}
+              className={({ isActive }) =>
+                `block rounded-lg px-3 py-3 text-[15px] transition-colors ${
+                  isActive ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-50'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }
