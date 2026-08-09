@@ -354,18 +354,6 @@ export default function AgentChat() {
             ))}
           </div>
         </div>
-
-        {/* 快速跳到底部（不在底部时显示） */}
-        {!atBottom && (
-          <button
-            type="button"
-            onClick={scrollToBottom}
-            aria-label="跳到底部"
-            className="absolute bottom-6 right-4 z-10 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:border-neutral-300 hover:text-neutral-900 sm:right-8"
-          >
-            <IconArrowDown className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {/* 左侧快速定位条组 */}
@@ -377,11 +365,27 @@ export default function AgentChat() {
       <form
         ref={formRef}
         onSubmit={handleSend}
-        className={`absolute inset-x-0 z-20 px-4 sm:px-6 ${
+        className={`absolute inset-x-0 z-20 px-5 sm:px-6 ${
           started ? 'bottom-0 pb-5' : 'top-1/2 -translate-y-1/2'
         }`}
       >
-        <div className="relative mx-auto max-w-xl">
+        {/* 初始态用较短宽度更协调；进入对话后与聊天列等宽 */}
+        <div
+          className={`relative mx-auto transition-[max-width] duration-300 ease-smooth ${
+            started ? 'max-w-2xl' : 'max-w-xl'
+          }`}
+        >
+          {/* 快速跳到底部：位于输入框正上方、与发送按钮右对齐 */}
+          {started && !atBottom && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              aria-label="跳到底部"
+              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:border-neutral-300 hover:text-neutral-900"
+            >
+              <IconArrowDown className="h-4 w-4" />
+            </button>
+          )}
           <input
             ref={inputElRef}
             type="text"
