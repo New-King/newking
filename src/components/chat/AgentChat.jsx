@@ -354,8 +354,8 @@ export default function AgentChat() {
         >
           <div className="mx-auto flex max-w-2xl flex-col gap-6">
             {/* 顶部预留条：导航显示时垫在导航下方，保证第一条消息完整可见；
-                导航隐藏且停在顶部附近时塌缩为 0，第一条消息自然上移 30px，不留空白。
-                不在顶部时保持 30px（不可见，避免中段阅读被上下移动打扰） */}
+                导航隐藏且停在顶部附近时塌缩为 0，第一条消息自然上移 20px，不留空白。
+                不在顶部时保持 20px（不可见，避免中段阅读被上下移动打扰） */}
             <div
               aria-hidden="true"
               className="shrink-0 transition-[height] duration-300 ease-smooth"

@@ -70,7 +70,6 @@ export default function Navbar() {
   const location = useLocation();
   const [open, setOpen] = useState(null);
   const [hidden, setHidden] = useState(false);
-  const [autoHide, setAutoHide] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const idleTimerRef = useRef(null);
   const autoHideRef = useRef(false);
@@ -116,11 +115,9 @@ export default function Navbar() {
     // 启用 / 禁用自动隐藏（无对话时导航常显）
     const onAutoOn = () => {
       autoHideRef.current = true;
-      setAutoHide(true);
     };
     const onAutoOff = () => {
       autoHideRef.current = false;
-      setAutoHide(false);
       clearTimeout(idleTimerRef.current);
       setHidden(false);
     };
