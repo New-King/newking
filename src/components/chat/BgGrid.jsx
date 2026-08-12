@@ -2,13 +2,15 @@ import { memo, useEffect, useRef } from 'react';
 
 const GRID = 80; // 网格间距（px），与 Aceternity 原版一致（线从 40px 起、每 80px 一条）
 const RADIUS = 110; // 碰撞半径（px）：光标进入该范围，圆点变深（大小不变）
-const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，整条线变深
-const IDLE_MS = 500; // 鼠标停止移动多久后全部回缩
+const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，该线开始变深
+const GROW_MS = 1000; // 变深"进度条"延伸时长（ms），放慢以便清晰看到从光标处延伸
+const SHRINK_MS = 700; // 离开带宽后的回缩时长（ms）：稍慢，快速扫过时竖线也能被看到
+const IDLE_MS = 3000; // 鼠标停止移动多久后回缩（加长：悬停时线保持变深，打字等长时间无操作才复位）
 const V_COUNT = 40; // 竖线数（80*40 = 3200px）
 const H_COUNT = 30; // 横线数（80*30 = 2400px）
 
 const LINE = '#E4E4E7'; // 线的基础色（Aceternity light 同色）
-const LINE_HOT = '#9B9BA3'; // 线被光标靠近时的深色
+const LINE_HOT = '#9B9BA3'; // 线变深后的颜色
 const DOT = '#D6D6DB'; // 圆点基础色
 const DOT_HOT = '#7F7F88'; // 圆点碰撞时的深色
 
@@ -26,38 +28,71 @@ const DOTS = buildDots();
 
 // 首页网格背景（复刻 Aceternity「background-grid-with-dots-and-animations」）：
 // SVG 画 80px 网格线 + 交点圆点，容器径向 mask 中心渐隐。
-// 交互（圆点大小保持不变，只变颜色）：
-//   线 —— 光标靠近某条线（±LINE_BAND）时整条线变深（颜色变化）
-//   圆点 —— 光标碰撞（进入 RADIUS）时圆点变深，离开回缩
+// 交互：
+//   线 —— 光标进入某条线 ±LINE_BAND 时，该线从光标位置向两端"进度条"式变深
+//        （竖线向上下、横线向左右，即从触发点向四周延伸）
+//   圆点 —— 光标碰撞（进入 RADIUS）时变深（大小不变）
 function BgGrid() {
-  const vRefs = useRef([]); // 竖线
-  const hRefs = useRef([]); // 横线
+  const vRefs = useRef([]); // 竖线（基础浅色）
+  const hRefs = useRef([]); // 横线（基础浅色）
+  const vUpRefs = useRef([]); // 竖线上半段深色覆盖线
+  const vDownRefs = useRef([]); // 竖线下半段深色覆盖线
+  const hLeftRefs = useRef([]); // 横线左半段深色覆盖线
+  const hRightRefs = useRef([]); // 横线右半段深色覆盖线
   const dotRefs = useRef([]);
-  const lastV = useRef([]); // 竖线当前 stroke（只写变化的，省性能）
-  const lastH = useRef([]); // 横线当前 stroke
+  const lastBandV = useRef([]); // 竖线是否处于带宽（只在进出时更新覆盖线）
+  const lastBandH = useRef([]); // 横线是否处于带宽
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const prevRangeRef = useRef(null); // 上一帧处理过的圆点范围（用于离开热区的点复位）
+  const sizeRef = useRef({ w: 0, h: 0 }); // 视口尺寸（覆盖线 dash 长度依赖）
   const rafRef = useRef(0);
   const idleRef = useRef(null);
 
   useEffect(() => {
+    const updateSize = () => {
+      sizeRef.current = { w: window.innerWidth, h: window.innerHeight };
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+
     const reset = () => {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = 0;
-      vRefs.current.forEach((el) => {
-        if (el) el.style.stroke = LINE;
+      const { h, w } = sizeRef.current;
+      // 覆盖线全部收拢为不可见
+      vUpRefs.current.forEach((el) => {
+        if (el) {
+          el.style.strokeDasharray = `0 ${h}`;
+          el.style.strokeDashoffset = '0';
+        }
       });
-      hRefs.current.forEach((el) => {
-        if (el) el.style.stroke = LINE;
+      vDownRefs.current.forEach((el) => {
+        if (el) {
+          el.style.strokeDasharray = `0 ${h}`;
+          el.style.strokeDashoffset = '0';
+        }
+      });
+      hLeftRefs.current.forEach((el) => {
+        if (el) {
+          el.style.strokeDasharray = `0 ${w}`;
+          el.style.strokeDashoffset = '0';
+        }
+      });
+      hRightRefs.current.forEach((el) => {
+        if (el) {
+          el.style.strokeDasharray = `0 ${w}`;
+          el.style.strokeDashoffset = '0';
+        }
       });
       dotRefs.current.forEach((el) => {
         if (el) el.style.fill = DOT;
       });
-      lastV.current = [];
-      lastH.current = [];
+      lastBandV.current = [];
+      lastBandH.current = [];
       lastHot.current = [];
       prevRangeRef.current = null;
     };
+
     const onMove = (e) => {
       // 每次移动都重置空闲计时：停止移动 / 离开窗口后全部回缩，避免残留
       clearTimeout(idleRef.current);
@@ -67,26 +102,60 @@ function BgGrid() {
       const my = e.clientY;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0;
-        // 竖线：光标靠近则整条变深
+        const { w, h } = sizeRef.current;
+        // 竖线：进入带宽时，从光标位置向上下"进度条"式变深。
+        // 上半段 dasharray=[cy, h] offset=0 → 覆盖 [0, cy)；
+        // 下半段 dasharray=[h-cy, h] offset=-cy → 覆盖 [cy, h)。
+        // 两条 dash 同时过渡 0 → 全长，即从 cy 处向两端延伸。
         for (let i = 0; i < V_COUNT; i++) {
-          const el = vRefs.current[i];
-          if (!el) continue;
-          const stroke =
-            Math.abs(GRID / 2 + i * GRID - mx) <= LINE_BAND ? LINE_HOT : LINE;
-          if (lastV.current[i] !== stroke) {
-            lastV.current[i] = stroke;
-            el.style.stroke = stroke;
+          const inBand = Math.abs(GRID / 2 + i * GRID - mx) <= LINE_BAND;
+          if (inBand === lastBandV.current[i]) continue;
+          lastBandV.current[i] = inBand;
+          const up = vUpRefs.current[i];
+          const down = vDownRefs.current[i];
+          if (!up || !down) continue;
+          if (inBand) {
+            const cy = Math.max(0, Math.min(h, my));
+            // 进入：恢复延伸过渡时长
+            up.style.transition = `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`;
+            down.style.transition = up.style.transition;
+            up.style.strokeDasharray = `${cy} ${h}`;
+            up.style.strokeDashoffset = '0';
+            down.style.strokeDasharray = `${h - cy} ${h}`;
+            down.style.strokeDashoffset = `-${cy}`;
+          } else {
+            // 离开：用较慢的淡出，快速扫过的线也能被看到
+            up.style.transition = `stroke-dasharray ${SHRINK_MS}ms ease, stroke-dashoffset ${SHRINK_MS}ms ease`;
+            down.style.transition = up.style.transition;
+            up.style.strokeDasharray = `0 ${h}`;
+            up.style.strokeDashoffset = '0';
+            down.style.strokeDasharray = `0 ${h}`;
+            down.style.strokeDashoffset = '0';
           }
         }
-        // 横线：光标靠近则整条变深
+        // 横线：进入带宽时，从光标位置向左右"进度条"式变深
         for (let j = 0; j < H_COUNT; j++) {
-          const el = hRefs.current[j];
-          if (!el) continue;
-          const stroke =
-            Math.abs(GRID / 2 + j * GRID - my) <= LINE_BAND ? LINE_HOT : LINE;
-          if (lastH.current[j] !== stroke) {
-            lastH.current[j] = stroke;
-            el.style.stroke = stroke;
+          const inBand = Math.abs(GRID / 2 + j * GRID - my) <= LINE_BAND;
+          if (inBand === lastBandH.current[j]) continue;
+          lastBandH.current[j] = inBand;
+          const left = hLeftRefs.current[j];
+          const right = hRightRefs.current[j];
+          if (!left || !right) continue;
+          if (inBand) {
+            const cx = Math.max(0, Math.min(w, mx));
+            left.style.transition = `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`;
+            right.style.transition = left.style.transition;
+            left.style.strokeDasharray = `${cx} ${w}`;
+            left.style.strokeDashoffset = '0';
+            right.style.strokeDasharray = `${w - cx} ${w}`;
+            right.style.strokeDashoffset = `-${cx}`;
+          } else {
+            left.style.transition = `stroke-dasharray ${SHRINK_MS}ms ease, stroke-dashoffset ${SHRINK_MS}ms ease`;
+            right.style.transition = left.style.transition;
+            left.style.strokeDasharray = `0 ${w}`;
+            left.style.strokeDashoffset = '0';
+            right.style.strokeDasharray = `0 ${w}`;
+            right.style.strokeDashoffset = '0';
           }
         }
         // 圆点：碰撞 → 变深（大小不变）。
@@ -132,6 +201,7 @@ function BgGrid() {
     return () => {
       clearTimeout(idleRef.current);
       reset();
+      window.removeEventListener('resize', updateSize);
       window.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);
       window.removeEventListener('blur', onLeave);
@@ -141,39 +211,93 @@ function BgGrid() {
   return (
     <div className="bg-grid-mask pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <svg className="absolute inset-0 h-full w-full">
-        {/* 横线 */}
+        {/* 横线：基础浅色 + 左右两段深色覆盖线 */}
         {Array.from({ length: H_COUNT }, (_, j) => (
-          <line
-            key={`h${j}`}
-            ref={(el) => {
-              hRefs.current[j] = el;
-            }}
-            data-h={j}
-            x1="0"
-            y1={GRID / 2 + j * GRID}
-            x2="100%"
-            y2={GRID / 2 + j * GRID}
-            stroke={LINE}
-            strokeWidth="1"
-            style={{ transition: 'stroke 0.3s ease' }}
-          />
+          <g key={`hg${j}`}>
+            <line
+              data-h={j}
+              x1="0"
+              y1={GRID / 2 + j * GRID}
+              x2="100%"
+              y2={GRID / 2 + j * GRID}
+              stroke={LINE}
+              strokeWidth="1"
+            />
+            <line
+              ref={(el) => {
+                hLeftRefs.current[j] = el;
+              }}
+              x1="0"
+              y1={GRID / 2 + j * GRID}
+              x2="100%"
+              y2={GRID / 2 + j * GRID}
+              stroke={LINE_HOT}
+              strokeWidth="1"
+              style={{
+                strokeDasharray: '0 2000',
+                transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
+              }}
+            />
+            <line
+              ref={(el) => {
+                hRightRefs.current[j] = el;
+              }}
+              x1="0"
+              y1={GRID / 2 + j * GRID}
+              x2="100%"
+              y2={GRID / 2 + j * GRID}
+              stroke={LINE_HOT}
+              strokeWidth="1"
+              style={{
+                strokeDasharray: '0 2000',
+                transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
+              }}
+            />
+          </g>
         ))}
-        {/* 竖线 */}
+        {/* 竖线：基础浅色 + 上下两段深色覆盖线 */}
         {Array.from({ length: V_COUNT }, (_, i) => (
-          <line
-            key={`v${i}`}
-            ref={(el) => {
-              vRefs.current[i] = el;
-            }}
-            data-v={i}
-            x1={GRID / 2 + i * GRID}
-            y1="0"
-            x2={GRID / 2 + i * GRID}
-            y2="100%"
-            stroke={LINE}
-            strokeWidth="1"
-            style={{ transition: 'stroke 0.3s ease' }}
-          />
+          <g key={`vg${i}`}>
+            <line
+              data-v={i}
+              x1={GRID / 2 + i * GRID}
+              y1="0"
+              x2={GRID / 2 + i * GRID}
+              y2="100%"
+              stroke={LINE}
+              strokeWidth="1"
+            />
+            <line
+              ref={(el) => {
+                vUpRefs.current[i] = el;
+              }}
+              x1={GRID / 2 + i * GRID}
+              y1="0"
+              x2={GRID / 2 + i * GRID}
+              y2="100%"
+              stroke={LINE_HOT}
+              strokeWidth="1"
+              style={{
+                strokeDasharray: '0 2000',
+                transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
+              }}
+            />
+            <line
+              ref={(el) => {
+                vDownRefs.current[i] = el;
+              }}
+              x1={GRID / 2 + i * GRID}
+              y1="0"
+              x2={GRID / 2 + i * GRID}
+              y2="100%"
+              stroke={LINE_HOT}
+              strokeWidth="1"
+              style={{
+                strokeDasharray: '0 2000',
+                transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
+              }}
+            />
+          </g>
         ))}
         {/* 交点圆点（碰撞：只变深，大小不变） */}
         {DOTS.map((p, k) => (
