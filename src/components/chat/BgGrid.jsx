@@ -36,6 +36,7 @@ function BgGrid() {
   const lastV = useRef([]); // 竖线当前 stroke（只写变化的，省性能）
   const lastH = useRef([]); // 横线当前 stroke
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
+  const prevRangeRef = useRef(null); // 上一帧处理过的圆点范围（用于离开热区的点复位）
   const rafRef = useRef(0);
   const idleRef = useRef(null);
 
@@ -55,6 +56,7 @@ function BgGrid() {
       lastV.current = [];
       lastH.current = [];
       lastHot.current = [];
+      prevRangeRef.current = null;
     };
     const onMove = (e) => {
       // 每次移动都重置空闲计时：停止移动 / 离开窗口后全部回缩，避免残留
@@ -87,18 +89,34 @@ function BgGrid() {
             el.style.stroke = stroke;
           }
         }
-        // 圆点：碰撞 → 变深（大小不变）
-        for (let k = 0; k < DOTS.length; k++) {
-          const el = dotRefs.current[k];
-          if (!el) continue;
-          const dx = DOTS[k].x - mx;
-          const dy = DOTS[k].y - my;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          const t = Math.max(0, 1 - d / RADIUS);
-          const hot = t > 0.05;
-          if (lastHot.current[k] !== hot) {
-            lastHot.current[k] = hot;
-            el.style.fill = hot ? DOT_HOT : DOT;
+        // 圆点：碰撞 → 变深（大小不变）。
+        // 空间裁剪：只检查光标 ±RADIUS 范围内的圆点（约十几个），避免每帧遍历全部 1200 个；
+        // 用「上一帧范围 ∪ 当前范围」处理离开热区的点复位。
+        const i0 = Math.max(0, Math.ceil((mx - RADIUS - GRID / 2) / GRID));
+        const i1 = Math.min(V_COUNT - 1, Math.floor((mx + RADIUS - GRID / 2) / GRID));
+        const j0 = Math.max(0, Math.ceil((my - RADIUS - GRID / 2) / GRID));
+        const j1 = Math.min(H_COUNT - 1, Math.floor((my + RADIUS - GRID / 2) / GRID));
+        const prev = prevRangeRef.current;
+        const ui0 = prev ? Math.min(prev.i0, i0) : i0;
+        const ui1 = prev ? Math.max(prev.i1, i1) : i1;
+        const uj0 = prev ? Math.min(prev.j0, j0) : j0;
+        const uj1 = prev ? Math.max(prev.j1, j1) : j1;
+        prevRangeRef.current = { i0, i1, j0, j1 };
+        for (let i = ui0; i <= ui1; i++) {
+          for (let j = uj0; j <= uj1; j++) {
+            const k = i * H_COUNT + j;
+            const el = dotRefs.current[k];
+            if (!el) continue;
+            const x = GRID / 2 + i * GRID;
+            const y = GRID / 2 + j * GRID;
+            const dx = x - mx;
+            const dy = y - my;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            const hot = d <= RADIUS;
+            if (lastHot.current[k] !== hot) {
+              lastHot.current[k] = hot;
+              el.style.fill = hot ? DOT_HOT : DOT;
+            }
           }
         }
       });
