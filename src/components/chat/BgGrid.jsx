@@ -1,102 +1,130 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
-const GRID = 75; // 网格间距（px），必须与 .bg-grid 的 background-size 一致
-const TRIGGER = 20; // 触发范围半径（px）：鼠标移动轨迹贴近某条线（20px 内）即触发
-const IDLE_MS = 400; // 鼠标停止移动多久后自动熄灭高亮线（避免打字/离开窗口时的残留）
-const V_COUNT = 30; // 最多渲染的竖线数（75*30 = 2250px，覆盖常见视口）
-const H_COUNT = 24; // 最多渲染的横线数（75*24 = 1800px）
+const GRID = 80; // 网格间距（px），与 Aceternity 原版一致（线从 40px 起、每 80px 一条）
+const RADIUS = 110; // 圆点碰撞半径（px）：光标进入该范围，圆点放大 + 变深
+const MAX_SCALE = 4; // 圆点最近时放大倍数（r=2 → 8px，明显可见）
+const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，整条线变深
+const IDLE_MS = 500; // 鼠标停止移动多久后全部回缩
+const V_COUNT = 40; // 竖线数（80*40 = 3200px）
+const H_COUNT = 30; // 横线数（80*30 = 2400px）
 
-// 首页科技感网格：基础网格（线 + 交点圆点）在 CSS 里；这里额外渲染一层高亮线。
-// 鼠标移动时按"整段轨迹"插值判断：只要这次移动的路径经过某条线 TRIGGER 范围内，
-// 整条线就变深并轻微"拨动"——快速移动也不会漏触发（鼠标事件是跳跃采样的，
-// 只用落点判断会跳过窄带，必须看轨迹）。
-export default function BgGrid() {
-  const vRefs = useRef([]);
-  const hRefs = useRef([]);
+const LINE = '#E4E4E7'; // 线的基础色（Aceternity light 同色）
+const LINE_HOT = '#9B9BA3'; // 线被光标靠近时的深色
+const DOT = '#D6D6DB'; // 圆点基础色
+const DOT_HOT = '#7F7F88'; // 圆点碰撞时的深色
+
+// 圆点坐标：从半格 40px 起，与横竖线交点对齐
+function buildDots() {
+  const dots = [];
+  for (let i = 0; i < V_COUNT; i++) {
+    for (let j = 0; j < H_COUNT; j++) {
+      dots.push({ x: GRID / 2 + i * GRID, y: GRID / 2 + j * GRID });
+    }
+  }
+  return dots;
+}
+const DOTS = buildDots();
+
+// 首页网格背景（复刻 Aceternity「background-grid-with-dots-and-animations」）：
+// SVG 画 80px 网格线 + 交点圆点，容器径向 mask 中心渐隐。
+// 交互：
+//   线 —— 光标靠近某条线（±LINE_BAND）时整条线变深（颜色变化）
+//   圆点 —— 光标碰撞（进入 RADIUS）时圆点放大 + 变深，离开回缩
+function BgGrid() {
+  const vRefs = useRef([]); // 竖线
+  const hRefs = useRef([]); // 横线
+  const dotRefs = useRef([]);
+  const lastV = useRef([]); // 竖线当前 stroke（只写变化的，省性能）
+  const lastH = useRef([]); // 横线当前 stroke
+  const lastS = useRef([]); // 圆点当前 scale
+  const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const rafRef = useRef(0);
-  const prevRef = useRef(null); // 上一次处理的鼠标位置（用于轨迹插值）
-  const idleRef = useRef(null); // 鼠标空闲定时器（自动熄灭高亮线）
+  const idleRef = useRef(null);
 
   useEffect(() => {
-    const clearAll = () => {
+    const reset = () => {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = 0;
       vRefs.current.forEach((el) => {
-        if (el) el.style.opacity = '0';
+        if (el) el.style.stroke = LINE;
       });
       hRefs.current.forEach((el) => {
-        if (el) el.style.opacity = '0';
+        if (el) el.style.stroke = LINE;
       });
+      dotRefs.current.forEach((el) => {
+        if (el) {
+          el.style.transform = 'scale(1)';
+          el.style.fill = DOT;
+        }
+      });
+      lastV.current = [];
+      lastH.current = [];
+      lastS.current = [];
+      lastHot.current = [];
     };
     const onMove = (e) => {
-      // 每次移动都重置空闲计时：停止移动 / 离开窗口后自动熄灭高亮线，避免残留
+      // 每次移动都重置空闲计时：停止移动 / 离开窗口后全部回缩，避免残留
       clearTimeout(idleRef.current);
-      idleRef.current = setTimeout(clearAll, IDLE_MS);
+      idleRef.current = setTimeout(reset, IDLE_MS);
       if (rafRef.current) return;
       const mx = e.clientX;
       const my = e.clientY;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0;
-        let px = prevRef.current?.x ?? mx;
-        let py = prevRef.current?.y ?? my;
-        prevRef.current = { x: mx, y: my };
-        // 跳变（离开窗口后重新进入等）：不做插值，避免整屏误触发
-        if (Math.abs(mx - px) > 300 || Math.abs(my - py) > 300) {
-          px = mx;
-          py = my;
+        // 竖线：光标靠近则整条变深
+        for (let i = 0; i < V_COUNT; i++) {
+          const el = vRefs.current[i];
+          if (!el) continue;
+          const stroke =
+            Math.abs(GRID / 2 + i * GRID - mx) <= LINE_BAND ? LINE_HOT : LINE;
+          if (lastV.current[i] !== stroke) {
+            lastV.current[i] = stroke;
+            el.style.stroke = stroke;
+          }
         }
-        const xmin = Math.min(px, mx);
-        const xmax = Math.max(px, mx);
-        const ymin = Math.min(py, my);
-        const ymax = Math.max(py, my);
-        vRefs.current.forEach((el, i) => {
-          if (!el) return;
-          const xi = (i + 1) * GRID;
-          const dx =
-            xmin <= xi && xi <= xmax
-              ? 0
-              : Math.min(Math.abs(xi - xmin), Math.abs(xi - xmax));
-          const on = dx <= TRIGGER;
-          if (on && el.style.opacity !== '1') {
-            el.style.opacity = '1';
-            // 重新触发"拨动"动画（必须清空并强制回流才能重放）
-            el.style.animation = 'none';
-            void el.offsetWidth;
-            el.style.animation = 'line-nudge-v 0.4s ease-out';
-          } else if (!on && el.style.opacity !== '0') {
-            el.style.opacity = '0';
+        // 横线：光标靠近则整条变深
+        for (let j = 0; j < H_COUNT; j++) {
+          const el = hRefs.current[j];
+          if (!el) continue;
+          const stroke =
+            Math.abs(GRID / 2 + j * GRID - my) <= LINE_BAND ? LINE_HOT : LINE;
+          if (lastH.current[j] !== stroke) {
+            lastH.current[j] = stroke;
+            el.style.stroke = stroke;
           }
-        });
-        hRefs.current.forEach((el, i) => {
-          if (!el) return;
-          const yi = (i + 1) * GRID;
-          const dy =
-            ymin <= yi && yi <= ymax
-              ? 0
-              : Math.min(Math.abs(yi - ymin), Math.abs(yi - ymax));
-          const on = dy <= TRIGGER;
-          if (on && el.style.opacity !== '1') {
-            el.style.opacity = '1';
-            el.style.animation = 'none';
-            void el.offsetWidth;
-            el.style.animation = 'line-nudge-h 0.4s ease-out';
-          } else if (!on && el.style.opacity !== '0') {
-            el.style.opacity = '0';
+        }
+        // 圆点：碰撞 → 放大 + 变深
+        for (let k = 0; k < DOTS.length; k++) {
+          const el = dotRefs.current[k];
+          if (!el) continue;
+          const dx = DOTS[k].x - mx;
+          const dy = DOTS[k].y - my;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          const t = Math.max(0, 1 - d / RADIUS);
+          const s = 1 + t * (MAX_SCALE - 1);
+          if (Math.abs(s - (lastS.current[k] || 0)) >= 0.02) {
+            lastS.current[k] = s;
+            el.style.transform = `scale(${s})`;
           }
-        });
+          const hot = t > 0.05;
+          if (lastHot.current[k] !== hot) {
+            lastHot.current[k] = hot;
+            el.style.fill = hot ? DOT_HOT : DOT;
+          }
+        }
       });
     };
-    // 鼠标离开窗口 / 窗口失焦：立即清除高亮线
+    // 鼠标离开窗口 / 窗口失焦：立即全部回缩
     const onLeave = () => {
       clearTimeout(idleRef.current);
-      clearAll();
+      reset();
     };
     window.addEventListener('mousemove', onMove);
     document.addEventListener('mouseleave', onLeave);
     window.addEventListener('blur', onLeave);
     return () => {
       clearTimeout(idleRef.current);
-      clearAll();
+      reset();
       window.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);
       window.removeEventListener('blur', onLeave);
@@ -104,30 +132,66 @@ export default function BgGrid() {
   }, []);
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {/* 基础网格：线 + 交点圆点，边缘渐隐 */}
-      <div className="bg-grid absolute inset-0" />
-      {/* 高亮线：鼠标触发范围内的整条线变深 */}
-      {Array.from({ length: V_COUNT }, (_, i) => (
-        <div
-          key={`v${i}`}
-          ref={(el) => {
-            vRefs.current[i] = el;
-          }}
-          className="absolute top-0 h-full w-px bg-ink/15"
-          style={{ left: (i + 1) * GRID, opacity: 0, transition: 'opacity 0.3s ease' }}
-        />
-      ))}
-      {Array.from({ length: H_COUNT }, (_, i) => (
-        <div
-          key={`h${i}`}
-          ref={(el) => {
-            hRefs.current[i] = el;
-          }}
-          className="absolute left-0 h-px w-full bg-ink/15"
-          style={{ top: (i + 1) * GRID, opacity: 0, transition: 'opacity 0.3s ease' }}
-        />
-      ))}
+    <div className="bg-grid-mask pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <svg className="absolute inset-0 h-full w-full">
+        {/* 横线 */}
+        {Array.from({ length: H_COUNT }, (_, j) => (
+          <line
+            key={`h${j}`}
+            ref={(el) => {
+              hRefs.current[j] = el;
+            }}
+            data-h={j}
+            x1="0"
+            y1={GRID / 2 + j * GRID}
+            x2="100%"
+            y2={GRID / 2 + j * GRID}
+            stroke={LINE}
+            strokeWidth="1"
+            style={{ transition: 'stroke 0.3s ease' }}
+          />
+        ))}
+        {/* 竖线 */}
+        {Array.from({ length: V_COUNT }, (_, i) => (
+          <line
+            key={`v${i}`}
+            ref={(el) => {
+              vRefs.current[i] = el;
+            }}
+            data-v={i}
+            x1={GRID / 2 + i * GRID}
+            y1="0"
+            x2={GRID / 2 + i * GRID}
+            y2="100%"
+            stroke={LINE}
+            strokeWidth="1"
+            style={{ transition: 'stroke 0.3s ease' }}
+          />
+        ))}
+        {/* 交点圆点（碰撞：放大 + 变深） */}
+        {DOTS.map((p, k) => (
+          <circle
+            key={k}
+            ref={(el) => {
+              dotRefs.current[k] = el;
+            }}
+            cx={p.x}
+            cy={p.y}
+            r="2.5"
+            fill={DOT}
+            style={{
+              transformBox: 'fill-box',
+              transformOrigin: 'center',
+              transition:
+                'transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), fill 0.3s ease',
+              willChange: 'transform',
+            }}
+          />
+        ))}
+      </svg>
     </div>
   );
 }
+
+// 组件无 props 且只有 refs，用 memo 保证只渲染一次（聊天流式更新时不被反复重渲染）
+export default memo(BgGrid);
