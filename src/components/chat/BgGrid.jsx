@@ -1,8 +1,7 @@
 import { memo, useEffect, useRef } from 'react';
 
 const GRID = 80; // 网格间距（px），与 Aceternity 原版一致（线从 40px 起、每 80px 一条）
-const RADIUS = 110; // 圆点碰撞半径（px）：光标进入该范围，圆点放大 + 变深
-const MAX_SCALE = 4; // 圆点最近时放大倍数（r=2 → 8px，明显可见）
+const RADIUS = 110; // 碰撞半径（px）：光标进入该范围，圆点变深（大小不变）
 const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，整条线变深
 const IDLE_MS = 500; // 鼠标停止移动多久后全部回缩
 const V_COUNT = 40; // 竖线数（80*40 = 3200px）
@@ -27,16 +26,15 @@ const DOTS = buildDots();
 
 // 首页网格背景（复刻 Aceternity「background-grid-with-dots-and-animations」）：
 // SVG 画 80px 网格线 + 交点圆点，容器径向 mask 中心渐隐。
-// 交互：
+// 交互（圆点大小保持不变，只变颜色）：
 //   线 —— 光标靠近某条线（±LINE_BAND）时整条线变深（颜色变化）
-//   圆点 —— 光标碰撞（进入 RADIUS）时圆点放大 + 变深，离开回缩
+//   圆点 —— 光标碰撞（进入 RADIUS）时圆点变深，离开回缩
 function BgGrid() {
   const vRefs = useRef([]); // 竖线
   const hRefs = useRef([]); // 横线
   const dotRefs = useRef([]);
   const lastV = useRef([]); // 竖线当前 stroke（只写变化的，省性能）
   const lastH = useRef([]); // 横线当前 stroke
-  const lastS = useRef([]); // 圆点当前 scale
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const rafRef = useRef(0);
   const idleRef = useRef(null);
@@ -52,14 +50,10 @@ function BgGrid() {
         if (el) el.style.stroke = LINE;
       });
       dotRefs.current.forEach((el) => {
-        if (el) {
-          el.style.transform = 'scale(1)';
-          el.style.fill = DOT;
-        }
+        if (el) el.style.fill = DOT;
       });
       lastV.current = [];
       lastH.current = [];
-      lastS.current = [];
       lastHot.current = [];
     };
     const onMove = (e) => {
@@ -93,7 +87,7 @@ function BgGrid() {
             el.style.stroke = stroke;
           }
         }
-        // 圆点：碰撞 → 放大 + 变深
+        // 圆点：碰撞 → 变深（大小不变）
         for (let k = 0; k < DOTS.length; k++) {
           const el = dotRefs.current[k];
           if (!el) continue;
@@ -101,11 +95,6 @@ function BgGrid() {
           const dy = DOTS[k].y - my;
           const d = Math.sqrt(dx * dx + dy * dy);
           const t = Math.max(0, 1 - d / RADIUS);
-          const s = 1 + t * (MAX_SCALE - 1);
-          if (Math.abs(s - (lastS.current[k] || 0)) >= 0.02) {
-            lastS.current[k] = s;
-            el.style.transform = `scale(${s})`;
-          }
           const hot = t > 0.05;
           if (lastHot.current[k] !== hot) {
             lastHot.current[k] = hot;
@@ -168,7 +157,7 @@ function BgGrid() {
             style={{ transition: 'stroke 0.3s ease' }}
           />
         ))}
-        {/* 交点圆点（碰撞：放大 + 变深） */}
+        {/* 交点圆点（碰撞：只变深，大小不变） */}
         {DOTS.map((p, k) => (
           <circle
             key={k}
@@ -179,13 +168,7 @@ function BgGrid() {
             cy={p.y}
             r="2.5"
             fill={DOT}
-            style={{
-              transformBox: 'fill-box',
-              transformOrigin: 'center',
-              transition:
-                'transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), fill 0.3s ease',
-              willChange: 'transform',
-            }}
+            style={{ transition: 'fill 0.3s ease' }}
           />
         ))}
       </svg>
