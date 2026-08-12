@@ -37,6 +37,10 @@ export default {
         'apple-lg': '0 12px 32px rgba(0,0,0,0.1)',
         'apple-input': '0 1px 2px rgba(0,0,0,0.04)',
       },
+      // 整体圆角收小约 30%：卡片/气泡/面板统一 16px → 11px
+      borderRadius: {
+        '2xl': '11px',
+      },
       transitionTimingFunction: {
         // 统一缓动曲线：快动缓停（ease-out）。设为 DEFAULT 后，
         // 所有 transition-* / transition-all 默认都使用它；如需显式引用可用 ease-smooth。
