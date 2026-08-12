@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-const GRID = 56; // 网格间距（px），必须与 .bg-grid 的 background-size 一致
+const GRID = 75; // 网格间距（px），必须与 .bg-grid 的 background-size 一致
 const TRIGGER = 20; // 触发范围半径（px）：鼠标移动轨迹贴近某条线（20px 内）即触发
-const V_COUNT = 40; // 最多渲染的竖线数（56*40 = 2240px，覆盖常见视口）
-const H_COUNT = 30; // 最多渲染的横线数（56*30 = 1680px）
+const IDLE_MS = 400; // 鼠标停止移动多久后自动熄灭高亮线（避免打字/离开窗口时的残留）
+const V_COUNT = 30; // 最多渲染的竖线数（75*30 = 2250px，覆盖常见视口）
+const H_COUNT = 24; // 最多渲染的横线数（75*24 = 1800px）
 
 // 首页科技感网格：基础网格（线 + 交点圆点）在 CSS 里；这里额外渲染一层高亮线。
 // 鼠标移动时按"整段轨迹"插值判断：只要这次移动的路径经过某条线 TRIGGER 范围内，
@@ -14,9 +15,23 @@ export default function BgGrid() {
   const hRefs = useRef([]);
   const rafRef = useRef(0);
   const prevRef = useRef(null); // 上一次处理的鼠标位置（用于轨迹插值）
+  const idleRef = useRef(null); // 鼠标空闲定时器（自动熄灭高亮线）
 
   useEffect(() => {
+    const clearAll = () => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+      vRefs.current.forEach((el) => {
+        if (el) el.style.opacity = '0';
+      });
+      hRefs.current.forEach((el) => {
+        if (el) el.style.opacity = '0';
+      });
+    };
     const onMove = (e) => {
+      // 每次移动都重置空闲计时：停止移动 / 离开窗口后自动熄灭高亮线，避免残留
+      clearTimeout(idleRef.current);
+      idleRef.current = setTimeout(clearAll, IDLE_MS);
       if (rafRef.current) return;
       const mx = e.clientX;
       const my = e.clientY;
@@ -71,10 +86,20 @@ export default function BgGrid() {
         });
       });
     };
+    // 鼠标离开窗口 / 窗口失焦：立即清除高亮线
+    const onLeave = () => {
+      clearTimeout(idleRef.current);
+      clearAll();
+    };
     window.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseleave', onLeave);
+    window.addEventListener('blur', onLeave);
     return () => {
+      clearTimeout(idleRef.current);
+      clearAll();
       window.removeEventListener('mousemove', onMove);
-      cancelAnimationFrame(rafRef.current);
+      document.removeEventListener('mouseleave', onLeave);
+      window.removeEventListener('blur', onLeave);
     };
   }, []);
 

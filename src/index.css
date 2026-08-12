@@ -36,16 +36,14 @@
   background-color: rgba(0, 113, 227, 0.12);
 }
 
-/* 首页科技感网格背景：细网格线 + 交点圆点（circle at 0 0 对准交叉点），边缘渐隐。
+/* 首页科技感网格背景：网格线 + 交点圆点，极浅色、满屏均匀平铺（不抢内容）。
    鼠标高亮线由 BgGrid 组件动态控制（触发范围内整条线变深并轻微"拨动"）。 */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(29, 29, 31, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(29, 29, 31, 0.06) 1px, transparent 1px),
-    radial-gradient(circle at 0 0, rgba(29, 29, 31, 0.35) 1.5px, transparent 2.1px);
-  background-size: 56px 56px, 56px 56px, 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 66% at 50% 42%, #000 16%, transparent 72%);
-  mask-image: radial-gradient(ellipse 80% 66% at 50% 42%, #000 16%, transparent 72%);
+    linear-gradient(to right, rgba(29, 29, 31, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(29, 29, 31, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 0 0, rgba(29, 29, 31, 0.3) 1.5px, transparent 2px);
+  background-size: 75px 75px, 75px 75px, 75px 75px;
 }
 
 /* 网格线"被拨动"动画：触发时轻微弹一下（阻尼衰减，如拨动琴弦） */
