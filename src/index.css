@@ -37,7 +37,7 @@
 }
 
 /* 首页科技感网格背景：细网格线 + 交点圆点（circle at 0 0 对准交叉点），边缘渐隐。
-   鼠标高亮线由 BgGrid 组件动态控制（触发范围内整条线变深）。 */
+   鼠标高亮线由 BgGrid 组件动态控制（触发范围内整条线变深并轻微"拨动"）。 */
 .bg-grid {
   background-image:
     linear-gradient(to right, rgba(29, 29, 31, 0.06) 1px, transparent 1px),
@@ -46,6 +46,42 @@
   background-size: 56px 56px, 56px 56px, 56px 56px;
   -webkit-mask-image: radial-gradient(ellipse 80% 66% at 50% 42%, #000 16%, transparent 72%);
   mask-image: radial-gradient(ellipse 80% 66% at 50% 42%, #000 16%, transparent 72%);
+}
+
+/* 网格线"被拨动"动画：触发时轻微弹一下（阻尼衰减，如拨动琴弦） */
+@keyframes line-nudge-v {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(2px);
+  }
+  45% {
+    transform: translateX(-1.5px);
+  }
+  70% {
+    transform: translateX(0.8px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes line-nudge-h {
+  0% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(2px);
+  }
+  45% {
+    transform: translateY(-1.5px);
+  }
+  70% {
+    transform: translateY(0.8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 
 /* 「正在思考」加载态：一条粗白光在文字上向右扫过，扫完后停顿 5 秒再出现 */
