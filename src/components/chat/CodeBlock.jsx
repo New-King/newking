@@ -18,7 +18,7 @@ const escapeHtml = (s) =>
 
 function CodeSkeleton() {
   return (
-    <div className="w-full max-w-md animate-pulse overflow-hidden rounded-2xl bg-[#1D1D1F] shadow-apple">
+    <div className="w-full animate-pulse overflow-hidden rounded-2xl bg-[#1D1D1F] shadow-apple">
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2.5">
         <div className="h-2.5 w-14 rounded bg-neutral-700/70" />
         <div className="h-5 w-12 rounded bg-neutral-700/70" />
@@ -57,7 +57,7 @@ export default function CodeBlock({ block }) {
   };
 
   return (
-    <div className="w-full max-w-md animate-fade-in-up overflow-hidden rounded-2xl bg-[#1D1D1F] shadow-apple">
+    <div className="w-full animate-fade-in-up overflow-hidden rounded-2xl bg-[#1D1D1F] shadow-apple">
       <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
         <span className="font-mono text-xs text-neutral-500">{block.language}</span>
         <button

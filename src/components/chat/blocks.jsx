@@ -20,7 +20,7 @@ function ThinkingBlock({ block }) {
 
   return (
     <div
-      className={`w-full max-w-md animate-fade-in-up px-1 py-1 transition-opacity duration-300 ease-smooth ${
+      className={`w-full animate-fade-in-up px-1 py-1 transition-opacity duration-300 ease-smooth ${
         block.status === 'done' ? 'opacity-0' : 'opacity-100'
       }`}
     >
@@ -35,7 +35,7 @@ function ToolCallCard({ block }) {
   const running = block.status === 'running';
   const pausedState = block.status === 'paused';
   return (
-    <div className="w-full max-w-md animate-fade-in-up rounded-2xl bg-card px-4 py-3 shadow-apple">
+    <div className="w-full animate-fade-in-up rounded-2xl bg-card px-4 py-3 shadow-apple">
       <div className="flex items-center gap-3">
         <span
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
@@ -72,11 +72,11 @@ function ToolCallCard({ block }) {
 /* ---------- 流式文字 ---------- */
 
 const textBubble =
-  'w-full max-w-md whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-card px-4 py-3 text-[15px] leading-7 text-ink shadow-apple';
+  'w-full whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-card px-4 py-3 text-[15px] leading-7 text-ink shadow-apple';
 
 function TextSkeleton() {
   return (
-    <div className="w-full max-w-md animate-pulse space-y-2.5 rounded-2xl bg-card px-4 py-3.5 shadow-apple">
+    <div className="w-full animate-pulse space-y-2.5 rounded-2xl bg-card px-4 py-3.5 shadow-apple">
       <div className="h-3 w-11/12 rounded bg-neutral-200/80" />
       <div className="h-3 w-full rounded bg-neutral-200/80" />
       <div className="h-3 w-3/4 rounded bg-neutral-200/80" />
@@ -102,11 +102,11 @@ function TextBlock({ block, paused, onDone }) {
 function ImageBlock({ block }) {
   if (block.status !== 'done') {
     return (
-      <div className="h-56 w-full max-w-md animate-pulse rounded-2xl bg-neutral-100" />
+      <div className="h-56 w-full animate-pulse rounded-2xl bg-neutral-100" />
     );
   }
   return (
-    <figure className="w-full max-w-md animate-fade-in-up">
+    <figure className="w-full animate-fade-in-up">
       <img
         src={block.src}
         alt={block.caption || '示意图'}
@@ -124,10 +124,10 @@ const EQ_BARS = [28, 52, 80, 42, 90, 60, 34, 72, 48, 82, 40, 64, 30];
 function AudioCard({ block }) {
   const [playing, setPlaying] = useState(false);
   if (block.status !== 'done') {
-    return <div className="h-[76px] w-full max-w-md animate-pulse rounded-2xl bg-neutral-100" />;
+    return <div className="h-[76px] w-full animate-pulse rounded-2xl bg-neutral-100" />;
   }
   return (
-    <div className="w-full max-w-md animate-fade-in-up rounded-2xl bg-card p-4 shadow-apple">
+    <div className="w-full animate-fade-in-up rounded-2xl bg-card p-4 shadow-apple">
       <div className="flex items-center gap-4">
         <button
           type="button"
@@ -165,11 +165,11 @@ function VideoCard({ block }) {
   const [playing, setPlaying] = useState(false);
   if (block.status !== 'done') {
     return (
-      <div className="aspect-video w-full max-w-md animate-pulse rounded-2xl bg-neutral-100" />
+      <div className="aspect-video w-full animate-pulse rounded-2xl bg-neutral-100" />
     );
   }
   return (
-    <div className="w-full max-w-md animate-fade-in-up">
+    <div className="w-full animate-fade-in-up">
       <div className="relative aspect-video overflow-hidden rounded-2xl bg-neutral-100">
         {playing ? (
           <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-ink-muted">
