@@ -3,8 +3,8 @@ import { memo, useEffect, useRef } from 'react';
 const GRID = 80; // 网格间距（px），与 Aceternity 原版一致（线从 40px 起、每 80px 一条）
 const RADIUS = 110; // 碰撞半径（px）：光标进入该范围，圆点变深（大小不变）
 const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，该线开始变深
-const GROW_MS = 1000; // 变深"进度条"延伸时长（ms），放慢以便清晰看到从光标处延伸
-const SLIDE_MS = 600; // 鼠标移开时深色段"往两边移开"滑出屏幕的时长（ms）
+const GROW_MS = 1300; // 变深"进度条"延伸时长（ms），整体放慢约 30%
+const SLIDE_MS = 800; // 鼠标移开时深色段"往两边移开"滑出屏幕的时长（ms），整体放慢约 30%
 const IDLE_MS = 3000; // 鼠标停止移动多久后回缩（加长：悬停时线保持变深，打字等长时间无操作才复位）
 const V_COUNT = 40; // 竖线数（80*40 = 3200px）
 const H_COUNT = 30; // 横线数（80*30 = 2400px）
@@ -355,7 +355,7 @@ function BgGrid() {
             cy={p.y}
             r="2.5"
             fill={DOT}
-            style={{ transition: 'fill 0.3s ease' }}
+            style={{ transition: 'fill 0.4s ease' }}
           />
         ))}
       </svg>
