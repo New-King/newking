@@ -4,7 +4,7 @@ const GRID = 80; // 网格间距（px），与 Aceternity 原版一致（线从 
 const RADIUS = 110; // 碰撞半径（px）：光标进入该范围，圆点变深（大小不变）
 const LINE_BAND = 60; // 线变深的带宽（px）：光标进入某条线 ±60px，该线开始变深
 const GROW_MS = 1000; // 变深"进度条"延伸时长（ms），放慢以便清晰看到从光标处延伸
-const SHRINK_MS = 700; // 离开带宽后的回缩时长（ms）：稍慢，快速扫过时竖线也能被看到
+const SLIDE_MS = 600; // 鼠标移开时深色段"往两边移开"滑出屏幕的时长（ms）
 const IDLE_MS = 3000; // 鼠标停止移动多久后回缩（加长：悬停时线保持变深，打字等长时间无操作才复位）
 const V_COUNT = 40; // 竖线数（80*40 = 3200px）
 const H_COUNT = 30; // 横线数（80*30 = 2400px）
@@ -40,13 +40,14 @@ function BgGrid() {
   const hLeftRefs = useRef([]); // 横线左半段深色覆盖线
   const hRightRefs = useRef([]); // 横线右半段深色覆盖线
   const dotRefs = useRef([]);
-  const lastBandV = useRef([]); // 竖线是否处于带宽（只在进出时更新覆盖线）
-  const lastBandH = useRef([]); // 横线是否处于带宽
+  const lastBandV = useRef(new Array(V_COUNT).fill(false)); // 竖线是否处于带宽（初始化 false，避免首帧误触发滑出动画）
+  const lastBandH = useRef(new Array(H_COUNT).fill(false)); // 横线是否处于带宽
   const lastCyV = useRef([]); // 竖线进入带宽时的光标 y（回缩时按此折叠回触发点）
   const lastCyH = useRef([]); // 横线进入带宽时的光标 x
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const prevRangeRef = useRef(null); // 上一帧处理过的圆点范围（用于离开热区的点复位）
   const sizeRef = useRef({ w: 0, h: 0 }); // 视口尺寸（覆盖线 dash 长度依赖）
+  const pauseRef = useRef(false); // 鼠标在输入框内：暂停所有网格动画
   const rafRef = useRef(0);
   const idleRef = useRef(null);
 
@@ -89,8 +90,8 @@ function BgGrid() {
       dotRefs.current.forEach((el) => {
         if (el) el.style.fill = DOT;
       });
-      lastBandV.current = [];
-      lastBandH.current = [];
+      lastBandV.current = new Array(V_COUNT).fill(false);
+      lastBandH.current = new Array(H_COUNT).fill(false);
       lastCyV.current = [];
       lastCyH.current = [];
       lastHot.current = [];
@@ -117,6 +118,7 @@ function BgGrid() {
       clearTimeout(idleRef.current);
       idleRef.current = setTimeout(reset, IDLE_MS);
       if (rafRef.current) return;
+      if (pauseRef.current) return; // 鼠标在输入框内：不触发任何动画
       const mx = e.clientX;
       const my = e.clientY;
       rafRef.current = requestAnimationFrame(() => {
@@ -137,10 +139,17 @@ function BgGrid() {
             animateTo(up, `0 ${h}`, `-${cy}`, `${cy} ${h}`, '0', GROW_MS);
             animateTo(down, `0 ${h}`, `-${cy}`, `${h - cy} ${h}`, `-${cy}`, GROW_MS);
           } else {
-            // 离开：深色段折叠回触发点（较慢淡出，快速扫过也能看到）
+            // 鼠标移开：深色段在光标处"断裂"，往两边滑出屏幕（上段滑出顶部、下段滑出底部）
             const cy = lastCyV.current[i] ?? h / 2;
-            animateTo(up, `${cy} ${h}`, '0', `0 ${h}`, `-${cy}`, SHRINK_MS);
-            animateTo(down, `${h - cy} ${h}`, `-${cy}`, `0 ${h}`, `-${cy}`, SHRINK_MS);
+            const t = `stroke-dasharray ${SLIDE_MS}ms ease, stroke-dashoffset ${SLIDE_MS}ms ease`;
+            // 上段 [0, cy]：offset 0 → cy，整段滑出顶部
+            up.style.transition = t;
+            up.style.strokeDasharray = `${cy} ${h}`;
+            up.style.strokeDashoffset = `${cy}`;
+            // 下段 [cy, h]：offset -cy → -h，整段滑出底部
+            down.style.transition = t;
+            down.style.strokeDasharray = `${h - cy} ${h}`;
+            down.style.strokeDashoffset = `-${h}`;
           }
         }
         // 横线：进入带宽时，深色从光标处（cx）向左右两端"进度条"式延伸
@@ -158,10 +167,17 @@ function BgGrid() {
             animateTo(left, `0 ${w}`, `-${cx}`, `${cx} ${w}`, '0', GROW_MS);
             animateTo(right, `0 ${w}`, `-${cx}`, `${w - cx} ${w}`, `-${cx}`, GROW_MS);
           } else {
-            // 离开：深色段折叠回触发点
+            // 鼠标移开：深色段在光标处"断裂"，往两边滑出屏幕（左段滑出左端、右段滑出右端）
             const cx = lastCyH.current[j] ?? w / 2;
-            animateTo(left, `${cx} ${w}`, '0', `0 ${w}`, `-${cx}`, SHRINK_MS);
-            animateTo(right, `${w - cx} ${w}`, `-${cx}`, `0 ${w}`, `-${cx}`, SHRINK_MS);
+            const t = `stroke-dasharray ${SLIDE_MS}ms ease, stroke-dashoffset ${SLIDE_MS}ms ease`;
+            // 左段 [0, cx]：offset 0 → cx，整段滑出左端
+            left.style.transition = t;
+            left.style.strokeDasharray = `${cx} ${w}`;
+            left.style.strokeDashoffset = `${cx}`;
+            // 右段 [cx, w]：offset -cx → -w，整段滑出右端
+            right.style.transition = t;
+            right.style.strokeDasharray = `${w - cx} ${w}`;
+            right.style.strokeDashoffset = `-${w}`;
           }
         }
         // 圆点：碰撞 → 变深（大小不变）。
@@ -201,12 +217,19 @@ function BgGrid() {
       clearTimeout(idleRef.current);
       reset();
     };
+    // 鼠标在输入框内：暂停所有网格动画（进入时立即复位）
+    const onPause = (e) => {
+      pauseRef.current = !!e.detail?.paused;
+      if (pauseRef.current) reset();
+    };
+    window.addEventListener('bg-grid-pause', onPause);
     window.addEventListener('mousemove', onMove);
     document.addEventListener('mouseleave', onLeave);
     window.addEventListener('blur', onLeave);
     return () => {
       clearTimeout(idleRef.current);
       reset();
+      window.removeEventListener('bg-grid-pause', onPause);
       window.removeEventListener('resize', updateSize);
       window.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);

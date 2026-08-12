@@ -394,11 +394,18 @@ export default function AgentChat() {
           started ? 'bottom-0 pb-5' : 'top-1/2 -translate-y-1/2'
         }`}
       >
-        {/* 初始态用较短宽度更协调；进入对话后与聊天列等宽 */}
+        {/* 初始态用较短宽度更协调；进入对话后与聊天列等宽。
+            鼠标在输入框内时暂停背景网格动画（bg-grid-pause 事件） */}
         <div
           className={`relative mx-auto transition-[max-width] duration-300 ease-smooth ${
             started ? 'max-w-2xl' : 'max-w-xl'
           }`}
+          onMouseEnter={() =>
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { paused: true } }))
+          }
+          onMouseLeave={() =>
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { paused: false } }))
+          }
         >
           {/* 快速跳到底部：位于输入框正上方、与发送按钮右对齐 */}
           {started && !atBottom && (
