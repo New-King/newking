@@ -47,7 +47,9 @@ function BgGrid() {
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const prevRangeRef = useRef(null); // 上一帧处理过的圆点范围（用于离开热区的点复位）
   const sizeRef = useRef({ w: 0, h: 0 }); // 视口尺寸（覆盖线 dash 长度依赖）
-  const pauseRef = useRef(false); // 鼠标在输入框内：暂停所有网格动画
+  const pauseRef = useRef(0); // 暂停计数器：>0 表示鼠标在输入框内
+  const startedRef = useRef(false); // 是否对话模式（对话展开后，中间列暂停动画）
+  const prevInMiddleRef = useRef(false); // 上一帧是否在中间列（进入时复位一次）
   const rafRef = useRef(0);
   const idleRef = useRef(null);
 
@@ -118,12 +120,19 @@ function BgGrid() {
       clearTimeout(idleRef.current);
       idleRef.current = setTimeout(reset, IDLE_MS);
       if (rafRef.current) return;
-      if (pauseRef.current) return; // 鼠标在输入框内：不触发任何动画
       const mx = e.clientX;
       const my = e.clientY;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0;
         const { w, h } = sizeRef.current;
+        // 对话展开后：光标在中间对话列（max-w-2xl，半宽 336px）内 → 暂停动画；两侧留白照常
+        const inMiddle =
+          startedRef.current && mx >= w / 2 - 336 && mx <= w / 2 + 336;
+        if (inMiddle !== prevInMiddleRef.current) {
+          prevInMiddleRef.current = inMiddle;
+          if (inMiddle) reset(); // 刚进入中间列：立即复位网格
+        }
+        if (pauseRef.current > 0 || inMiddle) return; // 输入框内 / 中间对话列：不触发动画
         // 竖线：进入带宽时，深色从光标处（cy）向上下两端"进度条"式延伸
         for (let i = 0; i < V_COUNT; i++) {
           const inBand = Math.abs(GRID / 2 + i * GRID - mx) <= LINE_BAND;
@@ -217,12 +226,18 @@ function BgGrid() {
       clearTimeout(idleRef.current);
       reset();
     };
-    // 鼠标在输入框内：暂停所有网格动画（进入时立即复位）
+    // 鼠标进入/离开输入框：计数器 +1/-1，>0 时暂停并立即复位
     const onPause = (e) => {
-      pauseRef.current = !!e.detail?.paused;
-      if (pauseRef.current) reset();
+      const prev = pauseRef.current;
+      pauseRef.current = Math.max(0, prev + (e.detail?.add ? 1 : -1));
+      if (prev === 0 && pauseRef.current > 0) reset(); // 刚进入输入框：立即复位
+    };
+    // 对话模式（展开/收起）：中间对话列暂停动画
+    const onMode = (e) => {
+      startedRef.current = !!e.detail?.started;
     };
     window.addEventListener('bg-grid-pause', onPause);
+    window.addEventListener('bg-grid-mode', onMode);
     window.addEventListener('mousemove', onMove);
     document.addEventListener('mouseleave', onLeave);
     window.addEventListener('blur', onLeave);
@@ -230,6 +245,7 @@ function BgGrid() {
       clearTimeout(idleRef.current);
       reset();
       window.removeEventListener('bg-grid-pause', onPause);
+      window.removeEventListener('bg-grid-mode', onMode);
       window.removeEventListener('resize', updateSize);
       window.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseleave', onLeave);

@@ -116,6 +116,11 @@ export default function AgentChat() {
     window.dispatchEvent(new CustomEvent(turns.length > 0 ? 'nav-autohide-on' : 'nav-autohide-off'));
   }, [turns.length]);
 
+  /* 通知背景网格当前是否为对话模式（对话展开后，中间对话列暂停动画） */
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('bg-grid-mode', { detail: { started } }));
+  }, [started]);
+
   useEffect(() => {
     return () => window.dispatchEvent(new CustomEvent('nav-autohide-off'));
   }, []);
@@ -344,7 +349,8 @@ export default function AgentChat() {
     <div className="relative min-h-screen overflow-hidden">
       {/* 科技感网格背景（线 + 交点圆点；鼠标触发范围内整条线变深） */}
       <BgGrid />
-      {/* 对话呈现区：底部到输入区上方为止，不把输入区算进聊天区域 */}
+      {/* 对话呈现区：底部到输入区上方为止，不把输入区算进聊天区域。
+          对话展开后的"中间列暂停"由 BgGrid 按位置判断（bg-grid-mode 事件） */}
       <div
         className={`absolute inset-x-0 bottom-20 top-0 transition-opacity duration-500 ease-smooth ${
           started ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -401,10 +407,10 @@ export default function AgentChat() {
             started ? 'max-w-2xl' : 'max-w-xl'
           }`}
           onMouseEnter={() =>
-            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { paused: true } }))
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: true } }))
           }
           onMouseLeave={() =>
-            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { paused: false } }))
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: false } }))
           }
         >
           {/* 快速跳到底部：位于输入框正上方、与发送按钮右对齐 */}
