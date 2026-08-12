@@ -42,6 +42,8 @@ function BgGrid() {
   const dotRefs = useRef([]);
   const lastBandV = useRef([]); // 竖线是否处于带宽（只在进出时更新覆盖线）
   const lastBandH = useRef([]); // 横线是否处于带宽
+  const lastCyV = useRef([]); // 竖线进入带宽时的光标 y（回缩时按此折叠回触发点）
+  const lastCyH = useRef([]); // 横线进入带宽时的光标 x
   const lastHot = useRef([]); // 圆点是否处于碰撞热区
   const prevRangeRef = useRef(null); // 上一帧处理过的圆点范围（用于离开热区的点复位）
   const sizeRef = useRef({ w: 0, h: 0 }); // 视口尺寸（覆盖线 dash 长度依赖）
@@ -89,8 +91,25 @@ function BgGrid() {
       });
       lastBandV.current = [];
       lastBandH.current = [];
+      lastCyV.current = [];
+      lastCyH.current = [];
       lastHot.current = [];
       prevRangeRef.current = null;
+    };
+
+    // 两步法过渡：先把元素设到"起点"（transition none + 强制回流），
+    // 再设"终点"并开启过渡 —— 保证动画从起点开始（否则会从初始状态插值，方向错误）。
+    // 覆盖线的深色段从 pivot（光标投影点）向两端延伸：
+    //   上/左段起点 (dash 0, offset -pivot) → 终点 (dash pivot, offset 0)
+    //   下/右段起点 (dash 0, offset -pivot) → 终点 (dash total-pivot, offset -pivot)
+    const animateTo = (el, fromDash, fromOffset, toDash, toOffset, ms) => {
+      el.style.transition = 'none';
+      el.style.strokeDasharray = fromDash;
+      el.style.strokeDashoffset = fromOffset;
+      void el.getBoundingClientRect(); // 强制回流
+      el.style.transition = `stroke-dasharray ${ms}ms ease, stroke-dashoffset ${ms}ms ease`;
+      el.style.strokeDasharray = toDash;
+      el.style.strokeDashoffset = toOffset;
     };
 
     const onMove = (e) => {
@@ -103,10 +122,7 @@ function BgGrid() {
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = 0;
         const { w, h } = sizeRef.current;
-        // 竖线：进入带宽时，从光标位置向上下"进度条"式变深。
-        // 上半段 dasharray=[cy, h] offset=0 → 覆盖 [0, cy)；
-        // 下半段 dasharray=[h-cy, h] offset=-cy → 覆盖 [cy, h)。
-        // 两条 dash 同时过渡 0 → 全长，即从 cy 处向两端延伸。
+        // 竖线：进入带宽时，深色从光标处（cy）向上下两端"进度条"式延伸
         for (let i = 0; i < V_COUNT; i++) {
           const inBand = Math.abs(GRID / 2 + i * GRID - mx) <= LINE_BAND;
           if (inBand === lastBandV.current[i]) continue;
@@ -116,24 +132,18 @@ function BgGrid() {
           if (!up || !down) continue;
           if (inBand) {
             const cy = Math.max(0, Math.min(h, my));
-            // 进入：恢复延伸过渡时长
-            up.style.transition = `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`;
-            down.style.transition = up.style.transition;
-            up.style.strokeDasharray = `${cy} ${h}`;
-            up.style.strokeDashoffset = '0';
-            down.style.strokeDasharray = `${h - cy} ${h}`;
-            down.style.strokeDashoffset = `-${cy}`;
+            lastCyV.current[i] = cy;
+            // 上段 [0, cy)：从 cy 向上延伸；下段 [cy, h)：从 cy 向下延伸
+            animateTo(up, `0 ${h}`, `-${cy}`, `${cy} ${h}`, '0', GROW_MS);
+            animateTo(down, `0 ${h}`, `-${cy}`, `${h - cy} ${h}`, `-${cy}`, GROW_MS);
           } else {
-            // 离开：用较慢的淡出，快速扫过的线也能被看到
-            up.style.transition = `stroke-dasharray ${SHRINK_MS}ms ease, stroke-dashoffset ${SHRINK_MS}ms ease`;
-            down.style.transition = up.style.transition;
-            up.style.strokeDasharray = `0 ${h}`;
-            up.style.strokeDashoffset = '0';
-            down.style.strokeDasharray = `0 ${h}`;
-            down.style.strokeDashoffset = '0';
+            // 离开：深色段折叠回触发点（较慢淡出，快速扫过也能看到）
+            const cy = lastCyV.current[i] ?? h / 2;
+            animateTo(up, `${cy} ${h}`, '0', `0 ${h}`, `-${cy}`, SHRINK_MS);
+            animateTo(down, `${h - cy} ${h}`, `-${cy}`, `0 ${h}`, `-${cy}`, SHRINK_MS);
           }
         }
-        // 横线：进入带宽时，从光标位置向左右"进度条"式变深
+        // 横线：进入带宽时，深色从光标处（cx）向左右两端"进度条"式延伸
         for (let j = 0; j < H_COUNT; j++) {
           const inBand = Math.abs(GRID / 2 + j * GRID - my) <= LINE_BAND;
           if (inBand === lastBandH.current[j]) continue;
@@ -143,19 +153,15 @@ function BgGrid() {
           if (!left || !right) continue;
           if (inBand) {
             const cx = Math.max(0, Math.min(w, mx));
-            left.style.transition = `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`;
-            right.style.transition = left.style.transition;
-            left.style.strokeDasharray = `${cx} ${w}`;
-            left.style.strokeDashoffset = '0';
-            right.style.strokeDasharray = `${w - cx} ${w}`;
-            right.style.strokeDashoffset = `-${cx}`;
+            lastCyH.current[j] = cx;
+            // 左段 [0, cx)：从 cx 向左延伸；右段 [cx, w)：从 cx 向右延伸
+            animateTo(left, `0 ${w}`, `-${cx}`, `${cx} ${w}`, '0', GROW_MS);
+            animateTo(right, `0 ${w}`, `-${cx}`, `${w - cx} ${w}`, `-${cx}`, GROW_MS);
           } else {
-            left.style.transition = `stroke-dasharray ${SHRINK_MS}ms ease, stroke-dashoffset ${SHRINK_MS}ms ease`;
-            right.style.transition = left.style.transition;
-            left.style.strokeDasharray = `0 ${w}`;
-            left.style.strokeDashoffset = '0';
-            right.style.strokeDasharray = `0 ${w}`;
-            right.style.strokeDashoffset = '0';
+            // 离开：深色段折叠回触发点
+            const cx = lastCyH.current[j] ?? w / 2;
+            animateTo(left, `${cx} ${w}`, '0', `0 ${w}`, `-${cx}`, SHRINK_MS);
+            animateTo(right, `${w - cx} ${w}`, `-${cx}`, `0 ${w}`, `-${cx}`, SHRINK_MS);
           }
         }
         // 圆点：碰撞 → 变深（大小不变）。
