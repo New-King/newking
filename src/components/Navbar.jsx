@@ -15,7 +15,7 @@ const NAV = [
 
 function QuotePanel() {
   return (
-    <p className="px-3 py-2 text-center text-[13px] leading-6 text-neutral-500">{SITE_QUOTE}</p>
+    <p className="px-3 py-2 text-center text-[13px] leading-6 text-ink-muted">{SITE_QUOTE}</p>
   );
 }
 
@@ -24,7 +24,7 @@ function ListPanel({ groups }) {
     <div className="space-y-3 p-1">
       {groups.map((g) => (
         <div key={g.date} className="flex gap-2">
-          <span className="w-11 shrink-0 pt-1 text-center text-[11px] tabular-nums text-neutral-400">
+          <span className="w-11 shrink-0 pt-1 text-center text-[11px] tabular-nums text-ink-faint">
             {formatDateShort(g.date)}
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -32,7 +32,7 @@ function ListPanel({ groups }) {
               <Link
                 key={it.id}
                 to={it.to}
-                className="truncate rounded-md px-1.5 py-1 text-[13px] text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                className="truncate rounded-md px-1.5 py-1 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink"
               >
                 {it.title}
               </Link>
@@ -47,19 +47,19 @@ function ListPanel({ groups }) {
 function ContactPanel() {
   return (
     <div className="space-y-0.5 p-1">
-      <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-neutral-400">联系方式</p>
+      <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-ink-faint">联系方式</p>
       <a
         href={`mailto:${contact.email}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-neutral-700 transition-colors hover:bg-neutral-100"
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100"
       >
-        <IconMail className="h-4 w-4 shrink-0 text-neutral-400" />
+        <IconMail className="h-4 w-4 shrink-0 text-ink-faint" />
         {contact.email}
       </a>
       <a
         href={`tel:${contact.phone}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-neutral-700 transition-colors hover:bg-neutral-100"
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100"
       >
-        <IconPhone className="h-4 w-4 shrink-0 text-neutral-400" />
+        <IconPhone className="h-4 w-4 shrink-0 text-ink-faint" />
         {contact.phone}
       </a>
     </div>
@@ -140,7 +140,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b border-neutral-200/70 bg-white transition-all duration-300 ease-smooth md:bg-white/70 md:backdrop-blur-md ${
+      className={`fixed inset-x-0 top-0 z-50 border-b border-black/[0.08] bg-white/80 backdrop-blur-xl transition-all duration-300 ease-smooth ${
         hidden ? 'pointer-events-none -translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
     >
@@ -162,7 +162,7 @@ export default function Navbar() {
                   onClick={() => setOpen(null)}
                   className={({ isActive }) =>
                     `relative flex h-14 items-center px-4 text-[14px] transition-colors duration-200 ${
-                      isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-900'
+                      isActive ? 'text-ink' : 'text-ink-muted hover:text-ink'
                     }`
                   }
                 >
@@ -170,7 +170,7 @@ export default function Navbar() {
                     <>
                       {item.label}
                       <span
-                        className={`absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-neutral-900 transition-all duration-300 ${
+                        className={`absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-accent transition-all duration-300 ${
                           isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
                         }`}
                       />
@@ -185,7 +185,7 @@ export default function Navbar() {
                     }`}
                   >
                     <div
-                      className={`${item.width} rounded-xl border border-neutral-200/80 bg-white p-2.5 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)]`}
+                      className={`${item.width} rounded-2xl border border-black/[0.06] bg-card p-2.5 shadow-apple-lg`}
                     >
                       {item.quote ? (
                         <QuotePanel />
@@ -210,7 +210,7 @@ export default function Navbar() {
           onClick={() => setDrawerOpen((v) => !v)}
           aria-label={drawerOpen ? '关闭菜单' : '打开菜单'}
           aria-expanded={drawerOpen}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-neutral-100 hover:text-ink"
         >
           {drawerOpen ? <IconX className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
         </button>
@@ -218,7 +218,7 @@ export default function Navbar() {
 
       {/* 移动端：抽屉面板（实心白，无毛玻璃，省移动端 GPU） */}
       <div
-        className={`absolute inset-x-0 top-full z-50 border-b border-neutral-200/70 bg-white transition-all duration-200 ease-smooth md:hidden ${
+        className={`absolute inset-x-0 top-full z-50 border-b border-black/[0.08] bg-white transition-all duration-200 ease-smooth md:hidden ${
           drawerOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
         }`}
       >
@@ -230,7 +230,7 @@ export default function Navbar() {
               onClick={() => setDrawerOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-3 text-[15px] transition-colors ${
-                  isActive ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-600 hover:bg-neutral-50'
+                  isActive ? 'bg-neutral-100 text-ink' : 'text-ink-muted hover:bg-neutral-50'
                 }`
               }
             >

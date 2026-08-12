@@ -81,7 +81,7 @@ export default function TurnRail({ turns, onSelect }) {
                   aria-label={`跳转到第 ${i + 1} 轮对话`}
                   style={{ width: `${hover == null ? BASE_LEN : lenFor(d)}px` }}
                   className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${
-                    isFocus ? 'bg-neutral-800' : 'bg-neutral-300'
+                    isFocus ? 'bg-accent' : 'bg-[#D2D2D7]'
                   }`}
                 />
               );
@@ -92,19 +92,19 @@ export default function TurnRail({ turns, onSelect }) {
         {/* 预览面板：跟随鼠标位置，鼠标可移入并点击操作 */}
         {hover !== null && (
           <div
-            className="absolute w-72 rounded-xl border border-neutral-200/80 bg-white p-3.5 shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)]"
+            className="absolute w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg"
             style={{ left: PANEL_LEFT, top: panelTop }}
           >
-            <p className="truncate text-[13px] font-medium text-neutral-900">
+            <p className="truncate text-[13px] font-medium text-ink">
               {turns[hover].question}
             </p>
-            <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-neutral-500">
+            <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-ink-muted">
               {turns[hover].reply}
             </p>
             <button
               type="button"
               onClick={() => onSelect(hover)}
-              className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500 transition-colors hover:text-neutral-900"
+              className="mt-3 flex items-center gap-1.5 text-xs text-ink-faint transition-colors hover:text-accent"
             >
               <IconGlobe className="h-3.5 w-3.5" />
               跳转至此轮

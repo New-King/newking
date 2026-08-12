@@ -403,7 +403,7 @@ export default function AgentChat() {
               type="button"
               onClick={scrollToBottom}
               aria-label="跳到底部"
-              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-neutral-200 bg-white/95 text-neutral-500 shadow-sm backdrop-blur transition-colors hover:border-neutral-300 hover:text-neutral-900"
+              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink-faint shadow-apple backdrop-blur transition-colors hover:text-ink"
             >
               <IconArrowDown className="h-4 w-4" />
             </button>
@@ -415,7 +415,7 @@ export default function AgentChat() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="输入你想了解的内容…"
             aria-label="输入你想了解的内容"
-            className="w-full rounded-full border border-neutral-300 bg-white py-3.5 pl-5 pr-14 text-[15px] text-neutral-900 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.08)] outline-none transition-colors duration-200 placeholder:text-neutral-400 focus:border-neutral-500 focus:ring-4 focus:ring-neutral-900/[0.05]"
+            className="w-full rounded-full border border-black/[0.08] bg-card py-3.5 pl-5 pr-14 text-[15px] text-ink shadow-apple-input outline-none transition-all duration-200 placeholder:text-ink-faint focus:border-accent/60 focus:ring-4 focus:ring-accent/15"
           />
           {/* 生成中：发送按钮原位变为暂停按钮，无法连续发送；对话结束或暂停后恢复发送 */}
           {pending > 0 && !paused ? (
@@ -423,7 +423,7 @@ export default function AgentChat() {
               type="button"
               onClick={handlePause}
               aria-label="暂停回复"
-              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors duration-200 hover:bg-neutral-700"
+              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95"
             >
               <IconPause className="h-4 w-4" />
             </button>
@@ -432,7 +432,7 @@ export default function AgentChat() {
               type="submit"
               disabled={!input.trim()}
               aria-label="发送"
-              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors duration-200 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-25"
+              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-25"
             >
               <IconSend className="h-4 w-4" />
             </button>
