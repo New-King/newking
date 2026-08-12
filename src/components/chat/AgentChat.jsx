@@ -10,6 +10,7 @@ import {
 import { IconArrowDown, IconPause, IconSend } from '../icons';
 import MessageItem from './MessageItem';
 import TurnRail from './TurnRail';
+import BgGrid from './BgGrid';
 
 let uid = 0;
 const nextId = () => ++uid;
@@ -341,6 +342,8 @@ export default function AgentChat() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      {/* 科技感网格背景（线 + 交点圆点；鼠标触发范围内整条线变深） */}
+      <BgGrid />
       {/* 对话呈现区：底部到输入区上方为止，不把输入区算进聊天区域 */}
       <div
         className={`absolute inset-x-0 bottom-20 top-0 transition-opacity duration-500 ease-smooth ${
