@@ -29,42 +29,35 @@ function ThinkingBlock({ block }) {
   );
 }
 
-/* ---------- 工具调用卡片：进行中 / 已完成 ---------- */
+/* ---------- 工具调用：单行扁卡片（保持全站白卡片风格） ---------- */
 
 function ToolCallCard({ block }) {
   const running = block.status === 'running';
   const pausedState = block.status === 'paused';
   return (
-    <div className="w-full animate-fade-in-up rounded-2xl bg-card px-4 py-3 shadow-apple">
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-            running ? 'bg-neutral-100' : 'bg-accent'
-          }`}
-        >
-          {running ? (
-            <IconSpinner className="h-3.5 w-3.5 text-ink-faint" />
-          ) : pausedState ? (
-            <IconPause className="h-3.5 w-3.5 text-white" />
-          ) : (
-            <IconCheck className="h-3.5 w-3.5 text-white" />
-          )}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-ink">
-            {running ? (
-              <>正在调用「{block.name}」</>
-            ) : pausedState ? (
-              <>已暂停「{block.name}」</>
-            ) : (
-              <>已调用「{block.name}」</>
-            )}
-          </p>
-          <p className="mt-0.5 text-xs text-ink-faint">
-            {running ? '正在执行，请稍候…' : pausedState ? '回复生成已暂停' : block.result}
-          </p>
-        </div>
-      </div>
+    <div className="flex w-full animate-fade-in-up items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
+      <span
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
+          running || pausedState ? 'bg-neutral-100' : 'bg-green-100'
+        }`}
+      >
+        {running ? (
+          <IconSpinner className="h-3 w-3 text-ink-faint" />
+        ) : pausedState ? (
+          <IconPause className="h-3 w-3 text-ink-faint" />
+        ) : (
+          <IconCheck className="h-3 w-3 text-green-600" />
+        )}
+      </span>
+      <p className="min-w-0 flex-1 truncate text-xs leading-5 text-ink-faint">
+        {running ? (
+          <>正在调用「{block.name}」…</>
+        ) : pausedState ? (
+          <>已暂停「{block.name}」</>
+        ) : (
+          <>已调用「{block.name}」· {block.result}</>
+        )}
+      </p>
     </div>
   );
 }
