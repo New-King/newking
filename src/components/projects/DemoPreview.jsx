@@ -15,14 +15,14 @@ function DemoWindow({ title, children }) {
   );
 }
 
-// 演示预览：按 preview.scene 分发到场景模板
-export default function DemoPreview({ p }) {
+// 演示预览：按 preview.scene 分发到场景模板；active=false 时场景不播放（展开才从头播）
+export default function DemoPreview({ p, active }) {
   const { preview } = p;
   if (!preview) return null;
   const Scene = SCENES[preview.scene] || SCENES.terminal;
   return (
     <DemoWindow title={p.title}>
-      <Scene {...preview} />
+      <Scene {...preview} active={active} />
     </DemoWindow>
   );
 }

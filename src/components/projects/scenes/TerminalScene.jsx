@@ -3,15 +3,19 @@ import { useEffect, useState } from 'react';
 // 终端场景：16:9 窗口内逐行执行，循环播放
 const TERMINAL_LINES = ['正在连接服务…', '正在检索知识库…', '正在生成回复…', '任务完成 ✓'];
 
-export default function TerminalScene({ lines = TERMINAL_LINES }) {
+export default function TerminalScene({ lines = TERMINAL_LINES, active = true }) {
   const [step, setStep] = useState(0);
   useEffect(() => {
+    if (!active) {
+      setStep(0);
+      return;
+    }
     const t = setInterval(
       () => setStep((s) => (s + 1) % (lines.length + 1)),
       800
     );
     return () => clearInterval(t);
-  }, [lines.length]);
+  }, [lines.length, active]);
   const visible = lines.slice(0, step + 1);
   const progress = (step / lines.length) * 100;
   return (

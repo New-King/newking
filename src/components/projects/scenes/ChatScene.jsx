@@ -4,11 +4,16 @@ import { useEffect, useState } from 'react';
 const CHAT_Q = '帮我检索相关文档…';
 const CHAT_A = '已找到 12 条相关片段，为你整理如下结论…';
 
-export default function ChatScene({ question = CHAT_Q, answer = CHAT_A }) {
+export default function ChatScene({ question = CHAT_Q, answer = CHAT_A, active = true }) {
   const [step, setStep] = useState(0);
   const [typed, setTyped] = useState(0);
   // step: 0 用户提问 → 1 思考中 → 2 回复打字中 → 3 完成
   useEffect(() => {
+    if (!active) {
+      setStep(0);
+      setTyped(0);
+      return;
+    }
     if (step !== 2) return;
     setTyped(0);
     const t = setInterval(() => {
@@ -22,8 +27,9 @@ export default function ChatScene({ question = CHAT_Q, answer = CHAT_A }) {
       });
     }, 40);
     return () => clearInterval(t);
-  }, [step, answer.length]);
+  }, [step, answer.length, active]);
   useEffect(() => {
+    if (!active) return;
     if (step === 0) {
       const t = setTimeout(() => setStep(1), 900);
       return () => clearTimeout(t);
@@ -36,7 +42,7 @@ export default function ChatScene({ question = CHAT_Q, answer = CHAT_A }) {
       const t = setTimeout(() => setStep(0), 1400);
       return () => clearTimeout(t);
     }
-  }, [step]);
+  }, [step, active]);
   return (
     <div className="flex aspect-[16/9] flex-col justify-end gap-2.5 p-5">
       {/* 用户气泡 */}

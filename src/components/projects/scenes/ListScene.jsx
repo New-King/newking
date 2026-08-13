@@ -3,15 +3,19 @@ import { useEffect, useState } from 'react';
 // 列表场景：模块逐个加载，最新一个高亮，循环播放
 const LIST_MODULES = ['app-shell', 'remote-a', 'remote-b', 'shared-utils'];
 
-export default function ListScene({ modules = LIST_MODULES }) {
+export default function ListScene({ modules = LIST_MODULES, active = true }) {
   const [step, setStep] = useState(0);
   useEffect(() => {
+    if (!active) {
+      setStep(0);
+      return;
+    }
     const t = setInterval(
       () => setStep((s) => (s + 1) % (modules.length + 1)),
       650
     );
     return () => clearInterval(t);
-  }, [modules.length]);
+  }, [modules.length, active]);
   return (
     <div className="flex aspect-[16/9] flex-col justify-center gap-2 p-6">
       {modules.slice(0, step + 1).map((m, i) => (

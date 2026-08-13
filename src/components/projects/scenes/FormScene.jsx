@@ -4,10 +4,15 @@ import { useEffect, useState } from 'react';
 const FORM_INPUT = 'portfolio.json';
 const FORM_RESULT = '已生成 12 个页面 ✓';
 
-export default function FormScene({ input = FORM_INPUT, result = FORM_RESULT }) {
+export default function FormScene({ input = FORM_INPUT, result = FORM_RESULT, active = true }) {
   const [step, setStep] = useState(0); // 0 输入中 → 1 按钮高亮 → 2 结果
   const [typed, setTyped] = useState(0);
   useEffect(() => {
+    if (!active) {
+      setStep(0);
+      setTyped(0);
+      return;
+    }
     if (step !== 0) return;
     setTyped(0);
     const t = setInterval(() => {
@@ -21,7 +26,7 @@ export default function FormScene({ input = FORM_INPUT, result = FORM_RESULT }) 
       });
     }, 60);
     return () => clearInterval(t);
-  }, [step, input.length]);
+  }, [step, input.length, active]);
   useEffect(() => {
     if (step === 1) {
       const t = setTimeout(() => setStep(2), 800);

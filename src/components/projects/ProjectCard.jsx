@@ -104,7 +104,7 @@ export default function ProjectCard({ p }) {
         }`}
       >
         <div className="min-h-0 overflow-hidden">
-          <DemoPreview p={p} />
+          <DemoPreview p={p} active={previewing} />
         </div>
       </div>
 
