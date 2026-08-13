@@ -79,10 +79,7 @@ export default function ProjectsPage() {
   const nextItem = projects[(index + 1) % total];
 
   return (
-    <PageShell
-      eyebrow="Projects"
-      note="内容筹备中 · 悬停顶部导航可预览最新项目"
-    >
+    <PageShell eyebrow="Projects">
       {/* 相册式展示：当前项目 + 自动播放预览；左右箭头 / 滑动 / 缩略图切换 */}
       <div
         className="relative"
@@ -129,7 +126,7 @@ export default function ProjectsPage() {
           <button
             onClick={prev}
             aria-label="上一个项目"
-            className="group absolute -left-36 top-0 bottom-0 z-10 hidden w-28 items-center justify-end pr-2 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+            className="group absolute -left-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-end pr-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
               width="32"
@@ -146,7 +143,7 @@ export default function ProjectsPage() {
           <button
             onClick={next}
             aria-label="下一个项目"
-            className="group absolute -right-36 top-0 bottom-0 z-10 hidden w-28 items-center justify-start pl-2 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+            className="group absolute -right-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-start pl-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
               width="32"

@@ -92,7 +92,7 @@ export default function CanvasScene({ active = true }) {
     ) : null;
 
   return (
-    <div className="flex aspect-[16/9]">
+    <div className="flex aspect-[16/9] max-sm:aspect-[4/3]">
       {/* 左：无限画布（60%）—— 3 视觉参考图 → 3 分镜图 → 1 视频（与对话区同步） */}
       <div className="relative w-[60%] overflow-hidden border-r border-black/[0.06] dark:border-white/10">
         <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(to_right,var(--grid-line)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid-line)_1px,transparent_1px)] [background-size:22px_22px]" />

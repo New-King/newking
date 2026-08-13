@@ -89,43 +89,6 @@ export const projects = [
     },
     to: '/projects',
   },
-  {
-    id: 'j3',
-    title: '知识库检索服务',
-    date: '2026-03-18',
-    description: 'RAG 驱动的文档检索 API，支持多种向量库接入。',
-    cover: 'dots',
-    preview: {
-      scene: 'chat',
-      question: '帮我检索相关文档…',
-      answer: '已找到 12 条相关片段，为你整理如下结论…',
-    },
-    to: '/projects',
-  },
-  {
-    id: 'j4',
-    title: '微前端脚手架',
-    date: '2026-03-18',
-    description: '基于模块联邦的微前端工程模板与发布工具。',
-    cover: 'cross',
-    preview: {
-      scene: 'list',
-      modules: ['app-shell', 'remote-a', 'remote-b', 'shared-utils'],
-    },
-    to: '/projects',
-  },
-  {
-    id: 'j5',
-    title: '命令行效率工具集',
-    date: '2026-01-20',
-    description: '一组提升日常开发效率的 CLI 小工具。',
-    cover: 'triangle',
-    preview: {
-      scene: 'terminal',
-      lines: ['正在安装依赖…', '正在运行测试…', '正在打包构建…', '构建完成 ✓'],
-    },
-    to: '/projects',
-  },
 ];
 
 export const notes = [
