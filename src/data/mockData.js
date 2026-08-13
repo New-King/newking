@@ -52,6 +52,8 @@ export const posts = [
 ];
 
 export const projects = [
+  // media 可选：{ type: 'gif' | 'video', src: '...' } —— 项目卡悬停预览的演示素材；
+  // 不提供时回退到内置动画模拟。视频需 muted 才能自动播放。
   {
     id: 'j1',
     title: 'Agent Console — 对话式运维助手',
