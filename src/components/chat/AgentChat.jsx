@@ -427,13 +427,13 @@ export default function AgentChat() {
             window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: false } }))
           }
         >
-          {/* 快速跳到底部：位于输入框正上方、与发送按钮右对齐 */}
+          {/* 快速跳到底部：位于输入框正上方、水平居中；箭头常态深色，无 hover 变化 */}
           {started && !atBottom && (
             <button
               type="button"
               onClick={scrollToBottom}
               aria-label="跳到底部"
-              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink-faint shadow-apple backdrop-blur transition-colors hover:text-ink dark:border-white/10 dark:bg-card/95"
+              className="absolute bottom-full left-1/2 z-10 mb-2 flex h-9 w-9 -translate-x-1/2 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink shadow-apple backdrop-blur dark:border-white/10 dark:bg-card/95"
             >
               <IconArrowDown className="h-4 w-4" />
             </button>

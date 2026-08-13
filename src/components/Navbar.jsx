@@ -170,7 +170,7 @@ export default function Navbar() {
                     <>
                       {item.label}
                       <span
-                        className={`absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-accent transition-all duration-300 ${
+                        className={`absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-ink transition-all duration-300 dark:bg-white/80 ${
                           isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
                         }`}
                       />

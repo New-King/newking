@@ -20,7 +20,7 @@ export default function BlogPage() {
   }
 
   return (
-    <PageShell eyebrow="Blog" note="内容筹备中 · 悬停顶部导航可预览最新文章">
+    <PageShell eyebrow="Blog">
       {groups.map((g, i) => (
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
           {/* 仅往年显示年份标题；最新年份平铺，年份不言自明（changelog 惯例） */}

@@ -92,11 +92,62 @@ export const projects = [
 ];
 
 export const notes = [
-  { id: 'n1', title: '关于 prompt 工程的一点心得', date: '2026-08-01', to: '/notes' },
-  { id: 'n2', title: 'Tailwind 排版与间距的取舍', date: '2026-07-25', to: '/notes' },
-  { id: 'n3', title: '读《设计中的设计》', date: '2026-07-10', to: '/notes' },
-  { id: 'n4', title: 'MCP 协议初探', date: '2026-07-10', to: '/notes' },
-  { id: 'n5', title: '每周速览 #12', date: '2026-06-28', to: '/notes' },
+  {
+    id: 'n1',
+    title: '关于 prompt 工程的一点心得',
+    date: '2026-08-01',
+    excerpt: '结构化指令的边界与技巧，从一次失败的对话说起。',
+    to: '/notes',
+  },
+  {
+    id: 'n2',
+    title: 'Tailwind 排版与间距的取舍',
+    date: '2026-07-25',
+    excerpt: '从字号到空间节奏，聊聊排版系统的一次重构。',
+    to: '/notes',
+  },
+  {
+    id: 'n3',
+    title: '读《设计中的设计》',
+    date: '2026-07-10',
+    excerpt: '原研哉的减法美学，和网站设计有不少共通之处。',
+    to: '/notes',
+  },
+  {
+    id: 'n4',
+    title: 'MCP 协议初探',
+    date: '2026-07-10',
+    excerpt: 'MCP 是什么、能做什么，一篇入门向的梳理。',
+    to: '/notes',
+  },
+  {
+    id: 'n5',
+    title: '每周速览 #12',
+    date: '2026-06-28',
+    excerpt: '本周关注的文章、工具与一些碎片想法。',
+    to: '/notes',
+  },
+  {
+    id: 'n6',
+    title: '终端美学：从 Vim 到 Warp',
+    date: '2025-12-15',
+    excerpt: '工具的外形与效率，聊聊终端的一次进化。',
+    to: '/notes',
+  },
+  {
+    id: 'n7',
+    title: '读《禅与摩托车维修艺术》',
+    date: '2025-10-08',
+    excerpt: '关于「良质」的一些摘录与胡思乱想。',
+    to: '/notes',
+  },
+  {
+    id: 'n8',
+    title: '静态博客的十年',
+    date: '2025-05-20',
+    excerpt: '从 Jekyll 到 Astro，写作工具的变迁史。',
+    to: '/notes',
+  },
 ];
 
 // 示例联系方式
