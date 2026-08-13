@@ -69,8 +69,8 @@ function CoverThumb({ shape, active, small }) {
 
 export default function ProjectsPage() {
   const [index, setIndex] = useState(0);
-  const [arrowDist, setArrowDist] = useState(0); // 左右箭头距离感应（0-1）
-  const arrowRefs = [useRef(null), useRef(null)];
+  const [arrowL, setArrowL] = useState(0); // 左箭头距离感应（0-1）
+  const [arrowR, setArrowR] = useState(0); // 右箭头距离感应（0-1）
   const touchX = useRef(null);
   const total = projects.length;
   const p = projects[index];
@@ -124,22 +124,21 @@ export default function ProjectsPage() {
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={p} active />
-          {/* 左右箭头：离卡片越远箭头越大（距离感应） */}
+          {/* 左右箭头：铺满视口边缘到卡片，离卡片越远箭头越大（独立距离感应） */}
           <button
             onClick={prev}
             aria-label="上一个项目"
-            ref={arrowRefs[0]}
             onMouseMove={(e) => {
-              const rect = arrowRefs[0].current.getBoundingClientRect();
+              const rect = e.currentTarget.getBoundingClientRect();
               const d = rect.right - e.clientX;
-              setArrowDist(Math.max(0, Math.min(1, d / rect.width)));
+              setArrowL(Math.max(0, Math.min(1, d / rect.width)));
             }}
-            onMouseLeave={() => setArrowDist(0)}
-            className="group absolute -left-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-end pr-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+            onMouseLeave={() => setArrowL(0)}
+            className="group absolute left-[calc(-50vw+336px)] top-0 bottom-0 z-10 hidden w-[calc(50vw-320px)] items-center justify-end pr-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
-              width={32 + Math.round(arrowDist * 20)}
-              height={32 + Math.round(arrowDist * 20)}
+              width={32 + Math.round(arrowL * 20)}
+              height={32 + Math.round(arrowL * 20)}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -152,18 +151,17 @@ export default function ProjectsPage() {
           <button
             onClick={next}
             aria-label="下一个项目"
-            ref={arrowRefs[1]}
             onMouseMove={(e) => {
-              const rect = arrowRefs[1].current.getBoundingClientRect();
+              const rect = e.currentTarget.getBoundingClientRect();
               const d = e.clientX - rect.left;
-              setArrowDist(Math.max(0, Math.min(1, d / rect.width)));
+              setArrowR(Math.max(0, Math.min(1, d / rect.width)));
             }}
-            onMouseLeave={() => setArrowDist(0)}
-            className="group absolute -right-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-start pl-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+            onMouseLeave={() => setArrowR(0)}
+            className="group absolute right-[calc(-50vw+336px)] top-0 bottom-0 z-10 hidden w-[calc(50vw-320px)] items-center justify-start pl-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
-              width={32 + Math.round(arrowDist * 20)}
-              height={32 + Math.round(arrowDist * 20)}
+              width={32 + Math.round(arrowR * 20)}
+              height={32 + Math.round(arrowR * 20)}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
