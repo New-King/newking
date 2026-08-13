@@ -99,13 +99,13 @@ export default function CanvasScene({ active = true }) {
         <div className="absolute inset-x-0 top-5 flex flex-col gap-3 px-5">
           {/* 3 张视觉参考图（设定图加载完成，画布同时出现） */}
           {block(phase >= 5, 0, (
-            <div className="flex gap-3">
+            <div className="flex w-2/3 gap-2">
               {[1, 2, 3].map((n) => tile('aspect-[4/3] flex-1', String(n).padStart(2, '0')))}
             </div>
           ))}
           {/* 3 个分镜图骨架（与对话区同步出现，横排） */}
           {block(phase >= 7, 200, (
-            <div className="flex gap-2">
+            <div className="flex w-2/3 gap-2">
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
@@ -116,7 +116,7 @@ export default function CanvasScene({ active = true }) {
           ))}
           {/* 1 个视频骨架（与对话区同步出现，方框中央播放按钮） */}
           {block(phase >= 9, 200, (
-            <div className="relative flex h-32 w-full items-center justify-center rounded-[4px] border border-black/[0.1] bg-card dark:border-white/20">
+            <div className="relative flex h-24 w-2/3 items-center justify-center rounded-[4px] border border-black/[0.1] bg-card dark:border-white/20">
               <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-ink/85 text-page">
                 <svg width="9" height="10" viewBox="0 0 8 9" fill="currentColor">
                   <path d="M0 0l8 4.5L0 9z" />
