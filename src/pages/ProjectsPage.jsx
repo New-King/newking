@@ -75,6 +75,8 @@ export default function ProjectsPage() {
 
   const next = () => setIndex((i) => (i + 1) % total);
   const prev = () => setIndex((i) => (i - 1 + total) % total);
+  const prevItem = projects[(index - 1 + total) % total];
+  const nextItem = projects[(index + 1) % total];
 
   return (
     <PageShell
@@ -103,7 +105,7 @@ export default function ProjectsPage() {
         {/* 主展示卡片（key 强制重挂载 → 预览从头播放） */}
         <div
           key={p.id}
-          className="animate-[fade-in-up_0.4s_ease_both] overflow-hidden rounded-lg border border-black/[0.06] bg-card dark:border-white/10"
+          className="animate-[fade-in-up_0.4s_ease_both] relative rounded-lg border border-black/[0.06] bg-card dark:border-white/10"
         >
           <div className="flex items-center gap-5 p-5">
             <CoverThumb shape={p.cover} active />
@@ -123,22 +125,47 @@ export default function ProjectsPage() {
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={p} active />
+          {/* 左右箭头：与整张卡片等高（卡片 relative 内定位）、无背景、hover 阴影变化提示可点击 */}
+          <button
+            onClick={prev}
+            aria-label="上一个项目"
+            className="group absolute -left-36 top-0 bottom-0 z-10 hidden w-28 items-center justify-end pr-2 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="transition-transform duration-200 group-hover:-translate-x-1"
+            >
+              <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            onClick={next}
+            aria-label="下一个项目"
+            className="group absolute -right-36 top-0 bottom-0 z-10 hidden w-28 items-center justify-start pl-2 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="transition-transform duration-200 group-hover:translate-x-1"
+            >
+              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
       </div>
 
-      {/* 底部导航行：左箭头 + 缩略图 + 右箭头（同一排居中） */}
-      <div className="mt-6 flex items-center justify-center gap-3">
-        <button
-          onClick={prev}
-          aria-label="上一个项目"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-black/[0.1] bg-card text-ink-soft transition-colors duration-200 hover:bg-black/[0.04] hover:text-ink dark:border-white/15 dark:hover:bg-white/[0.08]"
-        >
-          <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M8.5 3 5 7l3.5 4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <div className="flex flex-wrap justify-center gap-2">
+      {/* 底部缩略图导航：所有项目，当前高亮，点击直达（移动端主切换方式） */}
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
         {projects.map((item, i) => (
           <button
             key={item.id}
@@ -157,16 +184,6 @@ export default function ProjectsPage() {
             </span>
           </button>
         ))}
-        </div>
-        <button
-          onClick={next}
-          aria-label="下一个项目"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-black/[0.1] bg-card text-ink-soft transition-colors duration-200 hover:bg-black/[0.04] hover:text-ink dark:border-white/15 dark:hover:bg-white/[0.08]"
-        >
-          <svg width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M5.5 3 9 7l-3.5 4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
       </div>
     </PageShell>
   );
