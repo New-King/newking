@@ -4,12 +4,7 @@ import { IconMail, IconPhone } from '../components/icons';
 
 export default function ContactPage() {
   return (
-    <PageShell
-      eyebrow="Contact"
-      title="联系"
-      description="欢迎通过以下方式联系我，一般会在 24 小时内回复。"
-      note="示例联系方式，仅用于页面演示"
-    >
+    <PageShell eyebrow="Contact" note="示例联系方式，仅用于页面演示">
       <div className="space-y-3">
         <a
           href={`mailto:${contact.email}`}

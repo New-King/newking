@@ -52,11 +52,46 @@ export const posts = [
 ];
 
 export const projects = [
-  { id: 'j1', title: 'Agent Console — 对话式运维助手', date: '2026-06-15', to: '/projects' },
-  { id: 'j2', title: 'Portfolio 生成器', date: '2026-05-02', to: '/projects' },
-  { id: 'j3', title: '知识库检索服务', date: '2026-03-18', to: '/projects' },
-  { id: 'j4', title: '微前端脚手架', date: '2026-03-18', to: '/projects' },
-  { id: 'j5', title: '命令行效率工具集', date: '2026-01-20', to: '/projects' },
+  {
+    id: 'j1',
+    title: 'Agent Console — 对话式运维助手',
+    date: '2026-06-15',
+    description: '对话式 AI 运维终端，聚合日志、指标与操作指令。',
+    cover: 'ring',
+    to: '/projects',
+  },
+  {
+    id: 'j2',
+    title: 'Portfolio 生成器',
+    date: '2026-05-02',
+    description: '用 JSON 配置快速生成个人作品集站点。',
+    cover: 'square',
+    to: '/projects',
+  },
+  {
+    id: 'j3',
+    title: '知识库检索服务',
+    date: '2026-03-18',
+    description: 'RAG 驱动的文档检索 API，支持多种向量库接入。',
+    cover: 'dots',
+    to: '/projects',
+  },
+  {
+    id: 'j4',
+    title: '微前端脚手架',
+    date: '2026-03-18',
+    description: '基于模块联邦的微前端工程模板与发布工具。',
+    cover: 'cross',
+    to: '/projects',
+  },
+  {
+    id: 'j5',
+    title: '命令行效率工具集',
+    date: '2026-01-20',
+    description: '一组提升日常开发效率的 CLI 小工具。',
+    cover: 'triangle',
+    to: '/projects',
+  },
 ];
 
 export const notes = [
