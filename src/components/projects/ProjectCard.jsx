@@ -46,10 +46,10 @@ const formatDate = (iso) => {
   return `${m}/${d}`;
 };
 
-// 单个项目卡片：悬停蓄力 1s 后展开演示预览
-export default function ProjectCard({ p }) {
+// 单个项目卡片：悬停蓄力 1s 后展开演示预览；defaultOpen=true 时进入页面即展开常驻播放
+export default function ProjectCard({ p, defaultOpen = false }) {
   const [hovered, setHovered] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
+  const [previewing, setPreviewing] = useState(defaultOpen);
   const timer = useRef(null);
 
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -63,7 +63,7 @@ export default function ProjectCard({ p }) {
   const handleLeave = () => {
     clearTimeout(timer.current);
     setHovered(false);
-    setPreviewing(false);
+    if (!defaultOpen) setPreviewing(false);
   };
 
   return (

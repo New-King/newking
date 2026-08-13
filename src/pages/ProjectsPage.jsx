@@ -10,8 +10,8 @@ export default function ProjectsPage() {
     >
       {/* 单列项目列表：左侧封面缩略图 + 右侧标题行/描述；悬停 1s 展开演示预览 */}
       <div className="flex flex-col gap-4">
-        {projects.map((p) => (
-          <ProjectCard key={p.id} p={p} />
+        {projects.map((p, i) => (
+          <ProjectCard key={p.id} p={p} defaultOpen={i === 0} />
         ))}
       </div>
     </PageShell>
