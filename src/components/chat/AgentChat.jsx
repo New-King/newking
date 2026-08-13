@@ -53,6 +53,7 @@ export default function AgentChat() {
   const turnRefs = useRef([]);
 
   const stuckRef = useRef(true);
+  const forceScrollRef = useRef(false); // 发送后强制置底（即使之前滚到了上方）
   const mountedRef = useRef(true);
   const pendingRef = useRef(0);
   const pausedRef = useRef(false);
@@ -141,14 +142,21 @@ export default function AgentChat() {
     runSlide(formRef.current, from);
   }, [started]);
 
-  /* 自动滚动到最新内容（仅在用户停留在底部附近时跟随，避免向上阅读被拽回） */
-  const scrollToBottom = () => {
+  /* 滚动到底部；instant=true 时瞬间跳底（发送后置底不需要动画） */
+  const scrollToBottom = (instant = false) => {
     const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
   };
 
   useEffect(() => {
-    if (started && stuckRef.current) scrollToBottom();
+    if (!started) return;
+    // 发送后瞬间置底（forceScrollRef）；平时仅在停留在底部附近时平滑跟随，避免向上阅读被拽回
+    if (forceScrollRef.current) {
+      forceScrollRef.current = false;
+      scrollToBottom(true);
+    } else if (stuckRef.current) {
+      scrollToBottom();
+    }
   }, [messages, started]);
 
   useEffect(() => {
@@ -215,6 +223,10 @@ export default function AgentChat() {
 
     // 对话发出后立即隐藏顶部导航
     window.dispatchEvent(new CustomEvent('nav-hide'));
+
+    // 无论之前滚到哪，发送后立即置底（看最新回复）
+    forceScrollRef.current = true;
+    stuckRef.current = true;
 
     pendingSlideRef.current = formRef.current?.getBoundingClientRect().top ?? null;
 
