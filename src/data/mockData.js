@@ -12,6 +12,7 @@ export const posts = [
   { id: 'p3', title: '用 React 与 Vite 搭建现代前端', date: '2026-07-12', to: '/blog' },
   { id: 'p4', title: '关于 LLM 上下文工程的一些思考', date: '2026-07-12', to: '/blog' },
   { id: 'p5', title: '2026 年中技术盘点', date: '2026-06-30', to: '/blog' },
+  { id: 'p6', title: '个人网站搭建的早期探索', date: '2025-08-27', to: '/blog' },
 ];
 
 export const projects = [
