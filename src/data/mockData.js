@@ -7,12 +7,48 @@ export const SITE_QUOTE =
   '在AI极速发展的时代，任何你觉得了不起的新奇想法，都会在第二天怦然坠地。';
 
 export const posts = [
-  { id: 'p1', title: '构建可组合的 Agent 工作流', date: '2026-07-28', to: '/blog' },
-  { id: 'p2', title: 'RAG 落地实践：从原型到生产', date: '2026-07-20', to: '/blog' },
-  { id: 'p3', title: '用 React 与 Vite 搭建现代前端', date: '2026-07-12', to: '/blog' },
-  { id: 'p4', title: '关于 LLM 上下文工程的一些思考', date: '2026-07-12', to: '/blog' },
-  { id: 'p5', title: '2026 年中技术盘点', date: '2026-06-30', to: '/blog' },
-  { id: 'p6', title: '个人网站搭建的早期探索', date: '2025-08-27', to: '/blog' },
+  {
+    id: 'p1',
+    title: '构建可组合的 Agent 工作流',
+    date: '2026-07-28',
+    excerpt: '拆解 Agent 的组成单元，分享可复用工作流的搭建思路与实践。',
+    to: '/blog',
+  },
+  {
+    id: 'p2',
+    title: 'RAG 落地实践：从原型到生产',
+    date: '2026-07-20',
+    excerpt: '从检索方案选型到线上稳定运行，记录 RAG 服务化的关键决策。',
+    to: '/blog',
+  },
+  {
+    id: 'p3',
+    title: '用 React 与 Vite 搭建现代前端',
+    date: '2026-07-12',
+    excerpt: 'Vite 冷启动与 React 工程化的取舍，以及项目结构的演进。',
+    to: '/blog',
+  },
+  {
+    id: 'p4',
+    title: '关于 LLM 上下文工程的一些思考',
+    date: '2026-07-12',
+    excerpt: '上下文窗口的分配、压缩与检索，如何让模型用得更省。',
+    to: '/blog',
+  },
+  {
+    id: 'p5',
+    title: '2026 年中技术盘点',
+    date: '2026-06-30',
+    excerpt: '半年技术观察：Agent、推理模型与工程工具的进展。',
+    to: '/blog',
+  },
+  {
+    id: 'p6',
+    title: '个人网站搭建的早期探索',
+    date: '2025-08-27',
+    excerpt: '从零搭建个人站：技术选型、设计取舍与踩坑记录。',
+    to: '/blog',
+  },
 ];
 
 export const projects = [

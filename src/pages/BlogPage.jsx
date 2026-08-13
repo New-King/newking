@@ -25,7 +25,7 @@ export default function BlogPage() {
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
           {/* 仅往年显示年份标题；最新年份平铺，年份不言自明（changelog 惯例） */}
           {i > 0 && (
-            <h2 className="text-[28px] font-bold tracking-tight text-ink">
+            <h2 className="mr-[-3px] text-right text-[28px] font-bold tracking-tight text-ink">
               {g.year}
             </h2>
           )}
@@ -37,12 +37,20 @@ export default function BlogPage() {
                   to={p.to}
                   className="group -mx-3 block rounded-lg px-3 py-5 transition-colors duration-200 hover:bg-black/[0.04] dark:hover:bg-white/10"
                 >
-                  <p className="text-[16px] leading-snug text-ink">
-                    {p.title}
-                  </p>
-                  <p className="mt-1.5 text-xs tabular-nums text-ink-faint">
-                    {formatDate(p.date)}
-                  </p>
+                  {/* 标题行：标题左、日期右，两端对齐 */}
+                  <div className="flex items-baseline justify-between gap-4">
+                    <p className="text-[16px] leading-snug text-ink">
+                      {p.title}
+                    </p>
+                    <p className="shrink-0 text-xs tabular-nums text-ink-faint">
+                      {formatDate(p.date)}
+                    </p>
+                  </div>
+                  {p.excerpt && (
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
+                      {p.excerpt}
+                    </p>
+                  )}
                 </Link>
               </li>
             ))}
