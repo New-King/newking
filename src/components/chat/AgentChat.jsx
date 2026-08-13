@@ -163,7 +163,9 @@ export default function AgentChat() {
     if (pending <= 0) return;
     const id = setInterval(() => {
       const el = scrollRef.current;
-      if (el && stuckRef.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      // 瞬间置底：流式输出时内容持续增长，smooth 动画追逐移动目标易抖动/上跳；
+      // 每 180ms 直接吸附到底部，配合 overflow-anchor:none 彻底消除上跳
+      if (el && stuckRef.current) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
     }, 180);
     return () => clearInterval(id);
   }, [pending]);
@@ -371,7 +373,7 @@ export default function AgentChat() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto px-5 pb-6 pt-6 sm:px-6"
+          className="h-full overflow-y-auto px-5 pb-6 pt-6 sm:px-6 [overflow-anchor:none]"
         >
           <div className="mx-auto flex max-w-2xl flex-col gap-6">
             {/* 顶部预留条：导航显示时垫在导航下方，保证第一条消息完整可见；
