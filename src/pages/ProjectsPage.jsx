@@ -69,6 +69,8 @@ function CoverThumb({ shape, active, small }) {
 
 export default function ProjectsPage() {
   const [index, setIndex] = useState(0);
+  const [arrowDist, setArrowDist] = useState(0); // 左右箭头距离感应（0-1）
+  const arrowRefs = [useRef(null), useRef(null)];
   const touchX = useRef(null);
   const total = projects.length;
   const p = projects[index];
@@ -122,15 +124,22 @@ export default function ProjectsPage() {
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={p} active />
-          {/* 左右箭头：与整张卡片等高（卡片 relative 内定位）、无背景、hover 阴影变化提示可点击 */}
+          {/* 左右箭头：离卡片越远箭头越大（距离感应） */}
           <button
             onClick={prev}
             aria-label="上一个项目"
+            ref={arrowRefs[0]}
+            onMouseMove={(e) => {
+              const rect = arrowRefs[0].current.getBoundingClientRect();
+              const d = rect.right - e.clientX;
+              setArrowDist(Math.max(0, Math.min(1, d / rect.width)));
+            }}
+            onMouseLeave={() => setArrowDist(0)}
             className="group absolute -left-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-end pr-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
-              width="32"
-              height="32"
+              width={32 + Math.round(arrowDist * 20)}
+              height={32 + Math.round(arrowDist * 20)}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -143,11 +152,18 @@ export default function ProjectsPage() {
           <button
             onClick={next}
             aria-label="下一个项目"
+            ref={arrowRefs[1]}
+            onMouseMove={(e) => {
+              const rect = arrowRefs[1].current.getBoundingClientRect();
+              const d = e.clientX - rect.left;
+              setArrowDist(Math.max(0, Math.min(1, d / rect.width)));
+            }}
+            onMouseLeave={() => setArrowDist(0)}
             className="group absolute -right-[17.5rem] top-0 bottom-0 z-10 hidden w-[18.5rem] items-center justify-start pl-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
           >
             <svg
-              width="32"
-              height="32"
+              width={32 + Math.round(arrowDist * 20)}
+              height={32 + Math.round(arrowDist * 20)}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
