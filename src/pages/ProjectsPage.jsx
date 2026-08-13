@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import PageShell from '../components/PageShell';
 import DemoPreview from '../components/projects/DemoPreview';
-import { projects } from '../data/mockData';
+import { formatDate, projects } from '../data/mockData';
 
 // 封面几何图形（中性色，随主题色）—— 每个项目一种
 const COVER_SHAPES = {
@@ -41,12 +41,6 @@ const COVER_SHAPES = {
   ),
 };
 
-// 短日期：2026-06-15 → 06/15
-const formatDate = (iso) => {
-  const [, m, d] = iso.split('-');
-  return `${m}/${d}`;
-};
-
 // 封面缩略图（含细网格线，深浅模式自适应）
 function CoverThumb({ shape, active, small }) {
   return (
@@ -67,18 +61,54 @@ function CoverThumb({ shape, active, small }) {
   );
 }
 
+// 左右箭头点击区：独立组件（局部距离状态，避免 mousemove 重渲染整个页面）
+function ArrowZone({ direction, onClick, label }) {
+  const [dist, setDist] = useState(0);
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const d = direction === 'left' ? rect.right - e.clientX : e.clientX - rect.left;
+        setDist(Math.max(0, Math.min(1, d / rect.width)));
+      }}
+      onMouseLeave={() => setDist(0)}
+      className={`group absolute top-0 bottom-0 z-10 hidden items-center text-ink-faint transition-colors duration-200 hover:text-ink sm:flex ${
+        direction === 'left'
+          ? 'left-[calc(-50vw+336px)] w-[calc(50vw-320px)] justify-end pr-10'
+          : 'right-[calc(-50vw+336px)] w-[calc(50vw-320px)] justify-start pl-10'
+      }`}
+    >
+      <svg
+        width={32 + Math.round(dist * 20)}
+        height={32 + Math.round(dist * 20)}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        className={`transition-transform duration-200 ${
+          direction === 'left' ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
+        }`}
+      >
+        <path
+          d={direction === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export default function ProjectsPage() {
   const [index, setIndex] = useState(0);
-  const [arrowL, setArrowL] = useState(0); // 左箭头距离感应（0-1）
-  const [arrowR, setArrowR] = useState(0); // 右箭头距离感应（0-1）
   const touchX = useRef(null);
   const total = projects.length;
   const p = projects[index];
 
   const next = () => setIndex((i) => (i + 1) % total);
   const prev = () => setIndex((i) => (i - 1 + total) % total);
-  const prevItem = projects[(index - 1 + total) % total];
-  const nextItem = projects[(index + 1) % total];
 
   return (
     <PageShell eyebrow="Projects">
@@ -124,53 +154,9 @@ export default function ProjectsPage() {
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={p} active />
-          {/* 左右箭头：铺满视口边缘到卡片，离卡片越远箭头越大（独立距离感应） */}
-          <button
-            onClick={prev}
-            aria-label="上一个项目"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const d = rect.right - e.clientX;
-              setArrowL(Math.max(0, Math.min(1, d / rect.width)));
-            }}
-            onMouseLeave={() => setArrowL(0)}
-            className="group absolute left-[calc(-50vw+336px)] top-0 bottom-0 z-10 hidden w-[calc(50vw-320px)] items-center justify-end pr-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
-          >
-            <svg
-              width={32 + Math.round(arrowL * 20)}
-              height={32 + Math.round(arrowL * 20)}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="transition-transform duration-200 group-hover:-translate-x-1"
-            >
-              <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            onClick={next}
-            aria-label="下一个项目"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const d = e.clientX - rect.left;
-              setArrowR(Math.max(0, Math.min(1, d / rect.width)));
-            }}
-            onMouseLeave={() => setArrowR(0)}
-            className="group absolute right-[calc(-50vw+336px)] top-0 bottom-0 z-10 hidden w-[calc(50vw-320px)] items-center justify-start pl-10 text-ink-faint transition-colors duration-200 hover:text-ink sm:flex"
-          >
-            <svg
-              width={32 + Math.round(arrowR * 20)}
-              height={32 + Math.round(arrowR * 20)}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="transition-transform duration-200 group-hover:translate-x-1"
-            >
-              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          {/* 左右箭头：铺满视口边缘到卡片，离卡片越远箭头越大（独立组件局部状态） */}
+          <ArrowZone direction="left" onClick={prev} label="上一个项目" />
+          <ArrowZone direction="right" onClick={next} label="下一个项目" />
         </div>
 
       </div>

@@ -1,23 +1,10 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
-import { posts } from '../data/mockData';
-
-// 短日期：2026-07-28 → 07/28
-const formatDate = (iso) => {
-  const [, m, d] = iso.split('-');
-  return `${m}/${d}`;
-};
+import { formatDate, groupByYear, posts } from '../data/mockData';
 
 export default function BlogPage() {
   // 按年份分组，年份降序、组内日期降序
-  const sorted = [...posts].sort((a, b) => b.date.localeCompare(a.date));
-  const groups = [];
-  for (const p of sorted) {
-    const year = p.date.slice(0, 4);
-    const last = groups[groups.length - 1];
-    if (last && last.year === year) last.items.push(p);
-    else groups.push({ year, items: [p] });
-  }
+  const groups = groupByYear(posts);
 
   return (
     <PageShell eyebrow="Blog">

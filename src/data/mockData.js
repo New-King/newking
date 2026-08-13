@@ -158,9 +158,28 @@ export const contact = {
 
 // ---- 日期分组 ----
 
+// 短日期：2026-08-01 → 08/01（页面列表用）
+export function formatDate(iso) {
+  const [, m, d] = iso.split('-');
+  return `${m}/${d}`;
+}
+
 export function formatDateShort(iso) {
   const [, m, d] = iso.split('-');
   return `${Number(m)}月${Number(d)}日`;
+}
+
+// 按年份分组（降序），供博客/笔记页的年份分区列表使用
+export function groupByYear(items) {
+  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const groups = [];
+  for (const item of sorted) {
+    const year = item.date.slice(0, 4);
+    const last = groups[groups.length - 1];
+    if (last && last.year === year) last.items.push(item);
+    else groups.push({ year, items: [item] });
+  }
+  return groups;
 }
 
 // 取最新 n 条；同一天的内容合并为一组，日期只显示一次，不拆开。

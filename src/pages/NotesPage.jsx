@@ -1,23 +1,10 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
-import { notes } from '../data/mockData';
-
-// 短日期：2026-08-01 → 08/01
-const formatDate = (iso) => {
-  const [, m, d] = iso.split('-');
-  return `${m}/${d}`;
-};
+import { formatDate, groupByYear, notes } from '../data/mockData';
 
 export default function NotesPage() {
   // 按年份分组（同博客页）：最新年份平铺，往年显示大字号右对齐年份标题
-  const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date));
-  const groups = [];
-  for (const n of sorted) {
-    const year = n.date.slice(0, 4);
-    const last = groups[groups.length - 1];
-    if (last && last.year === year) last.items.push(n);
-    else groups.push({ year, items: [n] });
-  }
+  const groups = groupByYear(notes);
 
   return (
     <PageShell eyebrow="Notes">
