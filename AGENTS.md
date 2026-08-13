@@ -19,3 +19,25 @@
 
 ## 常用命令
 - `npm run dev` / `npm run build` / `npm run preview`
+
+## 项目页数据模型（新增项目的固定流程）
+用户提供 → Agent 实现，`src/data/mockData.js` 的 `projects` 数组：
+
+```js
+{
+  id: 'j6',
+  title: '项目名称',          // 用户提供
+  date: '2026-08-10',        // 用户提供或按当前日期填（YYYY-MM-DD）
+  description: '一句话描述',   // 用户提供
+  cover: 'ring',             // 封面缩略图：内置几何图形模板（ring/square/triangle/dots/cross）
+  preview: {                 // 悬停预览：专属场景动画（示意即可，不放真实图片）
+    scene: 'terminal',       // 模板：terminal / chat / form / list，新形态再新增模板
+    ...场景配置               // 按场景模板的参数传入（lines / question / answer / modules 等）
+  },
+  to: '/projects',
+}
+```
+
+- `SCENES` 注册表在 `src/pages/ProjectsPage.jsx`，新增场景 = 新增一个组件并注册。
+- 预览是「示意动画」而非真实截图/视频：轻量、零素材、统一风格，访客想看详情自行点击进入。
+- 用户若提供真实封面图，需先与用户确认后扩展 `cover` 支持图片。`

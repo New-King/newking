@@ -53,8 +53,17 @@ export const posts = [
 
 export const projects = [
   // preview 可选：悬停预览的场景动画，{ scene: 模板名, ...场景配置 }
-  // 模板：terminal（执行流程）/ chat（对话）/ form（表单生成）/ list（模块加载）
+  // 模板：terminal（执行流程）/ chat（对话）/ form（表单生成）/ list（模块加载）/ canvas（画布协作）
   // 不提供 preview 则悬停不展开预览；新项目按需新增场景模板。
+  {
+    id: 'j6',
+    title: '无限画布 — AI 创作工作台',
+    date: '2026-08-10',
+    description: '左画布右对话，用自然语言驱动图片与视频的连续创作。',
+    cover: 'dots',
+    preview: { scene: 'canvas' },
+    to: '/projects',
+  },
   {
     id: 'j1',
     title: 'Agent Console — 对话式运维助手',
