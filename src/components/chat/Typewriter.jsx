@@ -38,7 +38,7 @@ export default function Typewriter({ text, speed = 26, startDelay = 300, active 
   return (
     <span className="whitespace-pre-wrap">
       {text.slice(0, count)}
-      {!finished && active && <span className="animate-blink text-neutral-400">▍</span>}
+      {!finished && active && <span className="animate-blink text-neutral-400 dark:text-ink-muted">▍</span>}
     </span>
   );
 }

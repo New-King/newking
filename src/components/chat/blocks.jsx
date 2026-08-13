@@ -38,7 +38,7 @@ function ToolCallCard({ block }) {
     <div className="flex w-full animate-fade-in-up items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
       <span
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-          running || pausedState ? 'bg-neutral-100' : 'bg-green-100'
+          running || pausedState ? 'bg-neutral-100 dark:bg-white/10' : 'bg-green-100 dark:bg-green-500/20'
         }`}
       >
         {running ? (
@@ -46,7 +46,7 @@ function ToolCallCard({ block }) {
         ) : pausedState ? (
           <IconPause className="h-3 w-3 text-ink-faint" />
         ) : (
-          <IconCheck className="h-3 w-3 text-green-600" />
+          <IconCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
         )}
       </span>
       <p className="min-w-0 flex-1 truncate text-xs leading-5 text-ink-faint">
@@ -70,9 +70,9 @@ const textBubble =
 function TextSkeleton() {
   return (
     <div className="w-full animate-pulse space-y-2.5 rounded-2xl bg-card px-4 py-3.5 shadow-apple">
-      <div className="h-3 w-11/12 rounded bg-neutral-200/80" />
-      <div className="h-3 w-full rounded bg-neutral-200/80" />
-      <div className="h-3 w-3/4 rounded bg-neutral-200/80" />
+      <div className="h-3 w-11/12 rounded bg-neutral-200/80 dark:bg-white/15" />
+      <div className="h-3 w-full rounded bg-neutral-200/80 dark:bg-white/15" />
+      <div className="h-3 w-3/4 rounded bg-neutral-200/80 dark:bg-white/15" />
     </div>
   );
 }
@@ -95,7 +95,7 @@ function TextBlock({ block, paused, onDone }) {
 function ImageBlock({ block }) {
   if (block.status !== 'done') {
     return (
-      <div className="h-56 w-full animate-pulse rounded-2xl bg-neutral-100" />
+      <div className="h-56 w-full animate-pulse rounded-2xl bg-neutral-100 dark:bg-white/10" />
     );
   }
   return (
@@ -117,7 +117,7 @@ const EQ_BARS = [28, 52, 80, 42, 90, 60, 34, 72, 48, 82, 40, 64, 30];
 function AudioCard({ block }) {
   const [playing, setPlaying] = useState(false);
   if (block.status !== 'done') {
-    return <div className="h-[76px] w-full animate-pulse rounded-2xl bg-neutral-100" />;
+    return <div className="h-[76px] w-full animate-pulse rounded-2xl bg-neutral-100 dark:bg-white/10" />;
   }
   return (
     <div className="w-full animate-fade-in-up rounded-2xl bg-card p-4 shadow-apple">
@@ -158,12 +158,12 @@ function VideoCard({ block }) {
   const [playing, setPlaying] = useState(false);
   if (block.status !== 'done') {
     return (
-      <div className="aspect-video w-full animate-pulse rounded-2xl bg-neutral-100" />
+      <div className="aspect-video w-full animate-pulse rounded-2xl bg-neutral-100 dark:bg-white/10" />
     );
   }
   return (
     <div className="w-full animate-fade-in-up">
-      <div className="relative aspect-video overflow-hidden rounded-2xl bg-neutral-100">
+      <div className="relative aspect-video overflow-hidden rounded-2xl bg-neutral-100 dark:bg-white/10">
         {playing ? (
           <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-ink-muted">
             <IconPause className="h-4 w-4" />

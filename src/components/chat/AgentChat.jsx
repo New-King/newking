@@ -419,7 +419,7 @@ export default function AgentChat() {
               type="button"
               onClick={scrollToBottom}
               aria-label="跳到底部"
-              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink-faint shadow-apple backdrop-blur transition-colors hover:text-ink"
+              className="absolute bottom-full right-1.5 z-10 mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink-faint shadow-apple backdrop-blur transition-colors hover:text-ink dark:border-white/10 dark:bg-card/95"
             >
               <IconArrowDown className="h-4 w-4" />
             </button>
@@ -431,7 +431,7 @@ export default function AgentChat() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="输入你想了解的内容…"
             aria-label="输入你想了解的内容"
-            className="w-full rounded-full border border-black/[0.08] bg-card py-3.5 pl-5 pr-14 text-[15px] text-ink shadow-apple-input outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple"
+            className="w-full rounded-full border border-black/[0.08] bg-card py-3.5 pl-5 pr-14 text-[15px] text-ink shadow-apple-input outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple dark:border-white/10"
           />
           {/* 生成中：发送按钮原位变为暂停按钮，无法连续发送；对话结束或暂停后恢复发送 */}
           {pending > 0 && !paused ? (

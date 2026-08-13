@@ -7,7 +7,7 @@ export default function PageShell({ eyebrow, title, description, note, children 
       {children && <div className="mt-10">{children}</div>}
       {note && (
         <div className="mt-16 flex items-center gap-3 text-sm text-ink-faint">
-          <span className="h-px w-10 bg-neutral-200" />
+          <span className="h-px w-10 bg-neutral-200 dark:bg-white/15" />
           {note}
         </div>
       )}

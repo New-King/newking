@@ -2,6 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 设计令牌（RGB 三元组，供 tailwind 的 rgb(var(--x) / <alpha-value>) 使用）：
+   浅色在 :root，深色在 .dark（<html class="dark">） */
+:root {
+  --page: 245 245 247; /* #F5F5F7 暖白底 */
+  --card: 255 255 255;
+  --ink: 29 29 31; /* #1D1D1F 主文字 */
+  --ink-soft: 58 58 60;
+  --ink-muted: 110 110 115;
+  --ink-faint: 134 134 139;
+  --accent: 23 23 23; /* 深灰强调 */
+  --accent-hover: 64 64 64;
+  --accent-soft: 245 245 247;
+  --shadow-apple: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-apple-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-apple-input: 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* 网格背景（BgGrid 用 var() 引用） */
+  --grid-line: #e4e4e7;
+  --grid-line-hot: #9b9ba3;
+  --grid-dot: #d6d6db;
+  --grid-dot-hot: #7f7f88;
+}
+
+.dark {
+  --page: 10 10 12; /* #0A0A0C 深色底 */
+  --card: 28 28 30; /* #1C1C1E 卡片 */
+  --ink: 245 245 247; /* 浅色文字 */
+  --ink-soft: 212 212 217;
+  --ink-muted: 160 160 166;
+  --ink-faint: 120 120 126;
+  --accent: 58 58 60; /* 按钮/气泡：比底亮的灰 */
+  --accent-hover: 72 72 76;
+  --accent-soft: 44 44 46;
+  --shadow-apple: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-apple-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-apple-input: 0 1px 2px rgba(0, 0, 0, 0.3);
+  /* 深色下网格"变深"效果反向为"变亮" */
+  --grid-line: #2c2c2e;
+  --grid-line-hot: #8e8e93;
+  --grid-dot: #3a3a3c;
+  --grid-dot-hot: #a1a1a6;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -12,10 +54,13 @@
   }
 }
 
-/* 细滚动条（Apple 灰） */
+/* 细滚动条（浅色 Apple 灰 / 深色暖灰） */
 * {
   scrollbar-width: thin;
   scrollbar-color: #c7c7cc transparent;
+}
+.dark * {
+  scrollbar-color: #3a3a3c transparent;
 }
 ::-webkit-scrollbar {
   width: 8px;
@@ -28,12 +73,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: #aeaeb2;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #3a3a3c;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #48484a;
+}
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
 ::selection {
   background-color: rgba(0, 113, 227, 0.12);
+}
+.dark ::selection {
+  background-color: rgba(99, 102, 241, 0.35);
 }
 
 /* 首页网格背景遮罩（复刻 Aceternity mask-radial-from-10%）：
@@ -64,6 +118,15 @@
   );
   animation: think-sweep 5s linear infinite;
   animation-delay: 1s;
+}
+/* 深色模式下文字是浅色，白色光柱看不见 → 改用深色光柱扫过 */
+.dark .think-sweep::after {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 /* 周期 6.38s = 扫动 1.38s + 停顿 5s；首个周期前先延迟 2s；扫动阶段在画面外开始、画面外结束，循环无回跳 */
 @keyframes think-sweep {

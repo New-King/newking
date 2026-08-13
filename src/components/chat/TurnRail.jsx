@@ -81,7 +81,7 @@ export default function TurnRail({ turns, onSelect }) {
                   aria-label={`跳转到第 ${i + 1} 轮对话`}
                   style={{ width: `${hover == null ? BASE_LEN : lenFor(d)}px` }}
                   className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${
-                    isFocus ? 'bg-accent' : 'bg-[#D2D2D7]'
+                    isFocus ? 'bg-accent' : 'bg-[#D2D2D7] dark:bg-[#3A3A3C]'
                   }`}
                 />
               );
@@ -92,7 +92,7 @@ export default function TurnRail({ turns, onSelect }) {
         {/* 预览面板：跟随鼠标位置，鼠标可移入并点击操作 */}
         {hover !== null && (
           <div
-            className="absolute w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg"
+            className="absolute w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
             style={{ left: PANEL_LEFT, top: panelTop }}
           >
             <p className="truncate text-[13px] font-medium text-ink">

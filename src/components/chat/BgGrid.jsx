@@ -9,10 +9,11 @@ const IDLE_MS = 3000; // 鼠标停止移动多久后回缩（加长：悬停时�
 const V_COUNT = 40; // 竖线数（80*40 = 3200px）
 const H_COUNT = 30; // 横线数（80*30 = 2400px）
 
-const LINE = '#E4E4E7'; // 线的基础色（Aceternity light 同色）
-const LINE_HOT = '#9B9BA3'; // 线变深后的颜色
-const DOT = '#D6D6DB'; // 圆点基础色
-const DOT_HOT = '#7F7F88'; // 圆点碰撞时的深色
+// 网格颜色：引用 CSS 变量（:root 浅色 / .dark 深色），主题切换自动生效
+const LINE = 'var(--grid-line)'; // 线的基础色
+const LINE_HOT = 'var(--grid-line-hot)'; // 线变深后的颜色（深色模式下反向为变亮）
+const DOT = 'var(--grid-dot)'; // 圆点基础色
+const DOT_HOT = 'var(--grid-dot-hot)'; // 圆点碰撞时的深色
 
 // 圆点坐标：从半格 40px 起，与横竖线交点对齐
 function buildDots() {
@@ -265,8 +266,8 @@ function BgGrid() {
               y1={GRID / 2 + j * GRID}
               x2="100%"
               y2={GRID / 2 + j * GRID}
-              stroke={LINE}
               strokeWidth="1"
+              style={{ stroke: LINE }}
             />
             <line
               ref={(el) => {
@@ -276,9 +277,9 @@ function BgGrid() {
               y1={GRID / 2 + j * GRID}
               x2="100%"
               y2={GRID / 2 + j * GRID}
-              stroke={LINE_HOT}
               strokeWidth="1"
               style={{
+                stroke: LINE_HOT,
                 strokeDasharray: '0 2000',
                 transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
               }}
@@ -291,9 +292,9 @@ function BgGrid() {
               y1={GRID / 2 + j * GRID}
               x2="100%"
               y2={GRID / 2 + j * GRID}
-              stroke={LINE_HOT}
               strokeWidth="1"
               style={{
+                stroke: LINE_HOT,
                 strokeDasharray: '0 2000',
                 transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
               }}
@@ -309,8 +310,8 @@ function BgGrid() {
               y1="0"
               x2={GRID / 2 + i * GRID}
               y2="100%"
-              stroke={LINE}
               strokeWidth="1"
+              style={{ stroke: LINE }}
             />
             <line
               ref={(el) => {
@@ -320,9 +321,9 @@ function BgGrid() {
               y1="0"
               x2={GRID / 2 + i * GRID}
               y2="100%"
-              stroke={LINE_HOT}
               strokeWidth="1"
               style={{
+                stroke: LINE_HOT,
                 strokeDasharray: '0 2000',
                 transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
               }}
@@ -335,9 +336,9 @@ function BgGrid() {
               y1="0"
               x2={GRID / 2 + i * GRID}
               y2="100%"
-              stroke={LINE_HOT}
               strokeWidth="1"
               style={{
+                stroke: LINE_HOT,
                 strokeDasharray: '0 2000',
                 transition: `stroke-dasharray ${GROW_MS}ms ease, stroke-dashoffset ${GROW_MS}ms ease`,
               }}
@@ -354,8 +355,7 @@ function BgGrid() {
             cx={p.x}
             cy={p.y}
             r="2.5"
-            fill={DOT}
-            style={{ transition: 'fill 0.4s ease' }}
+            style={{ fill: DOT, transition: 'fill 0.4s ease' }}
           />
         ))}
       </svg>

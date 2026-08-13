@@ -32,7 +32,7 @@ function ListPanel({ groups }) {
               <Link
                 key={it.id}
                 to={it.to}
-                className="truncate rounded-md px-1.5 py-1 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink"
+                className="truncate rounded-md px-1.5 py-1 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
               >
                 {it.title}
               </Link>
@@ -50,14 +50,14 @@ function ContactPanel() {
       <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-ink-faint">联系方式</p>
       <a
         href={`mailto:${contact.email}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100"
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
       >
         <IconMail className="h-4 w-4 shrink-0 text-ink-faint" />
         {contact.email}
       </a>
       <a
         href={`tel:${contact.phone}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100"
+        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
       >
         <IconPhone className="h-4 w-4 shrink-0 text-ink-faint" />
         {contact.phone}
@@ -140,7 +140,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 border-b border-black/[0.08] bg-white/80 backdrop-blur-xl transition-all duration-300 ease-smooth ${
+      className={`fixed inset-x-0 top-0 z-50 border-b border-black/[0.08] bg-white/80 backdrop-blur-xl transition-all duration-300 ease-smooth dark:border-white/10 dark:bg-[#0A0A0C]/80 ${
         hidden ? 'pointer-events-none -translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
     >
@@ -185,7 +185,7 @@ export default function Navbar() {
                     }`}
                   >
                     <div
-                      className={`${item.width} rounded-2xl border border-black/[0.06] bg-card p-2.5 shadow-apple-lg`}
+                      className={`${item.width} rounded-2xl border border-black/[0.06] bg-card p-2.5 shadow-apple-lg dark:border-white/10`}
                     >
                       {item.quote ? (
                         <QuotePanel />
@@ -210,7 +210,7 @@ export default function Navbar() {
           onClick={() => setDrawerOpen((v) => !v)}
           aria-label={drawerOpen ? '关闭菜单' : '打开菜单'}
           aria-expanded={drawerOpen}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-neutral-100 hover:text-ink"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
         >
           {drawerOpen ? <IconX className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
         </button>
@@ -218,7 +218,7 @@ export default function Navbar() {
 
       {/* 移动端：抽屉面板（实心白，无毛玻璃，省移动端 GPU） */}
       <div
-        className={`absolute inset-x-0 top-full z-50 border-b border-black/[0.08] bg-white transition-all duration-200 ease-smooth md:hidden ${
+        className={`absolute inset-x-0 top-full z-50 border-b border-black/[0.08] bg-white transition-all duration-200 ease-smooth md:hidden dark:border-white/10 dark:bg-card ${
           drawerOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
         }`}
       >
@@ -230,7 +230,7 @@ export default function Navbar() {
               onClick={() => setDrawerOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-3 text-[15px] transition-colors ${
-                  isActive ? 'bg-neutral-100 text-ink' : 'text-ink-muted hover:bg-neutral-50'
+                  isActive ? 'bg-neutral-100 text-ink dark:bg-white/10' : 'text-ink-muted hover:bg-neutral-50 dark:hover:bg-white/10'
                 }`
               }
             >

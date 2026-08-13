@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // 深色模式：<html class="dark"> 切换（令牌为 CSS 变量，随主题换值）
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
@@ -15,27 +16,27 @@ export default {
         ],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
-      // Apple 风色板：暖白底 + 墨黑文字 + Apple 蓝强调
+      // 设计令牌（CSS 变量，支持 alpha）：深浅两套值定义在 index.css 的 :root / .dark
       colors: {
-        page: '#F5F5F7', // 页面底色（Apple 招牌暖白）
-        card: '#FFFFFF', // 卡片 / 输入框白
+        page: 'rgb(var(--page) / <alpha-value>)', // 页面底色
+        card: 'rgb(var(--card) / <alpha-value>)', // 卡片 / 输入框白
         ink: {
-          DEFAULT: '#1D1D1F', // 主文字（Apple 墨黑）
-          soft: '#3A3A3C', // 次级文字
-          muted: '#6E6E73', // 弱文字
-          faint: '#86868B', // 更弱文字 / 占位
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          soft: 'rgb(var(--ink-soft) / <alpha-value>)',
+          muted: 'rgb(var(--ink-muted) / <alpha-value>)',
+          faint: 'rgb(var(--ink-faint) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#171717', // 深灰强调（原设计的黑/深灰质感，替代蓝色）
-          hover: '#404040',
-          soft: '#F5F5F7', // 浅底（备用）
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover) / <alpha-value>)',
+          soft: 'rgb(var(--accent-soft) / <alpha-value>)',
         },
       },
-      // 柔和阴影：卡片 / 输入框 / 悬浮
+      // 柔和阴影（CSS 变量，深浅两套）
       boxShadow: {
-        apple: '0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
-        'apple-lg': '0 12px 32px rgba(0,0,0,0.1)',
-        'apple-input': '0 1px 2px rgba(0,0,0,0.04)',
+        apple: 'var(--shadow-apple)',
+        'apple-lg': 'var(--shadow-apple-lg)',
+        'apple-input': 'var(--shadow-apple-input)',
       },
       // 整体圆角收小约 30%：卡片/气泡/面板统一 16px → 11px
       borderRadius: {
