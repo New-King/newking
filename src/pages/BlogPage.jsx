@@ -23,10 +23,12 @@ export default function BlogPage() {
     <PageShell eyebrow="Blog" note="内容筹备中 · 悬停顶部导航可预览最新文章">
       {groups.map((g, i) => (
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
-          {/* 年份粗标题：大字号形成与列表项的强对比；下方不设间距，靠条目自带 py-5 */}
-          <h2 className="text-[28px] font-bold tracking-tight text-ink">
-            {g.year}
-          </h2>
+          {/* 仅往年显示年份标题；最新年份平铺，年份不言自明（changelog 惯例） */}
+          {i > 0 && (
+            <h2 className="text-[28px] font-bold tracking-tight text-ink">
+              {g.year}
+            </h2>
+          )}
           {/* 更新日志式列表：每条 = 标题 + MM/DD 日期，发丝分隔线 */}
           <ul className="divide-y divide-black/[0.06] dark:divide-white/15">
             {g.items.map((p) => (
