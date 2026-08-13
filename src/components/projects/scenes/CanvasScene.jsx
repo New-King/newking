@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 // 画布场景：左无限画布 + 右对话 Agent（16:9）
-// 流程：用户消息 → AI 找灵感（九宫格）→ 文本 → 视觉设定图（加载）→ 画布出图
-//      → 骨架文字往来 → 分镜图 → 来回对话（骨架）→ 左右出视频 → 播放 → 循环
+// 对话区流程：用户消息 → AI 找灵感（九宫格）→ 文本 → 视觉设定图（加载）
+//   → 右说话骨架 → 左说话骨架+3 分镜图 → 右说话骨架 → 视频骨架 → 播放 → 循环
+// 画布区同步：3 视觉参考图 → 3 分镜图 → 1 视频（其余时候为空）
 // 后续文字用骨架条（灰条）代替；active=false（预览收起）时暂停并重置，展开后从头播放
 // 注意：所有按 phase 显示的内容必须条件渲染（不能用 opacity 占位），否则隐藏元素占位
 // 导致对话区内容恒超高、滚动跟随把顶部消息滚出视口
-const PHASES = [800, 900, 1600, 1200, 1800, 1400, 1400, 1600, 1400, 1600, 1800]; // 一轮约 15s
+const PHASES = [800, 900, 1600, 1200, 1800, 1400, 1400, 1800, 1400, 1800, 1800]; // 一轮约 16.4s
 const USER_TEXT = '帮我制作一个 xxx 视频';
 
 // 文字骨架：一行行灰条模拟文字
@@ -44,6 +45,7 @@ export default function CanvasScene({ active = true }) {
   }, [phase]);
 
   // 对话气泡：条件渲染（未到时不在 DOM，不占位）+ 淡入上浮动画
+  // side: 'user' = 右侧说话（靠右气泡），'ai' = 左侧说话（靠左气泡）
   const msg = (side, show, children, delay = 0) => {
     if (!show) return null;
     return (
@@ -64,10 +66,10 @@ export default function CanvasScene({ active = true }) {
     );
   };
 
-  // 灰阶图片占位（无状态，由父级条件渲染控制出现时机）
+  // 灰阶图片占位（无状态，由父级条件渲染控制出现时机；暗色下用白叠加保证可见）
   const tile = (size, label = null, extra = null) => (
     <div
-      className={`relative shrink-0 rounded-[4px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/15 dark:from-white/[0.05] dark:to-white/[0.1] ${size}`}
+      className={`relative shrink-0 rounded-[4px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/20 dark:from-white/[0.08] dark:to-white/[0.14] ${size}`}
     >
       {label && (
         <span className="absolute bottom-0.5 right-1 text-[8px] tabular-nums text-ink-faint">
@@ -91,45 +93,54 @@ export default function CanvasScene({ active = true }) {
 
   return (
     <div className="flex aspect-[16/9]">
-      {/* 左：无限画布（60%）—— 全程为空，直到 phase 5 同时出现 3 张图；phase 9 出现视频骨架 */}
+      {/* 左：无限画布（60%）—— 3 视觉参考图 → 3 分镜图 → 1 视频（与对话区同步） */}
       <div className="relative w-[60%] overflow-hidden border-r border-black/[0.06] dark:border-white/10">
         <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(to_right,var(--grid-line)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid-line)_1px,transparent_1px)] [background-size:22px_22px]" />
         <div className="absolute inset-x-0 top-5 flex flex-col gap-3 px-5">
-          {/* 3 张生成图（同时出现） */}
+          {/* 3 张视觉参考图（设定图加载完成，画布同时出现） */}
           {block(phase >= 5, 0, (
             <div className="flex gap-3">
               {[1, 2, 3].map((n) => tile('aspect-[4/3] flex-1', String(n).padStart(2, '0')))}
             </div>
           ))}
-          {/* 画布视频骨架：播放按钮 + 骨架行 + 进度条（phase 10 播放中） */}
+          {/* 3 个分镜图骨架（与对话区同步出现，横排） */}
+          {block(phase >= 7, 200, (
+            <div className="flex gap-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="aspect-[4/3] flex-1 rounded-[3px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/20 dark:from-white/[0.08] dark:to-white/[0.14]"
+                />
+              ))}
+            </div>
+          ))}
+          {/* 1 个视频骨架（与对话区同步出现，方框中央播放按钮） */}
           {block(phase >= 9, 200, (
-            <div className="flex items-center gap-2.5 rounded-md border border-black/[0.1] bg-card px-2.5 py-2 dark:border-white/20">
-              <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink/85 text-page">
-                <svg width="8" height="9" viewBox="0 0 8 9" fill="currentColor">
+            <div className="relative flex h-32 w-full items-center justify-center rounded-[4px] border border-black/[0.1] bg-card dark:border-white/20">
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-ink/85 text-page">
+                <svg width="9" height="10" viewBox="0 0 8 9" fill="currentColor">
                   <path d="M0 0l8 4.5L0 9z" />
                 </svg>
                 {phase === 10 && (
                   <span className="absolute inset-0 animate-[ping_0.8s_ease-out_1] rounded-full bg-ink/25" />
                 )}
               </div>
-              <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="h-1.5 w-2/3 rounded-full bg-black/[0.1] dark:bg-white/15" />
-                <div className="h-[3px] overflow-hidden rounded-full bg-black/[0.08] dark:bg-white/15">
-                  <div
-                    className="h-full rounded-full bg-ink/50 dark:bg-white/40"
-                    style={{
-                      width: phase >= 10 ? '100%' : '0%',
-                      transition: 'width 1600ms linear 400ms',
-                    }}
-                  />
-                </div>
+              {/* 底部播放进度条 */}
+              <div className="absolute inset-x-3 bottom-2 h-[3px] overflow-hidden rounded-full bg-black/[0.08] dark:bg-white/15">
+                <div
+                  className="h-full rounded-full bg-ink/50 dark:bg-white/40"
+                  style={{
+                    width: phase >= 10 ? '100%' : '0%',
+                    transition: 'width 1600ms linear 400ms',
+                  }}
+                />
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 右：对话区（40%）—— 内容满了自动平滑滚动，顶部滚出、底部滚入 */}
+      {/* 右：对话区（40%）—— 左右交替说话；内容满了自动平滑滚动 */}
       <div className="flex w-[40%] flex-col p-2">
         <div
           ref={listRef}
@@ -175,36 +186,35 @@ export default function CanvasScene({ active = true }) {
               ))}
             </div>
           ))}
-          {/* —— 后续：骨架文字往来 —— */}
-          {msg('ai', phase >= 6, <SkeletonLines widths={['w-4/5', 'w-1/2']} />, 150)}
-          {msg('user', phase >= 6, <SkeletonLines widths={['w-2/3']} />, 300)}
-          {msg('ai', phase >= 7, <SkeletonLines widths={['w-3/5']} />, 150)}
-          {/* 分镜图：三条宽银幕横条 */}
-          {block(phase >= 7, 250, (
-            <div className="flex flex-col gap-1">
+          {/* —— 视觉设定图之后：左右交替说话 —— */}
+          {/* 右说话：一句话骨架 */}
+          {msg('user', phase >= 6, <SkeletonLines widths={['w-3/4']} />, 150)}
+          {/* 左说话：一句话骨架 */}
+          {msg('ai', phase >= 7, <SkeletonLines widths={['w-2/3']} />, 150)}
+          {/* 3 个分镜图（口口口，横排）——与画布同步 */}
+          {block(phase >= 7, 350, (
+            <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-5 w-full rounded-[3px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/15 dark:from-white/[0.05] dark:to-white/[0.1]"
+                  className="aspect-[4/3] flex-1 rounded-[3px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/20 dark:from-white/[0.08] dark:to-white/[0.14]"
                 />
               ))}
             </div>
           ))}
-          {msg('user', phase >= 8, <SkeletonLines widths={['w-1/2']} />, 100)}
-          {msg('ai', phase >= 8, <SkeletonLines widths={['w-3/4']} />, 250)}
-          {msg('ai', phase >= 9, <SkeletonLines widths={['w-2/3']} />, 150)}
-          {/* 对话区视频小格（与画布图片同尺寸，中央播放按钮） */}
-          {block(phase >= 9, 300, (
-            <div className="flex gap-1.5">
-              {[0, 1].map((i) =>
-                tile('h-10 flex-1', null, (
-                  <span className="absolute left-1/2 top-1/2 flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink/85 text-page">
-                    <svg width="5" height="6" viewBox="0 0 8 9" fill="currentColor">
-                      <path d="M0 0l8 4.5L0 9z" />
-                    </svg>
-                  </span>
-                ))
-              )}
+          {/* 右说话：一句话骨架 */}
+          {msg('user', phase >= 8, <SkeletonLines widths={['w-1/2']} />, 150)}
+          {/* 视频骨架（口，1 个方框中央播放按钮）——与画布同步 */}
+          {block(phase >= 9, 200, (
+            <div className="relative flex aspect-[16/9] w-full items-center justify-center rounded-[4px] border border-black/[0.1] bg-card dark:border-white/20">
+              <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-ink/85 text-page">
+                <svg width="7" height="8" viewBox="0 0 8 9" fill="currentColor">
+                  <path d="M0 0l8 4.5L0 9z" />
+                </svg>
+                {phase === 10 && (
+                  <span className="absolute inset-0 animate-[ping_0.8s_ease-out_1] rounded-full bg-ink/25" />
+                )}
+              </div>
             </div>
           ))}
         </div>
