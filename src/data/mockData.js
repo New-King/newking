@@ -52,14 +52,19 @@ export const posts = [
 ];
 
 export const projects = [
-  // media 可选：{ type: 'gif' | 'video', src: '...' } —— 项目卡悬停预览的演示素材；
-  // 不提供时回退到内置动画模拟。视频需 muted 才能自动播放。
+  // preview 可选：悬停预览的场景动画，{ scene: 模板名, ...场景配置 }
+  // 模板：terminal（执行流程）/ chat（对话）/ form（表单生成）/ list（模块加载）
+  // 不提供 preview 则悬停不展开预览；新项目按需新增场景模板。
   {
     id: 'j1',
     title: 'Agent Console — 对话式运维助手',
     date: '2026-06-15',
     description: '对话式 AI 运维终端，聚合日志、指标与操作指令。',
     cover: 'ring',
+    preview: {
+      scene: 'terminal',
+      lines: ['正在连接集群…', '正在拉取指标…', '正在执行指令…', '任务完成 ✓'],
+    },
     to: '/projects',
   },
   {
@@ -68,6 +73,11 @@ export const projects = [
     date: '2026-05-02',
     description: '用 JSON 配置快速生成个人作品集站点。',
     cover: 'square',
+    preview: {
+      scene: 'form',
+      input: 'portfolio.json',
+      result: '已生成 12 个页面 ✓',
+    },
     to: '/projects',
   },
   {
@@ -76,6 +86,11 @@ export const projects = [
     date: '2026-03-18',
     description: 'RAG 驱动的文档检索 API，支持多种向量库接入。',
     cover: 'dots',
+    preview: {
+      scene: 'chat',
+      question: '帮我检索相关文档…',
+      answer: '已找到 12 条相关片段，为你整理如下结论…',
+    },
     to: '/projects',
   },
   {
@@ -84,6 +99,10 @@ export const projects = [
     date: '2026-03-18',
     description: '基于模块联邦的微前端工程模板与发布工具。',
     cover: 'cross',
+    preview: {
+      scene: 'list',
+      modules: ['app-shell', 'remote-a', 'remote-b', 'shared-utils'],
+    },
     to: '/projects',
   },
   {
@@ -92,6 +111,10 @@ export const projects = [
     date: '2026-01-20',
     description: '一组提升日常开发效率的 CLI 小工具。',
     cover: 'triangle',
+    preview: {
+      scene: 'terminal',
+      lines: ['正在安装依赖…', '正在运行测试…', '正在打包构建…', '构建完成 ✓'],
+    },
     to: '/projects',
   },
 ];
