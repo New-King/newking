@@ -647,7 +647,7 @@ export default function AgentChat() {
 
       {!started ? (
         /* 初始态：时间轴预设问题轮播（每次 4 条自动向上滚动，hover 暂停，点击直接发送） */
-        <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-5 sm:px-6">
+        <div className="absolute inset-x-0 top-[45%] z-20 -translate-y-1/2 px-5 sm:px-6">
           <div className="relative mx-auto max-w-sm">
           {/* pl-[5px]：圆点左半（越出按钮左侧 4px）需要容器留出空间，否则被 overflow-hidden 裁掉。
              高度 5 行（4 行完整 + 上下各半行残影）；mask 上下 10% 渐隐，残影半透明可见，
