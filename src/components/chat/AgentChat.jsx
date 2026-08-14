@@ -159,6 +159,21 @@ export default function AgentChat() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
   };
 
+  /* 移动端浏览器：键盘弹出/收起时 visualViewport 尺寸变化，底部输入框可能被
+     键盘或浏览器导航栏挤出可视区（微信无此问题，因为它没有浏览器导航栏）。
+     输入框聚焦时监听 resize 滚动到底；失焦后不干预，避免打断阅读。 */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const keepInputVisible = () => {
+      if (document.activeElement !== inputElRef.current) return;
+      window.scrollTo(0, document.body.scrollHeight);
+      scrollToBottom(true);
+    };
+    vv.addEventListener('resize', keepInputVisible);
+    return () => vv.removeEventListener('resize', keepInputVisible);
+  }, []);
+
   useEffect(() => {
     if (!started) return;
     // 发送后瞬间置底（forceScrollRef）；平时仅在停留在底部附近时平滑跟随，避免向上阅读被拽回
@@ -249,7 +264,11 @@ export default function AgentChat() {
     setStarted(true);
     setInput('');
     startReply(text);
-    inputElRef.current?.focus();
+    // 桌面端（鼠标设备）：发送后保持焦点便于连续输入；
+    // 触屏设备（手机）：发送后失焦收起虚拟键盘，避免输入框反复弹出
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      inputElRef.current?.focus();
+    }
   };
 
   /* ---- mock 回复调度：一条回复依次演示 思考 / 工具调用 / 流式文字 / 图片 / 代码 / 音频 / 视频 ---- */
@@ -438,13 +457,13 @@ export default function AgentChat() {
             window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: false } }))
           }
         >
-          {/* 快速跳到底部：位于输入框正上方、水平居中；箭头常态深色，无 hover 变化 */}
+          {/* 快速跳到底部：输入框正上方水平居中；居中用 inset-x-0 mx-auto（不用 translateX，避免被 animate-fade-in-up 的 fill-mode:both 覆盖） */}
           {started && !atBottom && (
             <button
               type="button"
               onClick={scrollToBottom}
               aria-label="跳到底部"
-              className="absolute bottom-full left-1/2 z-10 mb-2 flex h-9 w-9 -translate-x-1/2 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink shadow-apple backdrop-blur dark:border-white/10 dark:bg-card/95"
+              className="absolute inset-x-0 bottom-full z-10 mx-auto mb-2 flex h-9 w-9 animate-fade-in-up items-center justify-center rounded-full border border-black/[0.08] bg-white/95 text-ink shadow-apple backdrop-blur dark:border-white/10 dark:bg-card/95"
             >
               <IconArrowDown className="h-4 w-4" />
             </button>
