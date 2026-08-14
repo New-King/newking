@@ -1,6 +1,6 @@
-# personal-site-3
+# New-King
 
-以「对话」为入口的个人网站前端 Demo。
+以「对话」为入口的个人网站
 
 技术栈：React 18 · Vite · Tailwind CSS · react-router-dom（JavaScript / JSX，纯前端，无后端）。
 
