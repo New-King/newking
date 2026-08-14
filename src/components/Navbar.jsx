@@ -139,7 +139,8 @@ export default function Navbar() {
   }, [show, canAutoHide]);
 
   return (
-    <header
+    <>
+      <header
       className={`fixed inset-x-0 top-0 z-50 border-b border-black/[0.08] bg-white/80 backdrop-blur-xl transition-all duration-300 ease-smooth dark:border-white/10 dark:bg-[#0A0A0C]/80 ${
         hidden ? 'pointer-events-none -translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
@@ -239,6 +240,19 @@ export default function Navbar() {
           ))}
         </nav>
       </div>
-    </header>
+      </header>
+
+      {/* 移动端：抽屉遮罩（点击外部区域关闭抽屉），透明不遮视觉。
+          注意：必须放在 header 外——header 有 transform（translate-y-0），
+          fixed 子元素会相对 header 定位而不是视口，放里面遮罩只有 header 高，
+          页面其余区域点不到。 */}
+      <div
+        aria-hidden="true"
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-40 transition-opacity duration-200 md:hidden ${
+          drawerOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
+      />
+    </>
   );
 }
