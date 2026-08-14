@@ -170,17 +170,49 @@ export default function AgentChat() {
 
   /* 移动端浏览器：键盘弹出时 visualViewport 高度缩小，但 layout viewport 不变，
      底部输入框会被键盘盖住（微信 WebView 会压缩视口所以没这问题）。
-     做法：输入框聚焦时把 form / 聊天区整体上移 gap（键盘遮挡高度），
-     输入框贴住键盘上方，页面不滚动、顶部不动；失焦后 gap 归零还原。 */
+     策略（兼容不同浏览器/系统版本）：
+     - resize 事件触发（iOS 16.4+ 等）：输入框聚焦时 form/聊天区上移 gap（键盘遮挡高度），
+       页面不滚动、顶部不动；
+     - resize 不触发（旧 iOS/部分浏览器）：聚焦后延迟重算仍是 0，退化为滚到底部
+       保证输入框可见（顶部会被顶起，键盘收起后自动恢复顶部）。 */
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => {
+    const inputEl = inputElRef.current;
+    const calcGap = () => (vv ? Math.max(0, window.innerHeight - vv.height) : 0);
+
+    const applyGap = () => {
       const focused = document.activeElement === inputElRef.current;
-      setKeyboardGap(focused ? Math.max(0, window.innerHeight - vv.height) : 0);
+      setKeyboardGap(focused ? calcGap() : 0);
     };
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+
+    const onFocus = () => {
+      // 等键盘弹出动画稳定后重算：resize 若触发，gap > 0 走"上移贴键盘"；
+      // 若未触发（旧环境），退化为滚动到底保证输入框可见
+      setTimeout(() => {
+        if (document.activeElement !== inputElRef.current) return;
+        const gap = calcGap();
+        if (gap > 0) {
+          setKeyboardGap(gap);
+        } else {
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      }, 400);
+    };
+
+    const onBlur = () => {
+      setKeyboardGap(0);
+      // 键盘收起后把页面滚回顶部（兼容路径下曾滚到底）
+      setTimeout(() => window.scrollTo(0, 0), 100);
+    };
+
+    if (vv) vv.addEventListener('resize', applyGap);
+    inputEl?.addEventListener('focusin', onFocus);
+    inputEl?.addEventListener('focusout', onBlur);
+    return () => {
+      if (vv) vv.removeEventListener('resize', applyGap);
+      inputEl?.removeEventListener('focusin', onFocus);
+      inputEl?.removeEventListener('focusout', onBlur);
+    };
   }, []);
 
   useEffect(() => {
@@ -399,7 +431,7 @@ export default function AgentChat() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="chat-shell relative overflow-hidden">
       {/* 科技感网格背景（线 + 交点圆点；鼠标触发范围内整条线变深） */}
       <BgGrid />
       {/* 对话呈现区：底部到输入区上方为止，不把输入区算进聊天区域。

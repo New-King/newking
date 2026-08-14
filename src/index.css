@@ -220,3 +220,19 @@ body.chat-page {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
+
+/* 首页聊天页：min-height 用 dvh（动态视口）——100vh 在移动浏览器是"地址栏收起时"的高度，
+   地址栏展开时会溢出产生滚动条（微信无地址栏所以正常），dvh 实时跟随可视区，永不溢出。
+   先写 100vh 兜底（旧浏览器），再写 100dvh 覆盖。 */
+.chat-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 移动端点击体验优化（避坑指南） */
+* {
+  touch-action: manipulation; /* 禁双击缩放，保留滚动/捏合 */
+}
+html {
+  -webkit-tap-highlight-color: transparent; /* 去点击灰色高亮 */
+}
