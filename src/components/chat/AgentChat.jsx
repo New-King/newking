@@ -7,13 +7,27 @@ import {
   DEMO_TOOLS,
   DEMO_VIDEO,
 } from '../../data/mockData';
-import { IconArrowDown, IconPause, IconSend } from '../icons';
+import { IconArrowDown, IconBubble, IconPause, IconSend } from '../icons';
 import MessageItem from './MessageItem';
 import TurnRail from './TurnRail';
 import BgGrid from './BgGrid';
 
 let uid = 0;
 const nextId = () => ++uid;
+
+// 首页预设提问：10 条，初始态时间轴轮播展示（每次 4 条，自动向上滚动，点击直接发送）
+const SUGGESTIONS = [
+  '做下自我介绍',
+  '看下你的作品集',
+  '介绍一下这个网站',
+  '你的技术栈是什么',
+  '你最近在做什么',
+  '你的职业经历是怎样的',
+  '怎么联系你',
+  '你在读什么书',
+  '你的学习路径是什么',
+  '介绍一下你的项目',
+];
 
 // 把元素从旧位置平滑"滑"到新位置（transform 动画，避免布局跳动）
 function runSlide(el, fromTop) {
@@ -47,6 +61,36 @@ export default function AgentChat() {
   const [navHidden, setNavHidden] = useState(false);
   const [nearTop, setNearTop] = useState(true);
   const [keyboardGap, setKeyboardGap] = useState(0); // 移动端键盘遮挡高度（输入框聚焦时上移）
+
+  /* 预设问题轮播：每次完整显示 4 条，上下各露出半行残影（渐隐过渡），
+     每 3.5s 向上滚动一条，10 条后无缝循环。
+     列表渲染 S9 + 10×2 + S0（前后各多一条残影行），step 0..10 无缝回跳。 */
+  const CAROUSEL_ROW_H = 42; // 每条固定高度（间距紧凑）
+  const [carouselStep, setCarouselStep] = useState(0);
+  const carouselListRef = useRef(null);
+  const carouselPrevStepRef = useRef(0);
+  // 前后各多一条：顶部残影 = 最后一条，底部残影 = 第一条
+  const CAROUSEL_ITEMS = [
+    SUGGESTIONS[SUGGESTIONS.length - 1],
+    ...SUGGESTIONS,
+    ...SUGGESTIONS,
+    SUGGESTIONS[0],
+  ];
+
+  useEffect(() => {
+    const id = setInterval(() => setCarouselStep((s) => (s + 1) % 11), 3500);
+    return () => clearInterval(id);
+  }, []);
+
+  /* step 10 → 0 时为无缝回跳：禁用过渡直接归零（两处显示内容相同，视觉无感） */
+  useEffect(() => {
+    const el = carouselListRef.current;
+    if (!el) return;
+    const isJump = carouselPrevStepRef.current === 10 && carouselStep === 0;
+    el.style.transition = isJump ? 'none' : 'transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1)';
+    el.style.transform = `translateY(${-carouselStep * CAROUSEL_ROW_H}px)`;
+    carouselPrevStepRef.current = carouselStep;
+  }, [carouselStep]);
 
   const formRef = useRef(null);
   const inputElRef = useRef(null);
@@ -282,11 +326,10 @@ export default function AgentChat() {
     );
   };
 
-  const handleSend = (e) => {
-    e?.preventDefault();
-    const text = input.trim();
+  /* 发送逻辑（供表单提交与预设提问共用）：对话发出后立即隐藏顶部导航、
+     强制置底、输入框滑到底部，然后调度 mock 回复 */
+  const sendText = (text) => {
     if (!text) return;
-
     // 回复生成中禁止连续发送（按钮已是暂停、回车也会被拦下）；手动暂停后才可继续发送
     if (pending > 0 && !paused) return;
 
@@ -310,6 +353,11 @@ export default function AgentChat() {
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       inputElRef.current?.focus();
     }
+  };
+
+  const handleSend = (e) => {
+    e?.preventDefault();
+    sendText(input.trim());
   };
 
   /* ---- mock 回复调度：一条回复依次演示 思考 / 工具调用 / 流式文字 / 图片 / 代码 / 音频 / 视频 ---- */
@@ -478,21 +526,57 @@ export default function AgentChat() {
         <TurnRail turns={turnSummaries} onSelect={jumpToTurn} />
       )}
 
-      {/* 输入框：初始居中，发送后固定到底部 */}
-      <form
-        ref={formRef}
-        onSubmit={handleSend}
-        style={started ? { bottom: keyboardGap } : undefined}
-        className={`absolute inset-x-0 z-20 px-5 sm:px-6 ${
-          started ? 'bottom-0 pb-5' : 'top-1/2 -translate-y-1/2'
-        }`}
-      >
-        {/* 初始态用较短宽度更协调；进入对话后与聊天列等宽。
-            鼠标在输入框内时暂停背景网格动画（bg-grid-pause 事件） */}
+      {!started ? (
+        /* 初始态：时间轴预设问题轮播（每次 4 条自动向上滚动，hover 暂停，点击直接发送） */
+        <div className="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 px-5 sm:px-6">
+          <div className="relative mx-auto max-w-sm">
+          {/* pl-[5px]：圆点左半（越出按钮左侧 4px）需要容器留出空间，否则被 overflow-hidden 裁掉。
+             高度 5 行（4 行完整 + 上下各半行残影）；mask 上下 10% 渐隐，残影半透明可见，
+             营造"内容正在流动"的过渡感 */}
+          <div
+            className="overflow-hidden pl-[5px]"
+            style={{
+              height: CAROUSEL_ROW_H * 5,
+              maskImage: 'linear-gradient(transparent, black 10%, black 90%, transparent)',
+              WebkitMaskImage: 'linear-gradient(transparent, black 10%, black 90%, transparent)',
+            }}
+          >
+            <div ref={carouselListRef} className="flex flex-col will-change-transform">
+              {/* 列表渲染前后多一条残影行；竖线在每条按钮内，随行移动（与时间轴原版一致） */}
+              {CAROUSEL_ITEMS.map((q, i) => (
+                <button
+                  key={`${q}-${i}`}
+                  type="button"
+                  onClick={() => sendText(q)}
+                  className="group relative flex items-center pl-8 text-left"
+                  style={{ height: CAROUSEL_ROW_H }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-0 h-full w-px bg-black/[0.08] dark:bg-white/10"
+                  />
+                  <span className="absolute left-0 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/20 bg-page transition-colors duration-200 group-hover:border-accent group-hover:bg-accent dark:border-white/30 dark:bg-[#0A0A0C]" />
+                  <span className="flex items-center gap-1.5 text-[16px] text-ink-soft transition-transform duration-200 group-hover:translate-x-1.5 group-hover:text-ink">
+                    {q}
+                    {/* 对话图标：hover 才出现（淡入 + 右移） */}
+                    <IconBubble className="h-3.5 w-3.5 -translate-x-1 text-ink-faint opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-hover:text-ink" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          </div>
+        </div>
+      ) : (
+        <form
+          ref={formRef}
+          onSubmit={handleSend}
+          style={{ bottom: keyboardGap }}
+          className="absolute inset-x-0 bottom-0 z-20 px-5 pb-5 sm:px-6"
+        >
+        {/* 进入对话后与聊天列等宽；鼠标在输入框内时暂停背景网格动画（bg-grid-pause 事件） */}
         <div
-          className={`relative mx-auto transition-[max-width] duration-300 ease-smooth ${
-            started ? 'max-w-2xl' : 'max-w-xl'
-          }`}
+          className="relative mx-auto max-w-2xl"
           onMouseEnter={() =>
             window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: true } }))
           }
@@ -500,8 +584,8 @@ export default function AgentChat() {
             window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: false } }))
           }
         >
-          {/* 快速跳到底部：输入框正上方水平居中；居中用 inset-x-0 mx-auto（不用 translateX，避免被 animate-fade-in-up 的 fill-mode:both 覆盖） */}
-          {started && !atBottom && (
+          {/* 快速跳到底部：输入框正上方水平居中；居中用 inset-x-0 mx-auto（不用 translateX，避免被 animate-fade-in-up 的 fill-mode:both 覆盖） */
+          started && !atBottom && (
             <button
               type="button"
               onClick={scrollToBottom}
@@ -511,37 +595,42 @@ export default function AgentChat() {
               <IconArrowDown className="h-4 w-4" />
             </button>
           )}
-          <input
-            ref={inputElRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="输入你想了解的内容…"
-            aria-label="输入你想了解的内容"
-            className="w-full rounded-full border border-black/[0.08] bg-card py-3.5 pl-5 pr-14 text-[15px] text-ink shadow-apple-input outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple dark:border-white/10"
-          />
-          {/* 生成中：发送按钮原位变为暂停按钮，无法连续发送；对话结束或暂停后恢复发送 */}
-          {pending > 0 && !paused ? (
-            <button
-              type="button"
-              onClick={handlePause}
-              aria-label="暂停回复"
-              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95"
-            >
-              <IconPause className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              aria-label="发送"
-              className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-25"
-            >
-              <IconSend className="h-4 w-4" />
-            </button>
-          )}
+          {/* 输入框 + 右侧按钮：独立相对容器——按钮垂直居中必须以输入框为准，
+              不能被上方预设提问区撑高带偏（否则初始态发送按钮会偏移到上方） */}
+          <div className="relative">
+            <input
+              ref={inputElRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="输入你想了解的内容…"
+              aria-label="输入你想了解的内容"
+              className="w-full rounded-full border border-black/[0.08] bg-card py-3.5 pl-5 pr-14 text-[15px] text-ink shadow-apple-input outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple dark:border-white/10"
+            />
+            {/* 生成中：发送按钮原位变为暂停按钮，无法连续发送；对话结束或暂停后恢复发送 */}
+            {pending > 0 && !paused ? (
+              <button
+                type="button"
+                onClick={handlePause}
+                aria-label="暂停回复"
+                className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95"
+              >
+                <IconPause className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                aria-label="发送"
+                className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-accent text-white shadow-apple transition-all duration-200 hover:bg-accent-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-25"
+              >
+                <IconSend className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </form>
+      )}
     </div>
   );
 }

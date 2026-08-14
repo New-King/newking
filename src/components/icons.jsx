@@ -95,3 +95,9 @@ export const IconMail = ({ className }) => (
     <path d="m22 7-10 6L2 7" />
   </svg>
 );
+
+export const IconBubble = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />
+  </svg>
+);
