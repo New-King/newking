@@ -214,3 +214,9 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/* 首页聊天页：禁用浏览器橡皮筋/弹性滚动（微信 WebView 无此效果，浏览器需对齐；仅聊天页生效） */
+body.chat-page {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}

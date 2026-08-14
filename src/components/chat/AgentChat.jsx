@@ -46,6 +46,7 @@ export default function AgentChat() {
   const [atBottom, setAtBottom] = useState(true);
   const [navHidden, setNavHidden] = useState(false);
   const [nearTop, setNearTop] = useState(true);
+  const [keyboardGap, setKeyboardGap] = useState(0); // 移动端键盘遮挡高度（输入框聚焦时上移）
 
   const formRef = useRef(null);
   const inputElRef = useRef(null);
@@ -66,6 +67,14 @@ export default function AgentChat() {
     return () => {
       mountedRef.current = false;
     };
+  }, []);
+
+  /* 首页为全屏固定布局（页面本身不可滚动，聊天区内部滚动）。
+     挂载时给 body 标记 chat-page：禁用浏览器橡皮筋弹性滚动，
+     与微信 WebView 行为对齐（内容不溢出时手指滑动页面不应移动）。 */
+  useEffect(() => {
+    document.body.classList.add('chat-page');
+    return () => document.body.classList.remove('chat-page');
   }, []);
 
   /* 按 Tab 始终聚焦输入框（无论当前焦点在哪） */
@@ -159,19 +168,19 @@ export default function AgentChat() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
   };
 
-  /* 移动端浏览器：键盘弹出/收起时 visualViewport 尺寸变化，底部输入框可能被
-     键盘或浏览器导航栏挤出可视区（微信无此问题，因为它没有浏览器导航栏）。
-     输入框聚焦时监听 resize 滚动到底；失焦后不干预，避免打断阅读。 */
+  /* 移动端浏览器：键盘弹出时 visualViewport 高度缩小，但 layout viewport 不变，
+     底部输入框会被键盘盖住（微信 WebView 会压缩视口所以没这问题）。
+     做法：输入框聚焦时把 form / 聊天区整体上移 gap（键盘遮挡高度），
+     输入框贴住键盘上方，页面不滚动、顶部不动；失焦后 gap 归零还原。 */
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const keepInputVisible = () => {
-      if (document.activeElement !== inputElRef.current) return;
-      window.scrollTo(0, document.body.scrollHeight);
-      scrollToBottom(true);
+    const onResize = () => {
+      const focused = document.activeElement === inputElRef.current;
+      setKeyboardGap(focused ? Math.max(0, window.innerHeight - vv.height) : 0);
     };
-    vv.addEventListener('resize', keepInputVisible);
-    return () => vv.removeEventListener('resize', keepInputVisible);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
   }, []);
 
   useEffect(() => {
@@ -399,11 +408,12 @@ export default function AgentChat() {
         className={`absolute inset-x-0 bottom-20 top-0 transition-opacity duration-500 ease-smooth ${
           started ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
+        style={{ bottom: keyboardGap + 80 }}
       >
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto px-5 pb-6 pt-6 sm:px-6 [overflow-anchor:none]"
+          className="h-full overflow-y-auto overscroll-contain px-5 pb-6 pt-6 sm:px-6 [overflow-anchor:none]"
         >
           <div className="mx-auto flex max-w-2xl flex-col gap-6">
             {/* 顶部预留条：导航显示时垫在导航下方，保证第一条消息完整可见；
@@ -440,6 +450,7 @@ export default function AgentChat() {
       <form
         ref={formRef}
         onSubmit={handleSend}
+        style={started ? { bottom: keyboardGap } : undefined}
         className={`absolute inset-x-0 z-20 px-5 sm:px-6 ${
           started ? 'bottom-0 pb-5' : 'top-1/2 -translate-y-1/2'
         }`}
