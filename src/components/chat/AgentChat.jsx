@@ -175,12 +175,13 @@ export default function AgentChat() {
     const d = carouselDragRef.current;
     const now = performance.now();
     if (now - d.lastT > 30) {
-      // 速度采样：最近位移/时间（px/帧 量纲），决定松手惯性
-      carouselVelRef.current = ((e.clientY - d.lastY) / (now - d.lastT)) * 16.7 * 0.55;
+      // 速度采样：向上拖 = 内容上移 = 看后面的问题（与自动轮播同向）
+      carouselVelRef.current = ((d.lastY - e.clientY) / (now - d.lastT)) * 16.7 * 0.55;
       d.lastY = e.clientY;
       d.lastT = now;
     }
-    let target = d.pos + (e.clientY - d.y);
+    // 滚动语义：手指向上滑 → 内容向上滚（pos 增大）→ 看后面的问题
+    let target = d.pos - (e.clientY - d.y);
     // 无边界：无限滚动，位置直接跟随
     carouselPosRef.current = target;
     carouselApply();
