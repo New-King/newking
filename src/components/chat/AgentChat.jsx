@@ -62,13 +62,14 @@ export default function AgentChat() {
   const [nearTop, setNearTop] = useState(true);
   const [keyboardGap, setKeyboardGap] = useState(0); // 移动端键盘遮挡高度（输入框聚焦时上移）
 
-  /* 预设问题轮播：每次完整显示 4 条，上下各露出半行残影（渐隐过渡），
-     每 3.5s 向上滚动一条，10 条后无缝循环。
-     列表渲染 S9 + 10×2 + S0（前后各多一条残影行），step 0..10 无缝回跳。 */
-  const CAROUSEL_ROW_H = 42; // 每条固定高度（间距紧凑）
-  const [carouselStep, setCarouselStep] = useState(0);
-  const carouselListRef = useRef(null);
-  const carouselPrevStepRef = useRef(0);
+  /* 预设问题轮播：无限滚动物理模型。
+     - 位置 carouselPosRef 无界（可无限增/减），显示时对周期取模（10 条 = 420px），
+       上下永无尽头（拖拽/滚轮/惯性全部无边界）
+     - 自动：每 3.5s 平滑滚动一条，取模后自然无限循环
+     - 手动：拖拽/滚轮自由滚动，松手按速度惯性滑动（阻尼衰减） */
+  const CAROUSEL_ROW_H = 42;
+  const CAROUSEL_VIEW_H = CAROUSEL_ROW_H * 5; // 可视 5 行（4 完整 + 上下残影）
+  const CAROUSEL_MAX = CAROUSEL_ROW_H * 10; // 内容周期（10 条）
   // 前后各多一条：顶部残影 = 最后一条，底部残影 = 第一条
   const CAROUSEL_ITEMS = [
     SUGGESTIONS[SUGGESTIONS.length - 1],
@@ -77,20 +78,138 @@ export default function AgentChat() {
     SUGGESTIONS[0],
   ];
 
-  useEffect(() => {
-    const id = setInterval(() => setCarouselStep((s) => (s + 1) % 11), 3500);
-    return () => clearInterval(id);
-  }, []);
+  const carouselListRef = useRef(null);
+  const carouselPosRef = useRef(0); // 无界位置（translateY 正值）
+  const carouselVelRef = useRef(0); // 惯性速度
+  const carouselRafRef = useRef(null);
+  const carouselDraggingRef = useRef(false);
+  const carouselAutoPausedRef = useRef(false);
+  const carouselAutoTimerRef = useRef(null);
+  const carouselDragRef = useRef({ y: 0, pos: 0, lastY: 0, lastT: 0 });
 
-  /* step 10 → 0 时为无缝回跳：禁用过渡直接归零（两处显示内容相同，视觉无感） */
-  useEffect(() => {
+  // 显示位置 = 无界位置对周期取模（保证非负），实现无限循环
+  const carouselApply = () => {
     const el = carouselListRef.current;
     if (!el) return;
-    const isJump = carouselPrevStepRef.current === 10 && carouselStep === 0;
-    el.style.transition = isJump ? 'none' : 'transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1)';
-    el.style.transform = `translateY(${-carouselStep * CAROUSEL_ROW_H}px)`;
-    carouselPrevStepRef.current = carouselStep;
-  }, [carouselStep]);
+    const mod = ((carouselPosRef.current % CAROUSEL_MAX) + CAROUSEL_MAX) % CAROUSEL_MAX;
+    el.style.transform = `translateY(${-mod}px)`;
+  };
+
+  // 惯性滑动：速度每帧衰减 8%（阻尼），无边界（无限滚动）
+  const carouselRunInertia = () => {
+    cancelAnimationFrame(carouselRafRef.current);
+    const step = () => {
+      const v = carouselVelRef.current;
+      if (Math.abs(v) < 0.1) return;
+      carouselPosRef.current += v;
+      carouselVelRef.current *= 0.92;
+      carouselApply();
+      carouselRafRef.current = requestAnimationFrame(step);
+    };
+    carouselRafRef.current = requestAnimationFrame(step);
+  };
+
+  // 平滑滚动到目标位置（自动播放用，ease-out）
+  const carouselAnimateTo = (target, duration) => {
+    cancelAnimationFrame(carouselRafRef.current);
+    const from = carouselPosRef.current;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      carouselPosRef.current = from + (target - from) * (1 - Math.pow(1 - t, 3));
+      carouselApply();
+      if (t < 1) carouselRafRef.current = requestAnimationFrame(step);
+    };
+    carouselRafRef.current = requestAnimationFrame(step);
+  };
+
+  const carouselPauseAuto = () => {
+    carouselAutoPausedRef.current = true;
+  };
+  const carouselResumeAuto = (delay = 3000) => {
+    clearTimeout(carouselAutoTimerRef.current);
+    carouselAutoTimerRef.current = setTimeout(() => {
+      // 用户又按住了就跳过（拖拽优先）
+      if (carouselDraggingRef.current) {
+        carouselResumeAuto(3000);
+        return;
+      }
+      // 先吸附到最近的整步点（取模后），保证自动步进节奏稳定
+      const mod = ((carouselPosRef.current % CAROUSEL_MAX) + CAROUSEL_MAX) % CAROUSEL_MAX;
+      const snapMod = Math.round(mod / CAROUSEL_ROW_H) * CAROUSEL_ROW_H;
+      if (snapMod !== mod) carouselAnimateTo(carouselPosRef.current + (snapMod - mod), 250);
+      carouselAutoPausedRef.current = false;
+    }, delay);
+  };
+
+  // 自动播放：每 3.5s 滚一条；拖拽中/暂停时不推进；位置无界，显示取模无限循环
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (carouselAutoPausedRef.current || carouselDraggingRef.current) return;
+      carouselAnimateTo(carouselPosRef.current + CAROUSEL_ROW_H, 900);
+    }, 3500);
+    return () => {
+      clearInterval(id);
+      clearTimeout(carouselAutoTimerRef.current);
+      cancelAnimationFrame(carouselRafRef.current);
+    };
+  }, []);
+
+  // 拖拽：按下记录起点并停掉一切动画；移动跟随（边界外弹性压缩），
+  // 且每次 move 先取消进行中的动画（防止自动轮播/吸附动画与手指竞争拉扯）
+  const onCarouselPointerDown = (e) => {
+    cancelAnimationFrame(carouselRafRef.current);
+    carouselPauseAuto();
+    carouselDraggingRef.current = true;
+    carouselDragRef.current = {
+      y: e.clientY,
+      pos: carouselPosRef.current,
+      lastY: e.clientY,
+      lastT: performance.now(),
+    };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onCarouselPointerMove = (e) => {
+    if (!carouselDraggingRef.current) return;
+    cancelAnimationFrame(carouselRafRef.current);
+    const d = carouselDragRef.current;
+    const now = performance.now();
+    if (now - d.lastT > 30) {
+      // 速度采样：最近位移/时间（px/帧 量纲），决定松手惯性
+      carouselVelRef.current = ((e.clientY - d.lastY) / (now - d.lastT)) * 16.7 * 0.55;
+      d.lastY = e.clientY;
+      d.lastT = now;
+    }
+    let target = d.pos + (e.clientY - d.y);
+    // 无边界：无限滚动，位置直接跟随
+    carouselPosRef.current = target;
+    carouselApply();
+  };
+  const onCarouselPointerUp = () => {
+    if (!carouselDraggingRef.current) return;
+    carouselDraggingRef.current = false;
+    if (Math.abs(carouselVelRef.current) > 0.5) {
+      carouselRunInertia();
+    }
+    carouselResumeAuto();
+  };
+  // 滚轮：原生监听（React onWheel 是 passive，无法 preventDefault 阻止页面滚动）。
+  // 滚动距离直接映射列表位移 + 速度转惯性，边界弹性
+  useEffect(() => {
+    const el = carouselListRef.current?.parentElement;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      cancelAnimationFrame(carouselRafRef.current);
+      carouselPauseAuto();
+      carouselPosRef.current += e.deltaY; // 无边界：无限滚动
+      carouselVelRef.current = e.deltaY * 0.9; // 滚轮速度 → 松手惯性
+      carouselApply();
+      carouselResumeAuto();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const formRef = useRef(null);
   const inputElRef = useRef(null);
@@ -534,12 +653,16 @@ export default function AgentChat() {
              高度 5 行（4 行完整 + 上下各半行残影）；mask 上下 10% 渐隐，残影半透明可见，
              营造"内容正在流动"的过渡感 */}
           <div
-            className="overflow-hidden pl-[5px]"
+            className="overflow-hidden pl-[5px] touch-none cursor-grab active:cursor-grabbing"
             style={{
-              height: CAROUSEL_ROW_H * 5,
+              height: CAROUSEL_VIEW_H,
               maskImage: 'linear-gradient(transparent, black 25%, black 75%, transparent)',
               WebkitMaskImage: 'linear-gradient(transparent, black 25%, black 75%, transparent)',
             }}
+            onPointerDown={onCarouselPointerDown}
+            onPointerMove={onCarouselPointerMove}
+            onPointerUp={onCarouselPointerUp}
+            onPointerCancel={onCarouselPointerUp}
           >
             <div ref={carouselListRef} className="flex flex-col will-change-transform">
               {/* 列表渲染前后多一条残影行；竖线在每条按钮内，随行移动（与时间轴原版一致） */}
