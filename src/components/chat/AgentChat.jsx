@@ -68,6 +68,17 @@ export default function AgentChat() {
     };
   }, []);
 
+  /* 按 Tab 始终聚焦输入框（无论当前焦点在哪） */
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Tab') return;
+      e.preventDefault();
+      inputElRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   /* 消息按轮次分组：一条用户消息 + 其后的回复为一轮 */
   const turns = useMemo(() => {
     const list = [];
