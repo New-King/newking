@@ -537,8 +537,8 @@ export default function AgentChat() {
             className="overflow-hidden pl-[5px]"
             style={{
               height: CAROUSEL_ROW_H * 5,
-              maskImage: 'linear-gradient(transparent, black 10%, black 90%, transparent)',
-              WebkitMaskImage: 'linear-gradient(transparent, black 10%, black 90%, transparent)',
+              maskImage: 'linear-gradient(transparent, black 25%, black 75%, transparent)',
+              WebkitMaskImage: 'linear-gradient(transparent, black 25%, black 75%, transparent)',
             }}
           >
             <div ref={carouselListRef} className="flex flex-col will-change-transform">
