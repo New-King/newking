@@ -186,13 +186,22 @@ export default function AgentChat() {
     carouselPosRef.current = target;
     carouselApply();
   };
-  const onCarouselPointerUp = () => {
+  const onCarouselPointerUp = (e) => {
     if (!carouselDraggingRef.current) return;
     carouselDraggingRef.current = false;
     if (Math.abs(carouselVelRef.current) > 0.5) {
       carouselRunInertia();
     }
     carouselResumeAuto();
+    // 修复：pointer capture 会把 click 重定向到容器，按钮 onClick 被吞。
+    // 若这次按下/松开几乎没有位移（= 点击而非拖拽），就手动补发一次 click，
+    // 目标是松手位置正下方最靠近的元素（预设问题按钮）。
+    const d = carouselDragRef.current;
+    if (Math.abs(e.clientY - d.y) < 4) {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const btn = el?.closest?.('button');
+      if (btn) btn.click();
+    }
   };
   // 滚轮：原生监听（React onWheel 是 passive，无法 preventDefault 阻止页面滚动）。
   // 滚动距离直接映射列表位移 + 速度转惯性，边界弹性
