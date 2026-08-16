@@ -71,6 +71,11 @@ curl http://127.0.0.1:8000/health
 
 ## 常见问题
 
-- `Connection refused`：SSH 隧道没开，先开隧道再跑
+- `Connection refused` / 对话一直卡在"知识库检索"：**SSH 隧道断了**。重开（带心跳保活，不易断）：
+  ```bash
+  nohup ssh -N -L 5432:127.0.0.1:5432 -i ~/.ssh/newking_deploy -p 22 root@111.231.13.51 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 &
+  ```
+  用 `nc -z -w 3 127.0.0.1 5432` 验证隧道通不通。
 - `extension "vector" is not available`：pgvector 没装好，见 `docs/后端方案.md` Step 2
 - 数据库连不上/鉴权失败：检查 `.env` 的 `DATABASE_URL`（用户名/密码/库名要对上 1Panel 的配置）
+- 改后端代码后没生效：uvicorn 若没用 `--reload` 启动，需手动重启进程
