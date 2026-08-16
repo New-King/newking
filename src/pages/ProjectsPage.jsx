@@ -135,8 +135,11 @@ export default function ProjectsPage() {
     );
   }
 
-  // 把后端数据补上前端动画配置 preview（按 id 映射，无配置给默认 list）
-  const item = { ...p, preview: PREVIEW_BY_ID[p.id] || { scene: 'list' } };
+  // 把后端数据补上前端动画配置 preview。
+  // 后端 id 是文件名（如 j6-canvas），这里取短前缀（j6）匹配动画配置；
+  // 匹配不到给默认 list 动画（不崩溃）。
+  const shortId = (p.id || '').split('-')[0];
+  const item = { ...p, preview: PREVIEW_BY_ID[shortId] || { scene: 'list' } };
 
   return (
     <PageShell eyebrow="Projects">

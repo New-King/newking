@@ -13,6 +13,7 @@ SSE 事件协议（前端 AgentChat 按此渲染）：
       {"type": "tool", "name", "status": "running|done", "result"}  工具调用卡片
       {"type": "text", "delta": "..."}      流式文字片段
       {"type": "text_done"}                 文字结束
+      {"type": "image", "src", "caption"}   图片块
       {"type": "link", "url", "title"}      链接块
       {"type": "video", "title", "url"}     视频块
       {"type": "done"}                      本轮回复结束
@@ -79,19 +80,30 @@ def _cited_media_blocks(context, full_text):
     """根据模型实际引用的编号，收集媒体块。
 
     full_text：模型生成的完整回复，含 [N] 标记。
-    用正则找出所有被引用的编号，只对这些块输出 links / video。
-    cover 是前端几何图形名，不是图片 URL，不作为图片输出。
+    用正则找出所有被引用的编号，只对这些块输出 image / links / video。
+    字段约定（frontmatter）：
+        image  图片 URL（图片块）
+        links  链接列表（链接块）
+        video  视频 URL（视频块）
     """
     cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
     blocks = []
+    seen_media = set()  # 去重：同一个媒体被多个块引用时只发一次
     for i, item in enumerate(context):
         if (i + 1) not in cited:
             continue
         md = item.get("metadata") or {}
+        image = md.get("image")
+        if image and image not in seen_media:
+            seen_media.add(image)
+            blocks.append({"type": "image", "src": image, "caption": md.get("title")})
         for link in md.get("links") or []:
-            blocks.append({"type": "link", "url": link, "title": "相关链接"})
+            if link not in seen_media:
+                seen_media.add(link)
+                blocks.append({"type": "link", "url": link, "title": "相关链接"})
         video = md.get("video")
-        if video:
+        if video and video not in seen_media:
+            seen_media.add(video)
             blocks.append({"type": "video", "title": "演示视频", "url": video})
     return blocks
 

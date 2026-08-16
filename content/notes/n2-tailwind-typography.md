@@ -2,6 +2,7 @@
 title: Tailwind 排版与间距的取舍
 date: 2026-07-25
 description: 从字号到空间节奏，聊聊排版系统的一次重构。
+image: https://picsum.photos/seed/tailwind/800/450
 ---
 
 ## 从字号说起
@@ -11,3 +12,5 @@ description: 从字号到空间节奏，聊聊排版系统的一次重构。
 ## 空间节奏
 
 间距比字号更容易被忽略，却对页面气质影响最大。统一用间距单位，能快速建立稳定的节奏感。
+
+![排版节奏示意](https://picsum.photos/seed/typography/800/450)

@@ -17,8 +17,9 @@
 from .config import CONTENT_DIR
 from .indexer import parse_md, json_safe
 
-# 目录名 → 内容类型
+# 目录名 → 内容类型 + 前端路由前缀
 _TYPE_BY_DIR = {"posts": "posts", "notes": "notes", "projects": "projects"}
+_ROUTE_BY_DIR = {"posts": "/blog", "notes": "/notes", "projects": "/projects"}
 
 
 def _load_all():
@@ -57,8 +58,8 @@ def _load_all():
             # 前端兼容字段：
             #   description 和 excerpt 同义（页面有的用 description、有的用 excerpt）
             "excerpt": meta.get("description"),
-            # to：列表项的跳转路由（目前列表页自身；未来详情页再细化）
-            "to": f"/{type_name}",
+            # to：列表项的详情页路由（前端新增对应详情路由）
+            "to": f"{_ROUTE_BY_DIR[dirname]}/{rel.stem}",
         }
         result[type_name].append(json_safe(item))
 

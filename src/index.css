@@ -236,3 +236,53 @@ body.chat-page {
 html {
   -webkit-tap-highlight-color: transparent; /* 去点击灰色高亮 */
 }
+
+/* 详情页 markdown 正文样式（content 正文渲染） */
+.article-body h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+.article-body h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.article-body p {
+  margin-bottom: 1rem;
+}
+.article-body ul,
+.article-body ol {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.article-body ol {
+  list-style: decimal;
+}
+.article-body li {
+  margin-bottom: 0.35rem;
+}
+.article-body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-body code {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.dark .article-body code {
+  background: rgba(255, 255, 255, 0.1);
+}
+.article-body img {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 0.5rem 0;
+}

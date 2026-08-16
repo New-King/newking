@@ -2,6 +2,9 @@
 title: RAG 落地实践：从原型到生产
 date: 2026-07-20
 description: 从检索方案选型到线上稳定运行，记录 RAG 服务化的关键决策。
+links:
+  - https://python.langchain.com/docs/concepts/rag/
+  - https://github.com/pgvector/pgvector
 ---
 
 ## 原型阶段的快速验证
@@ -11,8 +14,9 @@ description: 从检索方案选型到线上稳定运行，记录 RAG 服务化�
 ## 方案选型
 
 - 切块策略：按标题分节，保持语义完整
-- 向量库：PostgreSQL + pgvector
+- 向量库：PostgreSQL + [pgvector](https://github.com/pgvector/pgvector)
 - 检索：向量 + 全文混合，再经过重排精调
+- 编排：参考 [LangChain 的 RAG 文档](https://python.langchain.com/docs/concepts/rag/) 里的经典链路
 
 ## 生产化的关键决策
 
