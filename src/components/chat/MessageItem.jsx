@@ -26,10 +26,16 @@ export default function MessageItem({ message, onBlockDone }) {
     );
   }
 
+  // 从工具卡片块里收集"相关文章"列表，供文本里的引用标签 [N] 使用
+  const related =
+    message.blocks
+      ?.filter((b) => b.type === 'tool')
+      .flatMap((b) => b.related || []) || [];
+
   return (
     <div className="flex flex-col gap-3">
       {message.blocks.map((b) => (
-        <BlockRenderer key={b.id} block={b} paused={message.paused} onDone={onBlockDone} />
+        <BlockRenderer key={b.id} block={b} paused={message.paused} onDone={onBlockDone} related={related} />
       ))}
       {message.blocks.length === 0 && <WaitingDots />}
     </div>

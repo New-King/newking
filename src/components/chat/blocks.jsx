@@ -134,23 +134,47 @@ function TextSkeleton() {
   );
 }
 
-// 把回复文本里的引用标记 [N] 渲染成小上标角标（主流 RAG 产品的来源引用样式）
-function renderWithRefs(text) {
+// 引用标签：把 [N] 渲染成可交互的上标链接。
+// hover 弹出小预览（标题 + 链接），点击新窗口跳转到对应文章。
+// 用纯 CSS group-hover 控制浮窗显隐（不依赖 JS 状态，稳定可靠）。
+function ReferenceTag({ index, related }) {
+  const item = related && related[index];
+  return (
+    <span className="group relative inline-block">
+      <a
+        href={item?.url || '#'}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={item ? `查看引用来源：${item.title}` : `引用 ${index + 1}`}
+        className="mx-0.5 inline-flex h-4 w-4 -translate-y-1 items-center justify-center rounded-full bg-accent/15 align-top text-[10px] font-medium text-accent transition-colors group-hover:bg-accent group-hover:text-white"
+      >
+        {index + 1}
+      </a>
+      {/* hover 预览浮窗（纯 CSS 显隐） */}
+      {item && (
+        <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-64 -translate-x-1/2 rounded-xl border border-black/[0.08] bg-card p-3 text-left opacity-0 shadow-apple-lg transition-opacity duration-150 group-hover:block group-hover:opacity-100 dark:border-white/10">
+          <span className="block text-[13px] font-medium text-ink">{item.title}</span>
+          <span className="mt-1 block truncate text-[11px] text-ink-faint">{item.url}</span>
+          <span className="mt-1.5 block text-[11px] text-ink-faint">点击在新窗口打开 ↗</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
+// 把回复文本里的引用标记 [N] 渲染成可交互引用标签
+function renderWithRefs(text, related) {
   const parts = text.split(/(\[\d+\])/g);
   return parts.map((part, i) => {
     const m = part.match(/^\[(\d+)\]$/);
     if (m) {
-      return (
-        <sup key={i} className="ml-0.5 text-[10px] font-medium text-ink-faint">
-          {m[1]}
-        </sup>
-      );
+      return <ReferenceTag key={i} index={parseInt(m[1], 10) - 1} related={related} />;
     }
     return part;
   });
 }
 
-function TextBlock({ block }) {
+function TextBlock({ block, related }) {
   if (block.status === 'loading') return <TextSkeleton />;
   if (block.status === 'streaming') {
     // 真流式：后端增量追加到 content，这里直接渲染 + 闪烁光标（不再重新打字）
@@ -161,7 +185,7 @@ function TextBlock({ block }) {
       </div>
     );
   }
-  return <div className={textBubble}>{renderWithRefs(block.content)}</div>;
+  return <div className={textBubble}>{renderWithRefs(block.content, related)}</div>;
 }
 
 /* ---------- 图片 ---------- */
@@ -265,14 +289,14 @@ function VideoCard({ block }) {
 
 /* ---------- 统一出口 ---------- */
 
-export default function BlockRenderer({ block, paused, onDone }) {
+export default function BlockRenderer({ block, paused, onDone, related }) {
   switch (block.type) {
     case 'thinking':
       return <ThinkingBlock block={block} />;
     case 'tool':
       return <ToolCallCard block={block} />;
     case 'text':
-      return <TextBlock block={block} />;
+      return <TextBlock block={block} related={related} />;
     case 'image':
       return <ImageBlock block={block} />;
     case 'link':
