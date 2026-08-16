@@ -3,9 +3,6 @@ title: 无限画布 — AI 创作工作台
 date: 2026-08-10
 description: 左画布右对话，用自然语言驱动图片与视频的连续创作。
 cover: dots
-video: https://example.com/videos/canvas-demo.mp4
-links:
-  - https://example.com/projects/canvas
 ---
 
 ## 概览

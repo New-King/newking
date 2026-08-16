@@ -99,6 +99,22 @@ function TextSkeleton() {
   );
 }
 
+// 把回复文本里的引用标记 [N] 渲染成小上标角标（主流 RAG 产品的来源引用样式）
+function renderWithRefs(text) {
+  const parts = text.split(/(\[\d+\])/g);
+  return parts.map((part, i) => {
+    const m = part.match(/^\[(\d+)\]$/);
+    if (m) {
+      return (
+        <sup key={i} className="ml-0.5 text-[10px] font-medium text-ink-faint">
+          {m[1]}
+        </sup>
+      );
+    }
+    return part;
+  });
+}
+
 function TextBlock({ block }) {
   if (block.status === 'loading') return <TextSkeleton />;
   if (block.status === 'streaming') {
@@ -110,7 +126,7 @@ function TextBlock({ block }) {
       </div>
     );
   }
-  return <div className={textBubble}>{block.content}</div>;
+  return <div className={textBubble}>{renderWithRefs(block.content)}</div>;
 }
 
 /* ---------- 图片 ---------- */
