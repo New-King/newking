@@ -2,7 +2,7 @@
 title: 个人网站搭建的早期探索
 date: 2025-08-27
 description: 从零搭建个人站：技术选型、设计取舍与踩坑记录。
-image: https://picsum.photos/seed/personal-site/800/450
+url: https://www.new-king.com/blog/p6-personal-site
 ---
 
 ## 技术选型

@@ -77,13 +77,13 @@ def _build_prompt(query, history, context):
 
 
 def _cited_media_blocks(context, full_text):
-    """根据模型实际引用的编号，收集媒体块。
+    """根据模型实际引用的编号，收集媒体块（相关文章链接）。
 
     full_text：模型生成的完整回复，含 [N] 标记。
-    用正则找出所有被引用的编号，只对这些块输出 image / links / video。
+    用正则找出所有被引用的编号，只对被引用的块输出媒体。
     字段约定（frontmatter）：
-        image  图片 URL（图片块）
-        links  链接列表（链接块）
+        url    文章在网站的唯一跳转链接（作为"相关文章"链接块）
+        links  正文里附带的额外参考链接（链接块）
         video  视频 URL（视频块）
     """
     cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
@@ -93,10 +93,12 @@ def _cited_media_blocks(context, full_text):
         if (i + 1) not in cited:
             continue
         md = item.get("metadata") or {}
-        image = md.get("image")
-        if image and image not in seen_media:
-            seen_media.add(image)
-            blocks.append({"type": "image", "src": image, "caption": md.get("title")})
+        # 文章跳转链接 = 相关文章（点击可打开该文）
+        url = md.get("url")
+        if url and url not in seen_media:
+            seen_media.add(url)
+            blocks.append({"type": "link", "url": url, "title": f"相关文章：{md.get('title') or '原文'}"})
+        # 正文附带的额外参考链接
         for link in md.get("links") or []:
             if link not in seen_media:
                 seen_media.add(link)

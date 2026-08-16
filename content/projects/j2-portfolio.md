@@ -3,6 +3,7 @@ title: Portfolio 生成器
 date: 2026-05-02
 description: 用 JSON 配置快速生成个人作品集站点。
 cover: square
+url: https://www.new-king.com/projects/j2-portfolio
 ---
 
 ## 概览

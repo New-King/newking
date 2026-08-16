@@ -2,7 +2,7 @@
 title: 终端美学：从 Vim 到 Warp
 date: 2025-12-15
 description: 工具的外形与效率，聊聊终端的一次进化。
-image: https://picsum.photos/seed/terminal/800/450
+url: https://www.new-king.com/notes/n6-terminal-aesthetics
 ---
 
 ## 效率与美并不冲突

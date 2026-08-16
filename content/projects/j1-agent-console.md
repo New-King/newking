@@ -3,6 +3,7 @@ title: Agent Console — 对话式运维助手
 date: 2026-06-15
 description: 对话式 AI 运维终端，聚合日志、指标与操作指令。
 cover: ring
+url: https://www.new-king.com/projects/j1-agent-console
 ---
 
 ## 概览

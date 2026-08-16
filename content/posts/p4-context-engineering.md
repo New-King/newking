@@ -2,7 +2,7 @@
 title: 关于 LLM 上下文工程的一些思考
 date: 2026-07-12
 description: 上下文窗口的分配、压缩与检索，如何让模型用得更省。
-image: https://picsum.photos/seed/context-eng/800/450
+url: https://www.new-king.com/blog/p4-context-engineering
 ---
 
 ## 上下文是一种稀缺资源

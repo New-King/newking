@@ -2,7 +2,7 @@
 title: 每周速览 #12
 date: 2026-06-28
 description: 本周关注的文章、工具与一些碎片想法。
-image: https://picsum.photos/seed/weekly-12/800/450
+url: https://www.new-king.com/notes/n5-weekly-12
 ---
 
 ## 关注
