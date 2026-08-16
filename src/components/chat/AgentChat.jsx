@@ -43,9 +43,22 @@ function runSlide(el, fromTop) {
   el.addEventListener('transitionend', onTransitionEnd);
 }
 
+const STORAGE_KEY = 'newking_chat_messages';
+
+// 从 localStorage 恢复历史对话（用户清缓存才丢失）
+function loadMessages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* localStorage 不可用时静默失败 */
+  }
+  return [];
+}
+
 export default function AgentChat() {
-  const [started, setStarted] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(loadMessages);
+  const [started, setStarted] = useState(() => loadMessages().length > 0);
   const [pending, setPending] = useState(0);
   const [paused, setPaused] = useState(false);
   const [input, setInput] = useState('');
@@ -234,6 +247,30 @@ export default function AgentChat() {
       mountedRef.current = false;
     };
   }, []);
+
+  /* 对话持久化：messages 变化时存 localStorage，刷新后恢复。
+     只存已完成的消息（不含进行中的 loading/streaming 块，避免恢复出半截内容）。 */
+  useEffect(() => {
+    const clean = messages
+      .map((m) => {
+        if (m.role === 'user') return m;
+        return {
+          ...m,
+          blocks: (m.blocks || []).filter(
+            (b) => !['loading', 'running', 'streaming'].includes(b.status)
+          ),
+        };
+      })
+      .filter((m) => {
+        if (m.role === 'user') return true;
+        return m.blocks && m.blocks.length > 0;
+      });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+    } catch {
+      /* 隐私模式等不可写时静默失败 */
+    }
+  }, [messages]);
 
   /* 首页为全屏固定布局（页面本身不可滚动，聊天区内部滚动）。
      挂载时给 body 标记 chat-page：禁用浏览器橡皮筋弹性滚动，
