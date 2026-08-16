@@ -1,0 +1,60 @@
+"""内容 API 模块：把 content/*.md 解析成结构化 JSON，供前端页面展示。
+
+作用：前端博客/笔记/项目页面，以及导航栏"最新内容"，都从这里拿数据。
+不再用前端写死的 mockData，内容变更后实时反映。
+
+返回结构（按类型分组）：
+{
+  "posts":    [...],   # 博客列表
+  "notes":    [...],   # 笔记列表
+  "projects": [...],   # 项目列表
+  "about":    {...},   # 关于
+  "contact":  {...},   # 联系方式
+  "resume":   {...}    # 个人简介
+}
+每个列表项：{ id, title, date, description, cover, video, links }
+"""
+from .config import CONTENT_DIR
+from .indexer import parse_md, json_safe
+
+# 目录名 → 内容类型
+_TYPE_BY_DIR = {"posts": "posts", "notes": "notes", "projects": "projects"}
+
+
+def _load_all():
+    """读一遍 content/ 下所有 md，返回按类型分组的字典。"""
+    result = {"posts": [], "notes": [], "projects": [], "about": None, "contact": None, "resume": None}
+
+    for path in sorted(CONTENT_DIR.rglob("*.md")):
+        rel = path.relative_to(CONTENT_DIR)
+        text = path.read_text(encoding="utf-8")
+        meta, body = parse_md(text)
+
+        if len(rel.parts) == 1:
+            # 顶层文件（about.md / contact.md / resume.md）：单独存
+            name = rel.stem
+            if name in result:
+                result[name] = json_safe({**meta, "id": name, "content": body})
+            continue
+
+        # 子目录文件（posts/ notes/ projects/）：进对应列表
+        dirname = rel.parts[0]
+        type_name = _TYPE_BY_DIR.get(dirname)
+        if not type_name:
+            continue
+        result[type_name].append(
+            json_safe(
+                {
+                    "id": rel.stem,
+                    **meta,
+                    "content": body,
+                }
+            )
+        )
+
+    return result
+
+
+def get_content():
+    """返回全部内容（按类型分组）。供 GET /api/content 使用。"""
+    return _load_all()

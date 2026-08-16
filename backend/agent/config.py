@@ -46,5 +46,12 @@ SILICONFLOW_BASE_URL = _get(
     "SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"
 )  # SiliconFlow 的接口地址（OpenAI 兼容格式）
 EMBEDDING_MODEL = _get("EMBEDDING_MODEL", "BAAI/bge-m3")  # 向量模型名（默认 bge-m3）
+
+DEEPSEEK_API_KEY = _get("DEEPSEEK_API_KEY")  # DeepSeek 的 API 密钥（对话生成用）
+DEEPSEEK_BASE_URL = _get(
+    "DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
+)  # DeepSeek 的接口地址（OpenAI 兼容格式）
+DEEPSEEK_MODEL = _get("DEEPSEEK_MODEL", "deepseek-chat")  # DeepSeek 对话模型名
+
 DATABASE_URL = _get("DATABASE_URL")  # Postgres 连接串（形如 postgresql://用户:密码@地址:端口/库名）
 CONTENT_DIR = (BACKEND_DIR / _get("CONTENT_DIR", "../content")).resolve()  # 内容目录（content/）
