@@ -76,38 +76,53 @@ def _build_prompt(query, history, context):
     return messages
 
 
-def _cited_media_blocks(context, full_text):
-    """根据模型实际引用的编号，收集媒体块（相关文章链接）。
+def _cited_inline_links(context, full_text):
+    """收集"被引用块的正文内嵌链接"，作为底部链接块。
+
+    职责区分：
+    - 相关文章（frontmatter url）→ 由工具卡片展开显示，不进底部。
+    - 正文内嵌链接 → 只有回答引用了带链接的块时，底部才输出。
+      来源：正文 markdown 里的 [text](url)，以及 frontmatter 的 links 字段。
 
     full_text：模型生成的完整回复，含 [N] 标记。
-    用正则找出所有被引用的编号，只对被引用的块输出媒体。
-    字段约定（frontmatter）：
-        url    文章在网站的唯一跳转链接（作为"相关文章"链接块）
-        links  正文里附带的额外参考链接（链接块）
-        video  视频 URL（视频块）
+    返回：链接块列表（去重）。
     """
     cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
     blocks = []
-    seen_media = set()  # 去重：同一个媒体被多个块引用时只发一次
+    seen = set()
+
     for i, item in enumerate(context):
         if (i + 1) not in cited:
             continue
         md = item.get("metadata") or {}
-        # 文章跳转链接 = 相关文章（点击可打开该文）
-        url = md.get("url")
-        if url and url not in seen_media:
-            seen_media.add(url)
-            blocks.append({"type": "link", "url": url, "title": f"相关文章：{md.get('title') or '原文'}"})
-        # 正文附带的额外参考链接
+        # frontmatter links 字段（正文附带的参考链接）
         for link in md.get("links") or []:
-            if link not in seen_media:
-                seen_media.add(link)
+            if link not in seen:
+                seen.add(link)
                 blocks.append({"type": "link", "url": link, "title": "相关链接"})
-        video = md.get("video")
-        if video and video not in seen_media:
-            seen_media.add(video)
-            blocks.append({"type": "video", "title": "演示视频", "url": video})
+        # 正文 markdown 里的 [text](url)（排除 ![图](url) 图片）
+        for text, url in re.findall(r"(?<!!)\[([^\]]+)\]\((https?://[^)\s]+)\)", item["content"]):
+            if url not in seen:
+                seen.add(url)
+                blocks.append({"type": "link", "url": url, "title": text[:40] or "相关链接"})
     return blocks
+
+
+def _related_articles(context):
+    """收集检索到的相关文章列表（供工具卡片展开显示）。
+
+    返回：按 url 去重后的 [{url, title}] 列表。
+    """
+    seen = set()
+    items = []
+    for c in context:
+        md = c.get("metadata") or {}
+        url = md.get("url")
+        title = md.get("title") or "未命名文章"
+        if url and url not in seen:
+            seen.add(url)
+            items.append({"url": url, "title": title})
+    return items
 
 
 def _stream_generator(query, history):
@@ -121,7 +136,8 @@ def _stream_generator(query, history):
             "type": "tool",
             "name": "知识库检索",
             "status": "done",
-            "result": f"命中 {len(context)} 条相关内容",
+            "result": f"命中 {len(context)} 条相关文章",
+            "related": _related_articles(context),
         }
     )
 
@@ -142,8 +158,8 @@ def _stream_generator(query, history):
             yield _sse({"type": "text", "delta": delta})
     yield _sse({"type": "text_done"})
 
-    # 引用才输出的媒体块（cover 不是图片 URL，不输出 image）
-    for block in _cited_media_blocks(context, full_text):
+    # 底部：只输出被引用块的正文内嵌链接（正文 markdown 里的链接 / frontmatter links）
+    for block in _cited_inline_links(context, full_text):
         yield _sse(block)
 
     yield _sse({"type": "done"})

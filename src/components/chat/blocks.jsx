@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconCheck, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
+import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
 import CodeBlock from './CodeBlock';
 
 /* ---------- 链接：点击跳转的卡片 ---------- */
@@ -51,35 +51,70 @@ function ThinkingBlock({ block }) {
   );
 }
 
-/* ---------- 工具调用：单行扁卡片（保持全站白卡片风格） ---------- */
+/* ---------- 工具调用：单行扁卡片（可展开显示相关文章） ---------- */
 
 function ToolCallCard({ block }) {
+  const [open, setOpen] = useState(false);
   const running = block.status === 'running';
   const pausedState = block.status === 'paused';
+  const related = block.related || [];
+  const expandable = !running && !pausedState && related.length > 0;
   return (
-    <div className="flex w-full animate-fade-in-up items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
-      <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-          running || pausedState ? 'bg-neutral-100 dark:bg-white/10' : 'bg-green-100 dark:bg-green-500/20'
-        }`}
-      >
-        {running ? (
-          <IconSpinner className="h-3 w-3 text-ink-faint" />
-        ) : pausedState ? (
-          <IconPause className="h-3 w-3 text-ink-faint" />
-        ) : (
-          <IconCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
+    <div className="w-full animate-fade-in-up">
+      <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
+        <span
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
+            running || pausedState ? 'bg-neutral-100 dark:bg-white/10' : 'bg-green-100 dark:bg-green-500/20'
+          }`}
+        >
+          {running ? (
+            <IconSpinner className="h-3 w-3 text-ink-faint" />
+          ) : pausedState ? (
+            <IconPause className="h-3 w-3 text-ink-faint" />
+          ) : (
+            <IconCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
+          )}
+        </span>
+        <p className="min-w-0 flex-1 truncate text-xs leading-5 text-ink-faint">
+          {running ? (
+            <>正在调用「{block.name}」…</>
+          ) : pausedState ? (
+            <>已暂停「{block.name}」</>
+          ) : (
+            <>已调用「{block.name}」· {block.result}</>
+          )}
+        </p>
+        {/* 展开箭头：仅在有相关文章且已完成后显示 */}
+        {expandable && (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? '收起相关文章' : '展开相关文章'}
+            aria-expanded={open}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
+          >
+            <IconArrowDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </button>
         )}
-      </span>
-      <p className="min-w-0 flex-1 truncate text-xs leading-5 text-ink-faint">
-        {running ? (
-          <>正在调用「{block.name}」…</>
-        ) : pausedState ? (
-          <>已暂停「{block.name}」</>
-        ) : (
-          <>已调用「{block.name}」· {block.result}</>
-        )}
-      </p>
+      </div>
+      {/* 展开的相关文章列表 */}
+      {expandable && open && (
+        <div className="mt-1 space-y-0.5 rounded-2xl border border-black/[0.06] bg-card px-3 py-2 dark:border-white/10">
+          {related.map((r) => (
+            <a
+              key={r.url}
+              href={r.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-xs text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconGlobe className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+              <span className="min-w-0 flex-1 truncate">{r.title}</span>
+              <span className="text-ink-faint">↗</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

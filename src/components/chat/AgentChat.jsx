@@ -522,7 +522,7 @@ export default function AgentChat() {
             addBlock({ id, type: 'tool', status: 'running', name: evt.name });
           } else {
             const id = toolIds.shift();
-            if (id != null) updateBlock(id, { status: 'done', result: evt.result });
+            if (id != null) updateBlock(id, { status: 'done', result: evt.result, related: evt.related });
           }
           break;
         case 'text':
