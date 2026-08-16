@@ -6,8 +6,9 @@ import { useContent } from '../hooks/useContent';
 import PageShell from './PageShell';
 
 // 详情页：按类型 + id 从全站内容里找对应文章，渲染标题/日期/正文（markdown）。
-// 标题映射（eyebrow 用）
-const EYEBROW = { blog: 'Blog', notes: 'Notes', projects: 'Projects' };
+// 标题映射（eyebrow 用）+ 返回路由映射（type 是后端目录名 posts/notes/projects）
+const EYEBROW = { posts: 'Blog', notes: 'Notes', projects: 'Projects' };
+const LIST_ROUTE = { posts: '/blog', notes: '/notes', projects: '/projects' };
 
 export default function ContentDetail({ type }) {
   const { id } = useParams();
@@ -30,7 +31,7 @@ export default function ContentDetail({ type }) {
       ) : !item ? (
         <div className="py-8">
           <p className="text-sm text-ink-faint">未找到该文章。</p>
-          <Link to={`/${type}`} className="mt-3 inline-block text-sm text-ink underline">
+          <Link to={LIST_ROUTE[type]} className="mt-3 inline-block text-sm text-ink underline">
             返回列表
           </Link>
         </div>
@@ -50,7 +51,7 @@ export default function ContentDetail({ type }) {
             dangerouslySetInnerHTML={{ __html: html }}
           />
           <div className="mt-16">
-            <Link to={`/${type}`} className="text-sm text-ink-soft underline underline-offset-4 hover:text-ink">
+            <Link to={LIST_ROUTE[type]} className="text-sm text-ink-soft underline underline-offset-4 hover:text-ink">
               ← 返回列表
             </Link>
           </div>
