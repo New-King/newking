@@ -23,7 +23,9 @@ from .db import get_conn
 from .indexer import make_embeddings
 
 # 相关性阈值（余弦距离，越小越相关）
-RELEVANCE_THRESHOLD = 0.58
+# 0.55：相关查询（博客/笔记/项目）最近距离 0.36~0.51；编程等无关查询 0.51~0.56。
+# 收紧到 0.55 能让大多数与知识库无关的问题（写代码/算法/闲聊）走纯聊天。
+RELEVANCE_THRESHOLD = 0.55
 # 召回数量（先取这些再过滤）
 RECALL_TOP_K = 10
 # 最终最多返回的块数
