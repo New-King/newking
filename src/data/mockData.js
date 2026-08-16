@@ -150,12 +150,6 @@ export const notes = [
   },
 ];
 
-// 示例联系方式
-export const contact = {
-  phone: '138-0000-0000',
-  email: 'hello@example.com',
-};
-
 // ---- 日期分组 ----
 
 // 短日期：2026-08-01 → 08/01（页面列表用）
