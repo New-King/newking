@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { IconCheck, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
-import Typewriter from './Typewriter';
 import CodeBlock from './CodeBlock';
 
 /* ---------- 链接：点击跳转的卡片 ---------- */
@@ -100,13 +99,14 @@ function TextSkeleton() {
   );
 }
 
-function TextBlock({ block, paused, onDone }) {
+function TextBlock({ block }) {
   if (block.status === 'loading') return <TextSkeleton />;
   if (block.status === 'streaming') {
+    // 真流式：后端增量追加到 content，这里直接渲染 + 闪烁光标（不再重新打字）
     return (
       <div className={`${textBubble} animate-fade-in-up`}>
-        {/* 必须把 block.id 传给 onDone，驱动才能按 id 找到完成回调继续往下走 */}
-        <Typewriter text={block.content} onDone={() => onDone(block.id)} active={!paused} />
+        {block.content}
+        <span className="animate-blink text-ink-faint">▍</span>
       </div>
     );
   }
@@ -221,7 +221,7 @@ export default function BlockRenderer({ block, paused, onDone }) {
     case 'tool':
       return <ToolCallCard block={block} />;
     case 'text':
-      return <TextBlock block={block} paused={paused} onDone={onDone} />;
+      return <TextBlock block={block} />;
     case 'image':
       return <ImageBlock block={block} />;
     case 'link':

@@ -486,6 +486,7 @@ export default function AgentChat() {
     const msgId = nextId();
     const thinkingId = nextId();
     const toolIds = []; // 工具卡片的 id 列表（running 记下，done 按序更新）
+    let textBlockId = null; // 流式文字的块 id（首个 delta 创建，后续追加内容）
     pendingRef.current += 1;
     setPending(pendingRef.current);
 
@@ -525,27 +526,34 @@ export default function AgentChat() {
           }
           break;
         case 'text':
-          addBlock({ id: nextId(), type: 'text', status: 'streaming', content: evt.delta });
+          // 流式文字：首个 delta 创建块，后续追加内容（同一个块不断变长 → 真流式）
+          if (textBlockId == null) {
+            textBlockId = nextId();
+            addBlock({ id: textBlockId, type: 'text', status: 'streaming', content: evt.delta });
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === msgId
+                  ? {
+                      ...m,
+                      blocks: m.blocks.map((b) =>
+                        b.id === textBlockId
+                          ? { ...b, content: (b.content || '') + evt.delta }
+                          : b
+                      ),
+                    }
+                  : m
+              )
+            );
+          }
           break;
-        case 'text_done': {
-          // 把多次 text 事件合并成一段完整文字
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== msgId) return m;
-              const texts = m.blocks.filter((b) => b.type === 'text' && b.status === 'streaming');
-              if (!texts.length) return m;
-              const content = texts.map((b) => b.content).join('');
-              return {
-                ...m,
-                blocks: [
-                  ...m.blocks.filter((b) => !(b.type === 'text' && b.status === 'streaming')),
-                  { id: nextId(), type: 'text', status: 'done', content },
-                ],
-              };
-            })
-          );
+        case 'text_done':
+          // 流式结束：把 text 块标记为完成（不再更新）
+          if (textBlockId != null) {
+            updateBlock(textBlockId, { status: 'done' });
+            textBlockId = null;
+          }
           break;
-        }
         case 'image':
           addBlock({ id: nextId(), type: 'image', status: 'done', src: evt.src, caption: evt.caption });
           break;
