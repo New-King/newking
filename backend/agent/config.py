@@ -55,3 +55,7 @@ DEEPSEEK_MODEL = _get("DEEPSEEK_MODEL", "deepseek-chat")  # DeepSeek 对话模�
 
 DATABASE_URL = _get("DATABASE_URL")  # Postgres 连接串（形如 postgresql://用户:密码@地址:端口/库名）
 CONTENT_DIR = (BACKEND_DIR / _get("CONTENT_DIR", "../content")).resolve()  # 内容目录（content/）
+
+# LangSmith：全链路追踪（agent 每一步操作的日志，见 langsmith.com）
+LANGSMITH_API_KEY = _get("LANGSMITH_API_KEY")  # LangSmith API key（不填则不追踪）
+LANGSMITH_PROJECT = _get("LANGSMITH_PROJECT", "newking-agent")  # 追踪项目名

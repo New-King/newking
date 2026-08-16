@@ -6,9 +6,18 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from . import config
 from .content import get_content
 from .indexer import index_all
 from .chat import chat_stream
+
+# 启用 LangSmith 全链路追踪（有 LANGSMITH_API_KEY 才启用；LangChain 自动读取这些环境变量）
+if config.LANGSMITH_API_KEY:
+    import os
+
+    os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
+    os.environ.setdefault("LANGSMITH_API_KEY", config.LANGSMITH_API_KEY)
+    os.environ.setdefault("LANGSMITH_PROJECT", config.LANGSMITH_PROJECT)
 
 app = FastAPI(title="newking-agent")
 
