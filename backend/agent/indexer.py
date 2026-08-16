@@ -18,29 +18,46 @@ import json      # 元数据转成 JSON 字符串存库
 import re        # 正则，用来识别 markdown 标题行
 from pathlib import Path
 
+import httpx     # 直接调 SiliconFlow embedding API
 import yaml      # 解析 markdown 头部的 frontmatter（YAML 格式）
-from langchain_openai import OpenAIEmbeddings  # LangChain 提供的 OpenAI 兼容向量化工具
 
 from .config import CONTENT_DIR, EMBEDDING_MODEL, SILICONFLOW_API_KEY, SILICONFLOW_BASE_URL
 from .db import get_conn, init_db
 
 
-def make_embeddings():
-    """创建"向量化工具"（embeddings 对象）。
+class SiliconFlowEmbeddings:
+    """直接调用 SiliconFlow embedding API 的向量化工具。
 
-    OpenAIEmbeddings 是 LangChain 提供的通用类，它按 OpenAI 的接口格式工作。
-    我们通过 base_url 指向 SiliconFlow（它也提供 OpenAI 兼容接口），
-    再指定模型 bge-m3，就能用 SiliconFlow 来向量化了。
+    为什么不用 langchain_openai 的 OpenAIEmbeddings：
+    它对 bge-large-zh-v1.5 会传不兼容参数导致 400（向量坍缩的坑之一），
+    用原始 HTTP 请求最可控、行为与文档一致。
 
-    返回的对象有两个常用方法：
-    - embed_query("一句话")    → 给单个问题算向量
-    - embed_documents([...])   → 给一批文字批量算向量
+    接口对齐 LangChain：embed_query(单条) / embed_documents(批量)。
     """
-    return OpenAIEmbeddings(
-        model=EMBEDDING_MODEL,                        # 模型名：BAAI/bge-m3
-        api_key=SILICONFLOW_API_KEY,                  # SiliconFlow 的密钥
-        base_url=SILICONFLOW_BASE_URL,                # SiliconFlow 的接口地址
-    )
+
+    def __init__(self, model=None):
+        self.model = model or EMBEDDING_MODEL
+
+    def _embed(self, texts):
+        resp = httpx.post(
+            f"{SILICONFLOW_BASE_URL}/embeddings",
+            headers={"Authorization": f"Bearer {SILICONFLOW_API_KEY}"},
+            json={"model": self.model, "input": texts},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return [d["embedding"] for d in resp.json()["data"]]
+
+    def embed_query(self, text):
+        return self._embed([text])[0]
+
+    def embed_documents(self, texts):
+        return self._embed(texts)
+
+
+def make_embeddings():
+    """创建向量化工具。用自实现的 SiliconFlowEmbeddings（原始 HTTP 调用）。"""
+    return SiliconFlowEmbeddings()
 
 
 def parse_md(text):

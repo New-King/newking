@@ -45,7 +45,7 @@ SILICONFLOW_API_KEY = _get("SILICONFLOW_API_KEY")  # SiliconFlow 的 API 密钥�
 SILICONFLOW_BASE_URL = _get(
     "SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1"
 )  # SiliconFlow 的接口地址（OpenAI 兼容格式）
-EMBEDDING_MODEL = _get("EMBEDDING_MODEL", "BAAI/bge-m3")  # 向量模型名（默认 bge-m3）
+EMBEDDING_MODEL = _get("EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5")  # 向量模型名（中文检索专用）
 
 DEEPSEEK_API_KEY = _get("DEEPSEEK_API_KEY")  # DeepSeek 的 API 密钥（对话生成用）
 DEEPSEEK_BASE_URL = _get(
