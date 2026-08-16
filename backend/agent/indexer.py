@@ -159,17 +159,22 @@ def json_safe(value):
 
 
 def iter_docs():
-    """遍历 content/ 目录下所有 .md 文件。
+    """遍历知识库内容：只索引 posts/ notes/ projects/ 三个子目录。
 
-    rglob("*.md")：递归查找所有子目录里的 .md 文件（不限于顶层）。
-    relative_to(CONTENT_DIR)：把绝对路径转成相对路径，作为文档唯一标识。
+    根目录的 about.md / contact.md / resume.md 是"人格信息"，
+    只注入系统提示词（见 site_context.py），不进向量知识库，
+    避免被检索匹配错（如"你是谁"检索到 contact 而非 resume）。
 
     产出 (doc_id, path)：
     - doc_id：相对路径字符串，如 "posts/p1-agent-workflow.md"
     - path：文件的完整路径对象（能直接读文件内容）
     """
-    for path in sorted(CONTENT_DIR.rglob("*.md")):  # 排序保证顺序稳定
-        yield path.relative_to(CONTENT_DIR).as_posix(), path  # yield 让本函数变成"生成器"，逐个产出
+    for sub in ("posts", "notes", "projects"):  # 只有这三个子目录进知识库
+        base = CONTENT_DIR / sub
+        if not base.exists():
+            continue
+        for path in sorted(base.rglob("*.md")):
+            yield path.relative_to(CONTENT_DIR).as_posix(), path
 
 
 def index_all():
