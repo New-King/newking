@@ -2,6 +2,7 @@
 title: 2026 年中技术盘点
 date: 2026-06-30
 description: 半年技术观察：Agent、推理模型与工程工具的进展。
+image: https://picsum.photos/seed/mid-review/800/450
 ---
 
 ## Agent 工程化

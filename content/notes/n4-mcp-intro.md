@@ -2,6 +2,7 @@
 title: MCP 协议初探
 date: 2026-07-10
 description: MCP 是什么、能做什么，一篇入门向的梳理。
+image: https://picsum.photos/seed/mcp-intro/800/450
 ---
 
 ## MCP 是什么

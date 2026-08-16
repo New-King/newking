@@ -2,6 +2,7 @@
 title: 读《设计中的设计》
 date: 2026-07-10
 description: 原研哉的减法美学，和网站设计有不少共通之处。
+image: https://picsum.photos/seed/design-of-design/800/450
 ---
 
 ## 减法即加法

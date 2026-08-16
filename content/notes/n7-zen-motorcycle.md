@@ -2,6 +2,7 @@
 title: 读《禅与摩托车维修艺术》
 date: 2025-10-08
 description: 关于「良质」的一些摘录与胡思乱想。
+image: https://picsum.photos/seed/zen/800/450
 ---
 
 ## 关于良质
