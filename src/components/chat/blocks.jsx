@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
 import CodeBlock from './CodeBlock';
 
-/* ---------- 链接：点击跳转的卡片 ---------- */
+/* ---------- 链接：小条样式（多条横排，放不下换行） ---------- */
 
 function LinkCard({ block }) {
   return (
@@ -11,17 +11,11 @@ function LinkCard({ block }) {
       href={block.url}
       target="_blank"
       rel="noreferrer"
-      className="group flex w-full animate-fade-in-up items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-apple transition-colors hover:bg-card-hover"
+      className="inline-flex max-w-full animate-fade-in-up items-center gap-1.5 rounded-full border border-black/[0.08] bg-card px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-accent/40 hover:text-ink dark:border-white/10"
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-        <IconLink className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm text-ink group-hover:underline">
-          {block.title || block.url}
-        </span>
-        <span className="block truncate text-xs text-ink-faint">{block.url}</span>
-      </span>
+      <IconLink className="h-3 w-3 shrink-0 text-ink-faint" />
+      <span className="truncate">{block.title || block.url}</span>
+      <span className="shrink-0 text-ink-faint">↗</span>
     </a>
   );
 }

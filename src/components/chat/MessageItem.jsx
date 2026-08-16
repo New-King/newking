@@ -32,11 +32,39 @@ export default function MessageItem({ message, onBlockDone }) {
       ?.filter((b) => b.type === 'tool')
       .flatMap((b) => b.related || []) || [];
 
+  // 连续的 link 块聚合成一个横排容器（小条横排，放不下换行）
+  const renderBlocks = () => {
+    const out = [];
+    let linkGroup = [];
+    const flushLinks = () => {
+      if (linkGroup.length) {
+        out.push(
+          <div key={`links-${linkGroup[0].id}`} className="flex flex-wrap gap-2">
+            {linkGroup.map((b) => (
+              <BlockRenderer key={b.id} block={b} />
+            ))}
+          </div>
+        );
+        linkGroup = [];
+      }
+    };
+    message.blocks.forEach((b) => {
+      if (b.type === 'link') {
+        linkGroup.push(b);
+      } else {
+        flushLinks();
+        out.push(
+          <BlockRenderer key={b.id} block={b} paused={message.paused} onDone={onBlockDone} related={related} />
+        );
+      }
+    });
+    flushLinks();
+    return out;
+  };
+
   return (
     <div className="flex flex-col gap-3">
-      {message.blocks.map((b) => (
-        <BlockRenderer key={b.id} block={b} paused={message.paused} onDone={onBlockDone} related={related} />
-      ))}
+      {renderBlocks()}
       {message.blocks.length === 0 && <WaitingDots />}
     </div>
   );
