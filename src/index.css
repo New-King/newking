@@ -286,3 +286,25 @@ html {
   border-radius: 12px;
   margin: 0.5rem 0;
 }
+
+/* 对话文本里的引用链接（[N]）样式：小号上标式链接 */
+.article-body .ref-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0 0.15em;
+  border-radius: 9999px;
+  background: rgba(127, 127, 127, 0.15);
+  color: var(--ink-soft);
+  font-size: 0.72em;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.article-body .ref-link:hover {
+  background: var(--accent);
+  color: #fff;
+}

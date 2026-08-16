@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { marked } from 'marked';
 import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
 import CodeBlock from './CodeBlock';
 
@@ -134,44 +135,24 @@ function TextSkeleton() {
   );
 }
 
-// 引用标签：把 [N] 渲染成可交互的上标链接。
-// hover 弹出小预览（标题 + 链接），点击新窗口跳转到对应文章。
-// 用纯 CSS group-hover 控制浮窗显隐（不依赖 JS 状态，稳定可靠）。
-function ReferenceTag({ index, related }) {
-  const item = related && related[index];
-  return (
-    <span className="group relative inline-block">
-      <a
-        href={item?.url || '#'}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={item ? `查看引用来源：${item.title}` : `引用 ${index + 1}`}
-        className="mx-0.5 inline-flex h-4 w-4 -translate-y-1 items-center justify-center rounded-full bg-accent/15 align-top text-[10px] font-medium text-accent transition-colors group-hover:bg-accent group-hover:text-white"
-      >
-        {index + 1}
-      </a>
-      {/* hover 预览浮窗（纯 CSS 显隐） */}
-      {item && (
-        <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-64 -translate-x-1/2 rounded-xl border border-black/[0.08] bg-card p-3 text-left opacity-0 shadow-apple-lg transition-opacity duration-150 group-hover:block group-hover:opacity-100 dark:border-white/10">
-          <span className="block text-[13px] font-medium text-ink">{item.title}</span>
-          <span className="mt-1 block truncate text-[11px] text-ink-faint">{item.url}</span>
-          <span className="mt-1.5 block text-[11px] text-ink-faint">点击在新窗口打开 ↗</span>
-        </span>
-      )}
-    </span>
-  );
-}
+// 引用标签的 CSS 由 index.css 里的 .ref-link 定义（hover 浮窗用 title 属性显示）
 
-// 把回复文本里的引用标记 [N] 渲染成可交互引用标签
-function renderWithRefs(text, related) {
-  const parts = text.split(/(\[\d+\])/g);
-  return parts.map((part, i) => {
-    const m = part.match(/^\[(\d+)\]$/);
-    if (m) {
-      return <ReferenceTag key={i} index={parseInt(m[1], 10) - 1} related={related} />;
-    }
-    return part;
+// 渲染对话文本：markdown（**加粗**、`代码`、[链接]）用 marked 解析，
+// 引用标记 [N] 替换成可点击的文章链接（href 指向该文，title 显示标题预览）。
+function renderMarkdownWithRefs(text, related) {
+  // 先解析 markdown（支持加粗/斜体/代码/链接/列表等）
+  let html = marked.parse(text);
+  // 把 [N] 替换成引用链接。用函数式替换，N 对应 related 里的文章
+  html = html.replace(/\[(\d+)\]/g, (m, num) => {
+    const idx = parseInt(num, 10) - 1;
+    const item = related && related[idx];
+    if (!item) return m;
+    return (
+      `<a class="ref-link" href="${item.url}" target="_blank" rel="noreferrer" ` +
+      `title="点击打开：${item.title}">${num}</a>`
+    );
   });
+  return html;
 }
 
 function TextBlock({ block, related }) {
@@ -185,7 +166,13 @@ function TextBlock({ block, related }) {
       </div>
     );
   }
-  return <div className={textBubble}>{renderWithRefs(block.content, related)}</div>;
+  // 完成态：markdown 渲染 + 引用链接
+  return (
+    <div
+      className={`${textBubble} article-body`}
+      dangerouslySetInnerHTML={{ __html: renderMarkdownWithRefs(block.content, related) }}
+    />
+  );
 }
 
 /* ---------- 图片 ---------- */
