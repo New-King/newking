@@ -7,7 +7,8 @@ image: https://picsum.photos/seed/react-vite/800/450
 
 ## 为什么选 Vite
 
-Vite 的冷启动速度和 HMR 体验明显优于传统打包器，开发期的反馈循环更短。
+更详细的对比可以参考 [Vite 官方文档](https://vite.dev/guide/why.html)，里面解释了冷启动优化的原理。
+
 
 ## 工程化的取舍
 

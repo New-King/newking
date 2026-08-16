@@ -11,4 +11,5 @@ image: https://picsum.photos/seed/prompt-eng/800/450
 
 ## 让指令可执行
 
-把约束写清楚：明确输出格式、限定信息来源、给定示例。结构化指令能让模型稳定复现预期行为。
+如果对结构化 prompt 感兴趣，[OpenAI 的 prompt engineering 指南](https://platform.openai.com/docs/guides/prompt-engineering) 值得一读。
+

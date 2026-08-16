@@ -13,7 +13,10 @@ image: https://picsum.photos/seed/agent-workflow/800/450
 
 ## 组成单元
 
-一个工作流通常由四类单元构成：
+比如上面的工作流里，思考单元和工具单元就是最常见的搭配。
+
+![工作流组成示意](https://picsum.photos/seed/agent-workflow-diagram/640/360)
+
 
 - 思考单元：决定下一步做什么
 - 工具单元：执行具体的操作

@@ -17,4 +17,7 @@ image: https://picsum.photos/seed/context-eng/800/450
 
 ## 压缩与检索
 
-检索决定"放什么进上下文"，压缩决定"旧内容如何退场"。两者配合，才能让模型始终聚焦在当前任务上。
+关于上下文压缩的更多讨论，可以看 [Anthropic 的 long context 最佳实践](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)。
+
+![上下文窗口分配示意](https://picsum.photos/seed/context-window/640/360)
+
