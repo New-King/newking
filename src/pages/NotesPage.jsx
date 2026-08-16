@@ -1,14 +1,20 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
-import { formatDate, groupByYear, notes } from '../data/mockData';
+import { formatDate, groupByYear } from '../data/mockData';
+import { useContent } from '../hooks/useContent';
 
 export default function NotesPage() {
+  const { data, loading } = useContent();
+  const notes = data?.notes ?? [];
   // 按年份分组（同博客页）：最新年份平铺，往年显示大字号右对齐年份标题
   const groups = groupByYear(notes);
 
   return (
     <PageShell eyebrow="Notes">
-      {groups.map((g, i) => (
+      {loading ? (
+        <p className="py-8 text-sm text-ink-faint">加载中…</p>
+      ) : (
+        groups.map((g, i) => (
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
           {/* 仅往年显示年份标题（changelog 惯例，同博客页） */}
           {i > 0 && (
@@ -41,7 +47,8 @@ export default function NotesPage() {
             ))}
           </div>
         </section>
-      ))}
+        ))
+      )}
     </PageShell>
   );
 }

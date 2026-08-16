@@ -1,12 +1,4 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  DEMO_AUDIO,
-  DEMO_CODE,
-  DEMO_IMAGE,
-  DEMO_TEXT,
-  DEMO_TOOLS,
-  DEMO_VIDEO,
-} from '../../data/mockData';
 import { IconArrowDown, IconBubble, IconPause, IconSend } from '../icons';
 import MessageItem from './MessageItem';
 import TurnRail from './TurnRail';
@@ -234,6 +226,7 @@ export default function AgentChat() {
   const pauseWakeRef = useRef(null);
   const pendingSlideRef = useRef(null);
   const doneResolversRef = useRef({});
+  const activeControllerRef = useRef(null); // 当前 SSE 请求的 AbortController（暂停时中止流）
 
   useEffect(() => {
     mountedRef.current = true;
@@ -430,12 +423,10 @@ export default function AgentChat() {
 
   const onBlockDone = (blockId) => doneResolversRef.current[blockId]?.();
 
-  /* 暂停当前回复：打断等待、移除未完成的骨架、工具卡片标记为已暂停、流式文字冻结 */
+  /* 停止当前回复：中止 SSE 流，清理未完成块（真流式下无法续跑，停止=中止） */
   const handlePause = () => {
     if (pending <= 0) return;
-    pausedRef.current = true;
-    setPaused(true);
-    pauseWakeRef.current?.();
+    activeControllerRef.current?.abort();
     setMessages((prev) =>
       prev.map((m) => {
         // 用户消息没有 blocks 字段，需做空保护
@@ -446,10 +437,9 @@ export default function AgentChat() {
         if (!inProgress) return m;
         return {
           ...m,
-          paused: true,
           blocks: blocks
             .filter((b) => b.status !== 'loading')
-            .map((b) => (b.status === 'running' ? { ...b, status: 'paused' } : b)),
+            .map((b) => (b.status === 'running' ? { ...b, status: 'done' } : b)),
         };
       })
     );
@@ -489,16 +479,21 @@ export default function AgentChat() {
     sendText(input.trim());
   };
 
-  /* ---- mock 回复调度：一条回复依次演示 思考 / 工具调用 / 流式文字 / 图片 / 代码 / 音频 / 视频 ---- */
+  /* ---- 真实对话：SSE 流式，接收后端事件并更新消息块 ----
+     事件类型（后端 chat.py 定义）：
+       thinking / tool / text(delta) / text_done / image / link / video / done   */
   const startReply = (userText) => {
     const msgId = nextId();
+    const thinkingId = nextId();
+    const toolIds = []; // 工具卡片的 id 列表（running 记下，done 按序更新）
     pendingRef.current += 1;
     setPending(pendingRef.current);
 
-    setMessages((prev) => [...prev, { id: msgId, role: 'assistant', blocks: [] }]);
-
-    const update = (patch) =>
-      setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, ...patch } : m)));
+    // 预置一个 thinking 块（收到后端事件前先显示"正在思考"）
+    setMessages((prev) => [
+      ...prev,
+      { id: msgId, role: 'assistant', blocks: [{ id: thinkingId, type: 'thinking', status: 'running' }] },
+    ]);
 
     const updateBlock = (blockId, patch) =>
       setMessages((prev) =>
@@ -509,98 +504,118 @@ export default function AgentChat() {
         )
       );
 
-    const addBlock = (block) => {
+    const addBlock = (block) =>
       setMessages((prev) =>
         prev.map((m) => (m.id === msgId ? { ...m, blocks: [...m.blocks, block] } : m))
       );
-      return block;
+
+    const handleEvent = (evt) => {
+      switch (evt.type) {
+        case 'thinking':
+          updateBlock(thinkingId, { status: evt.status === 'done' ? 'done' : 'running' });
+          break;
+        case 'tool':
+          if (evt.status === 'running') {
+            const id = nextId();
+            toolIds.push(id);
+            addBlock({ id, type: 'tool', status: 'running', name: evt.name });
+          } else {
+            const id = toolIds.shift();
+            if (id != null) updateBlock(id, { status: 'done', result: evt.result });
+          }
+          break;
+        case 'text':
+          addBlock({ id: nextId(), type: 'text', status: 'streaming', content: evt.delta });
+          break;
+        case 'text_done': {
+          // 把多次 text 事件合并成一段完整文字
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id !== msgId) return m;
+              const texts = m.blocks.filter((b) => b.type === 'text' && b.status === 'streaming');
+              if (!texts.length) return m;
+              const content = texts.map((b) => b.content).join('');
+              return {
+                ...m,
+                blocks: [
+                  ...m.blocks.filter((b) => !(b.type === 'text' && b.status === 'streaming')),
+                  { id: nextId(), type: 'text', status: 'done', content },
+                ],
+              };
+            })
+          );
+          break;
+        }
+        case 'image':
+          addBlock({ id: nextId(), type: 'image', status: 'done', src: evt.src, caption: evt.caption });
+          break;
+        case 'link':
+          addBlock({ id: nextId(), type: 'link', status: 'done', url: evt.url, title: evt.title });
+          break;
+        case 'video':
+          addBlock({ id: nextId(), type: 'video', status: 'done', title: evt.title, duration: evt.duration });
+          break;
+        case 'done':
+          updateBlock(thinkingId, { status: 'done' });
+          break;
+        default:
+          break;
+      }
     };
 
-    // 可被暂停打断的等待：点击暂停时立即唤醒，由调用方检查 pausedRef 决定是否继续
-    const sleepPauseable = (ms) =>
-      new Promise((resolve) => {
-        const wake = () => {
-          if (pauseWakeRef.current === wake) pauseWakeRef.current = null;
-          clearTimeout(timer);
-          resolve();
-        };
-        const timer = setTimeout(wake, ms);
-        pauseWakeRef.current = wake;
+    // 把历史对话整理成 [{role, content}] 传给后端，保持上下文连续
+    const history = turns
+      .flatMap((turn) => {
+        const userMsg = turn[0];
+        const assistant = turn.find((m) => m.role === 'assistant');
+        const text = assistant?.blocks?.find((b) => b.type === 'text')?.content ?? '';
+        return [
+          { role: 'user', content: userMsg.text },
+          ...(text ? [{ role: 'assistant', content: text }] : []),
+        ];
       });
+
+    const controller = new AbortController();
+    activeControllerRef.current = controller;
 
     (async () => {
       try {
-        // 1. 思考过程（仅加载指示，2 秒后淡出，开始正式回复）
-        const thinking = addBlock({ id: nextId(), type: 'thinking', status: 'loading' });
-        await sleepPauseable(2000);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(thinking.id, { status: 'done' });
-
-        // 2. 工具调用
-        for (const tool of DEMO_TOOLS) {
-          const t = addBlock({ id: nextId(), type: 'tool', status: 'running', name: tool.name });
-          await sleepPauseable(tool.duration);
-          if (!mountedRef.current || pausedRef.current) return;
-          updateBlock(t.id, { status: 'done', result: tool.result });
+        const res = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: userText, history }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) throw new Error(`对话接口失败: ${res.status}`);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          // SSE 事件：data: <json>，空行分隔
+          let sep;
+          while ((sep = buf.indexOf('\n\n')) !== -1) {
+            const raw = buf.slice(0, sep);
+            buf = buf.slice(sep + 2);
+            if (!raw.startsWith('data:')) continue;
+            let evt;
+            try {
+              evt = JSON.parse(raw.slice(5).trim());
+            } catch {
+              continue;
+            }
+            if (!mountedRef.current) return;
+            handleEvent(evt);
+          }
         }
-
-        // 3. 流式文字
-        const text = addBlock({ id: nextId(), type: 'text', status: 'loading', content: DEMO_TEXT });
-        await sleepPauseable(320);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(text.id, { status: 'streaming' });
-        await new Promise((resolve) => {
-          doneResolversRef.current[text.id] = resolve;
-          pauseWakeRef.current = resolve;
-        });
-        if (!mountedRef.current || pausedRef.current) return;
-        delete doneResolversRef.current[text.id];
-        updateBlock(text.id, { status: 'done' });
-
-        // 4. 图片
-        const image = addBlock({ id: nextId(), type: 'image', status: 'loading' });
-        await sleepPauseable(950);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(image.id, { status: 'done', src: DEMO_IMAGE.src, caption: DEMO_IMAGE.caption });
-
-        // 5. 代码块
-        const code = addBlock({
-          id: nextId(),
-          type: 'code',
-          status: 'loading',
-          language: 'javascript',
-          code: DEMO_CODE,
-        });
-        await sleepPauseable(820);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(code.id, { status: 'done' });
-
-        // 6. 音频
-        const audio = addBlock({
-          id: nextId(),
-          type: 'audio',
-          status: 'loading',
-          title: DEMO_AUDIO.title,
-          duration: DEMO_AUDIO.duration,
-        });
-        await sleepPauseable(620);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(audio.id, { status: 'done' });
-
-        // 7. 视频
-        const video = addBlock({
-          id: nextId(),
-          type: 'video',
-          status: 'loading',
-          title: DEMO_VIDEO.title,
-          duration: DEMO_VIDEO.duration,
-        });
-        await sleepPauseable(620);
-        if (!mountedRef.current || pausedRef.current) return;
-        updateBlock(video.id, { status: 'done' });
-
-        update({ status: 'done' });
+      } catch (err) {
+        if (err.name !== 'AbortError' && mountedRef.current) {
+          addBlock({ id: nextId(), type: 'text', status: 'done', content: '抱歉，回复出错了，请稍后再试。' });
+        }
       } finally {
+        if (mountedRef.current) updateBlock(thinkingId, { status: 'done' });
         pendingRef.current = Math.max(0, pendingRef.current - 1);
         setPending(pendingRef.current);
       }

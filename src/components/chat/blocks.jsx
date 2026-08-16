@@ -1,7 +1,30 @@
 import { useEffect, useState } from 'react';
-import { IconCheck, IconPause, IconPlay, IconSpinner } from '../icons';
+import { IconCheck, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
 import Typewriter from './Typewriter';
 import CodeBlock from './CodeBlock';
+
+/* ---------- 链接：点击跳转的卡片 ---------- */
+
+function LinkCard({ block }) {
+  return (
+    <a
+      href={block.url}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex w-full animate-fade-in-up items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-apple transition-colors hover:bg-card-hover"
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+        <IconLink className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm text-ink group-hover:underline">
+          {block.title || block.url}
+        </span>
+        <span className="block truncate text-xs text-ink-faint">{block.url}</span>
+      </span>
+    </a>
+  );
+}
 
 /* ---------- 思考过程：仅保留「正在思考」加载态（颜色深浅脉动），不展示思考内容 ---------- */
 
@@ -201,6 +224,8 @@ export default function BlockRenderer({ block, paused, onDone }) {
       return <TextBlock block={block} paused={paused} onDone={onDone} />;
     case 'image':
       return <ImageBlock block={block} />;
+    case 'link':
+      return <LinkCard block={block} />;
     case 'code':
       return <CodeBlock block={block} />;
     case 'audio':

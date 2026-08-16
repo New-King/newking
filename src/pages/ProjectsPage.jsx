@@ -1,7 +1,16 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PageShell from '../components/PageShell';
 import DemoPreview from '../components/projects/DemoPreview';
-import { formatDate, projects } from '../data/mockData';
+import { formatDate } from '../data/mockData';
+import { useContent } from '../hooks/useContent';
+
+// 项目预览动画是前端专属效果（示意动画），后端只给数据。
+// 这里按项目 id 映射内置的 preview 场景；后端数据无该字段，动画逻辑不受影响。
+const PREVIEW_BY_ID = {
+  j6: { scene: 'canvas' },
+  j1: { scene: 'terminal', lines: ['正在连接集群…', '正在拉取指标…', '正在执行指令…', '任务完成 ✓'] },
+  j2: { scene: 'form', input: 'portfolio.json', result: '已生成 12 个页面 ✓' },
+};
 
 // 封面几何图形（中性色，随主题色）—— 每个项目一种
 const COVER_SHAPES = {
@@ -102,13 +111,32 @@ function ArrowZone({ direction, onClick, label }) {
 }
 
 export default function ProjectsPage() {
+  const { data, loading } = useContent();
+  const projects = data?.projects ?? [];
   const [index, setIndex] = useState(0);
+
+  // 数据到达后索引一定有效；数据变化时把当前索引兜底到有效范围
+  useEffect(() => {
+    if (projects.length > 0 && index >= projects.length) setIndex(0);
+  }, [projects.length, index]);
+
   const touchX = useRef(null);
   const total = projects.length;
   const p = projects[index];
 
   const next = () => setIndex((i) => (i + 1) % total);
   const prev = () => setIndex((i) => (i - 1 + total) % total);
+
+  if (loading) {
+    return (
+      <PageShell eyebrow="Projects">
+        <p className="py-8 text-sm text-ink-faint">加载中…</p>
+      </PageShell>
+    );
+  }
+
+  // 把后端数据补上前端动画配置 preview（按 id 映射，无配置给默认 list）
+  const item = { ...p, preview: PREVIEW_BY_ID[p.id] || { scene: 'list' } };
 
   return (
     <PageShell eyebrow="Projects">
@@ -133,27 +161,27 @@ export default function ProjectsPage() {
 
         {/* 主展示卡片（key 强制重挂载 → 预览从头播放） */}
         <div
-          key={p.id}
+          key={item.id}
           className="animate-[fade-in-up_0.4s_ease_both] relative rounded-lg border border-black/[0.06] bg-card dark:border-white/10"
         >
           <div className="flex items-center gap-5 p-5">
-            <CoverThumb shape={p.cover} active />
+            <CoverThumb shape={item.cover} active />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="truncate text-[17px] font-medium leading-snug text-ink">
-                  {p.title}
+                  {item.title}
                 </p>
                 <p className="shrink-0 text-xs tabular-nums text-ink-faint">
-                  {formatDate(p.date)}
+                  {formatDate(item.date)}
                 </p>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
-                {p.description}
+                {item.description}
               </p>
             </div>
           </div>
           {/* 预览动画：常驻自动播放 */}
-          <DemoPreview p={p} active />
+          <DemoPreview p={item} active />
           {/* 左右箭头：铺满视口边缘到卡片，离卡片越远箭头越大（独立组件局部状态） */}
           <ArrowZone direction="left" onClick={prev} label="上一个项目" />
           <ArrowZone direction="right" onClick={next} label="下一个项目" />

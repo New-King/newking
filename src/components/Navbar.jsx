@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { contact, formatDateShort, latestGroups, notes, posts, projects, SITE_QUOTE } from '../data/mockData';
+import { formatDateShort, latestGroups, SITE_QUOTE } from '../data/mockData';
+import { useContent } from '../hooks/useContent';
 import { IconMail, IconMenu, IconPhone, IconX } from './icons';
 
 const IDLE_MS = 5000; // 鼠标闲置多久后隐藏导航
 
+// 联系方式的兜底（内容 API 拉取前先用空壳；有数据后替换）
 const NAV = [
   { label: '首页', to: '/', quote: true, width: 'w-80' },
-  { label: '博客', to: '/blog', groups: () => latestGroups(posts), width: 'w-72' },
-  { label: '项目', to: '/projects', groups: () => latestGroups(projects), width: 'w-72' },
-  { label: '笔记', to: '/notes', groups: () => latestGroups(notes), width: 'w-72' },
+  { label: '博客', to: '/blog', type: 'posts', width: 'w-72' },
+  { label: '项目', to: '/projects', type: 'projects', width: 'w-72' },
+  { label: '笔记', to: '/notes', type: 'notes', width: 'w-72' },
   { label: '联系', to: '/contact', contact: true, width: 'w-64' },
 ];
 
@@ -44,24 +46,31 @@ function ListPanel({ groups }) {
   );
 }
 
-function ContactPanel() {
+function ContactPanel({ contact }) {
   return (
     <div className="space-y-0.5 p-1">
       <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-ink-faint">联系方式</p>
-      <a
-        href={`mailto:${contact.email}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
-      >
-        <IconMail className="h-4 w-4 shrink-0 text-ink-faint" />
-        {contact.email}
-      </a>
-      <a
-        href={`tel:${contact.phone}`}
-        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
-      >
-        <IconPhone className="h-4 w-4 shrink-0 text-ink-faint" />
-        {contact.phone}
-      </a>
+      {contact?.email && (
+        <a
+          href={`mailto:${contact.email}`}
+          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
+        >
+          <IconMail className="h-4 w-4 shrink-0 text-ink-faint" />
+          {contact.email}
+        </a>
+      )}
+      {contact?.phone && (
+        <a
+          href={`tel:${contact.phone}`}
+          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
+        >
+          <IconPhone className="h-4 w-4 shrink-0 text-ink-faint" />
+          {contact.phone}
+        </a>
+      )}
+      {!contact?.email && !contact?.phone && (
+        <p className="px-2.5 py-2 text-[13px] text-ink-faint">暂无联系方式</p>
+      )}
     </div>
   );
 }
@@ -73,6 +82,13 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const idleTimerRef = useRef(null);
   const autoHideRef = useRef(false);
+  const { data } = useContent();
+
+  // 按导航项类型从内容数据里取该类型的列表（供 hover 下拉展示最新几条）
+  const itemGroups = (item) => {
+    const list = item.type ? (data?.[item.type] ?? []) : [];
+    return latestGroups(list);
+  };
 
   // 触屏/移动端（无悬停指针）不启用自动隐藏，导航常显，避免隐藏后无法唤出
   const [canAutoHide, setCanAutoHide] = useState(
@@ -191,9 +207,9 @@ export default function Navbar() {
                       {item.quote ? (
                         <QuotePanel />
                       ) : item.contact ? (
-                        <ContactPanel />
+                        <ContactPanel contact={data?.contact} />
                       ) : (
-                        <ListPanel groups={item.groups()} />
+                        <ListPanel groups={itemGroups(item)} />
                       )}
                     </div>
                   </div>

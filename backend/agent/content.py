@@ -34,7 +34,15 @@ def _load_all():
             # 顶层文件（about.md / contact.md / resume.md）：单独存
             name = rel.stem
             if name in result:
-                result[name] = json_safe({**meta, "id": name, "content": body})
+                item = json_safe({**meta, "id": name, "content": body})
+                if name == "contact":
+                    # 从正文里提取 email / phone（供导航"联系方式"下拉使用）
+                    import re as _re
+                    email = _re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", body)
+                    phone = _re.search(r"1[3-9][\d-]{8,11}", body)
+                    item["email"] = email.group(0) if email else None
+                    item["phone"] = phone.group(0) if phone else None
+                result[name] = item
             continue
 
         # 子目录文件（posts/ notes/ projects/）：进对应列表
@@ -42,15 +50,17 @@ def _load_all():
         type_name = _TYPE_BY_DIR.get(dirname)
         if not type_name:
             continue
-        result[type_name].append(
-            json_safe(
-                {
-                    "id": rel.stem,
-                    **meta,
-                    "content": body,
-                }
-            )
-        )
+        item = {
+            "id": rel.stem,
+            **meta,
+            "content": body,
+            # 前端兼容字段：
+            #   description 和 excerpt 同义（页面有的用 description、有的用 excerpt）
+            "excerpt": meta.get("description"),
+            # to：列表项的跳转路由（目前列表页自身；未来详情页再细化）
+            "to": f"/{type_name}",
+        }
+        result[type_name].append(json_safe(item))
 
     return result
 

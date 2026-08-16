@@ -1,14 +1,20 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../components/PageShell';
-import { formatDate, groupByYear, posts } from '../data/mockData';
+import { formatDate, groupByYear } from '../data/mockData';
+import { useContent } from '../hooks/useContent';
 
 export default function BlogPage() {
+  const { data, loading } = useContent();
+  const posts = data?.posts ?? [];
   // 按年份分组，年份降序、组内日期降序
   const groups = groupByYear(posts);
 
   return (
     <PageShell eyebrow="Blog">
-      {groups.map((g, i) => (
+      {loading ? (
+        <p className="py-8 text-sm text-ink-faint">加载中…</p>
+      ) : (
+        groups.map((g, i) => (
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
           {/* 仅往年显示年份标题；最新年份平铺，年份不言自明（changelog 惯例） */}
           {i > 0 && (
@@ -43,7 +49,8 @@ export default function BlogPage() {
             ))}
           </ul>
         </section>
-      ))}
+        ))
+      )}
     </PageShell>
   );
 }
