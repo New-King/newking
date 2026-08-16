@@ -22,22 +22,31 @@ import json
 import re
 
 from fastapi.responses import StreamingResponse
-from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from langchain_openai import ChatOpenAI
 
 from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 from .retrieval import search
+from .site_context import build_site_context
 
-# 系统提示：定义"数字分身"的人设和回答规则
-SYSTEM_PROMPT = """你是这个网站的主人（即"本人"）的数字分身，负责代表网站主人回答访客的问题。
+# 上下文窗口：保留最近多少轮对话（避免历史无限膨胀）
+MAX_HISTORY_TURNS = 8
 
-回答规则：
-1. 只依据提供的"参考资料"回答，不要编造；资料里没有的就如实说不知道。
-2. 回答要口语化、自然，像一个真实的人在对话，不要用"作为AI模型"这类口吻。
-3. 提到博客/笔记/项目时，自然地给出标题和要点。
-4. 参考资料每条都有编号 [1][2]...。回答里用到哪条资料的内容，就在对应句子的末尾标注它的编号。
-   例如：我写过一篇关于 RAG 落地的博客[2]。没用到就不标。
-5. 除非引用，不要在回复里主动罗列链接、视频或资源列表。"""
+# 系统提示：定义"数字分身"的人设 + 回答规则 + 网站背景（动态注入）
+def _build_system_prompt():
+    site = build_site_context()
+    return f"""你是「New-King」个人网站的对话助手，是这个网站主人（即"本人"）的数字分身，负责代表网站主人回答访客的问题。
+
+{site}
+
+【回答规则】
+1. 回答只依据两处信息来源：① 上面描述的网站背景；② 检索到的"参考资料"（带编号 [1][2]...）。
+   不要编造资料里没有的信息；不知道的就如实说"这个我还真没整理过/不太清楚"。
+2. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
+3. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
+4. 参考资料每条有编号。回答里用到哪条的内容，就在对应句尾标注编号，如：我写过一篇关于 RAG 落地的博客[2]。
+   注意：编号表示"这一句依据了该资料"，不是装饰。
+5. 除非引用，不要在回复里主动罗列链接列表。
+6. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。"""
 
 
 def _sse(data: dict) -> str:
@@ -49,30 +58,29 @@ def _build_prompt(query, history, context):
     """用 LangChain 组装发给模型的 prompt。
 
     context：检索到的块列表，每条编号 [N]，供模型引用。
+    history：历史对话，只保留最近 MAX_HISTORY_TURNS 轮（滑动窗口，防上下文膨胀）。
     """
-    system = SystemMessagePromptTemplate.from_template(SYSTEM_PROMPT)
-    ref = "\n\n".join(f"[{i+1}] {c['content']}" for i, c in enumerate(context))
-    human = HumanMessagePromptTemplate.from_template(
-        "参考资料：\n{ref}\n\n---\n\n访客的问题：{query}\n请根据参考资料回答。"
-    )
-    chat_prompt = ChatPromptTemplate.from_messages([system, human])
+    system_text = _build_system_prompt()
+    # 检索到相关内容才注入参考资料；否则纯聊天（避免空参考资料干扰）
+    if context:
+        ref = "\n\n".join(f"[{i+1}] {c['content']}" for i, c in enumerate(context))
+        human_text = f"参考资料：\n{ref}\n\n---\n\n访客的问题：{query}\n请根据参考资料回答。"
+    else:
+        human_text = query
 
-    messages = []
-    for m in history or []:
-        if m.get("role") == "user":
-            messages.append({"role": "user", "content": m.get("content", "")})
-        elif m.get("role") == "assistant":
-            messages.append({"role": "assistant", "content": m.get("content", "")})
+    # 系统提示放最前
+    messages = [{"role": "system", "content": system_text}]
 
-    formatted = chat_prompt.format_messages(ref=ref, query=query)
-    messages.extend(
-        [
-            {"role": "system", "content": m.content}
-            if m.type == "system"
-            else {"role": "user", "content": m.content}
-            for m in formatted
-        ]
-    )
+    # 历史对话：滑动窗口，只保留最近 N 轮
+    history = history or []
+    if len(history) > MAX_HISTORY_TURNS * 2:
+        history = history[-MAX_HISTORY_TURNS * 2 :]
+    for m in history:
+        if m.get("role") in ("user", "assistant"):
+            messages.append({"role": m["role"], "content": m.get("content", "")})
+
+    # 当前问题（带检索资料）放最后
+    messages.append({"role": "user", "content": human_text})
     return messages
 
 
@@ -125,21 +133,47 @@ def _related_articles(context):
     return items
 
 
+def _cited_inline_images(context, full_text):
+    """收集被引用块的正文内嵌图片（markdown ![alt](url)），作为图片块。
+
+    职责：只有回答实际引用了带图的块时，才输出图片。
+    """
+    cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
+    blocks = []
+    seen = set()
+    for i, item in enumerate(context):
+        if (i + 1) not in cited:
+            continue
+        for alt, url in re.findall(r"!\[([^\]]*)\]\((https?://[^)\s]+)\)", item["content"]):
+            if url not in seen:
+                seen.add(url)
+                blocks.append({"type": "image", "src": url, "caption": alt or (item.get("metadata") or {}).get("title")})
+    return blocks
+
+
 def _stream_generator(query, history):
-    """SSE 事件生成器：按顺序产出 思考/工具/文字/媒体/结束 事件。"""
+    """SSE 事件生成器。
+
+    查询路由：
+      检索有相关内容（经过相关性阈值过滤）→ 触发"知识库检索"工具 + 注入参考 + 生成。
+      检索不到相关内容（闲聊/乱码/与知识库无关）→ 纯聊天，不触发工具、不注入参考。
+    """
     yield _sse({"type": "thinking", "status": "running"})
 
-    yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
     context = search(query, top_k=5)
-    yield _sse(
-        {
-            "type": "tool",
-            "name": "知识库检索",
-            "status": "done",
-            "result": f"命中 {len(context)} 条相关文章",
-            "related": _related_articles(context),
-        }
-    )
+
+    # 只有检索到相关内容，才展示工具卡片并注入参考资料
+    if context:
+        yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
+        yield _sse(
+            {
+                "type": "tool",
+                "name": "知识库检索",
+                "status": "done",
+                "result": f"命中 {len(context)} 条相关文章",
+                "related": _related_articles(context),
+            }
+        )
 
     # DeepSeek 流式生成（用 LangChain ChatOpenAI 走 OpenAI 兼容接口）
     llm = ChatOpenAI(
@@ -158,9 +192,12 @@ def _stream_generator(query, history):
             yield _sse({"type": "text", "delta": delta})
     yield _sse({"type": "text_done"})
 
-    # 底部：只输出被引用块的正文内嵌链接（正文 markdown 里的链接 / frontmatter links）
-    for block in _cited_inline_links(context, full_text):
-        yield _sse(block)
+    # 底部：被引用块的图片 + 正文内嵌链接
+    if context:
+        for block in _cited_inline_images(context, full_text):
+            yield _sse(block)
+        for block in _cited_inline_links(context, full_text):
+            yield _sse(block)
 
     yield _sse({"type": "done"})
 
