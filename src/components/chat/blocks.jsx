@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { marked } from 'marked';
-import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner } from '../icons';
+import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner, IconX } from '../icons';
 import CodeBlock from './CodeBlock';
 
 /* ---------- 链接：小条样式（多条横排，放不下换行） ---------- */
@@ -52,6 +52,7 @@ function ToolCallCard({ block }) {
   const [open, setOpen] = useState(false);
   const running = block.status === 'running';
   const pausedState = block.status === 'paused';
+  const failed = !running && !pausedState && block.ok === false; // 工具调用失败
   const related = block.related || [];
   const expandable = !running && !pausedState && related.length > 0;
   return (
@@ -59,22 +60,34 @@ function ToolCallCard({ block }) {
       <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
         <span
           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
-            running || pausedState ? 'bg-neutral-100 dark:bg-white/10' : 'bg-green-100 dark:bg-green-500/20'
+            running || pausedState
+              ? 'bg-neutral-100 dark:bg-white/10'
+              : failed
+                ? 'bg-red-100/70 dark:bg-red-500/20'
+                : 'bg-green-100 dark:bg-green-500/20'
           }`}
         >
           {running ? (
             <IconSpinner className="h-3 w-3 text-ink-faint" />
           ) : pausedState ? (
             <IconPause className="h-3 w-3 text-ink-faint" />
+          ) : failed ? (
+            <IconX className="h-3 w-3 text-red-500 dark:text-red-400" />
           ) : (
             <IconCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
           )}
         </span>
-        <p className="min-w-0 flex-1 truncate text-xs leading-5 text-ink-faint">
+        <p
+          className={`min-w-0 flex-1 truncate text-xs leading-5 ${
+            failed ? 'text-red-600 dark:text-red-400' : 'text-ink-faint'
+          }`}
+        >
           {running ? (
             <>正在调用「{block.name}」…</>
           ) : pausedState ? (
             <>已暂停「{block.name}」</>
+          ) : failed ? (
+            <>已调用「{block.name}」· {block.result}</>
           ) : (
             <>已调用「{block.name}」· {block.result}</>
           )}
@@ -268,27 +281,12 @@ function VideoCard({ block }) {
   );
 }
 
-/* ---------- 错误提示：某环节出错时的一行小提示（不中断对话） ---------- */
-
-function ErrorBlock({ block }) {
-  return (
-    <div className="w-full animate-fade-in-up">
-      <p className="flex items-center gap-2 rounded-xl border border-black/[0.06] bg-card px-3.5 py-2 text-xs leading-5 text-ink-faint dark:border-white/10">
-        <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-faint" />
-        {block.message}
-      </p>
-    </div>
-  );
-}
-
 /* ---------- 统一出口 ---------- */
 
 export default function BlockRenderer({ block, paused, onDone, related }) {
   switch (block.type) {
     case 'thinking':
       return <ThinkingBlock block={block} />;
-    case 'error':
-      return <ErrorBlock block={block} />;
     case 'tool':
       return <ToolCallCard block={block} />;
     case 'text':

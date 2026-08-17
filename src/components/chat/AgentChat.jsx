@@ -572,7 +572,8 @@ export default function AgentChat() {
             addBlock({ id, type: 'tool', status: 'running', name: evt.name });
           } else {
             const id = toolIds.shift();
-            if (id != null) updateBlock(id, { status: 'done', result: evt.result, related: evt.related });
+            if (id != null)
+              updateBlock(id, { status: 'done', ok: evt.ok !== false, result: evt.result, related: evt.related });
           }
           break;
         case 'text':
@@ -612,10 +613,6 @@ export default function AgentChat() {
           break;
         case 'video':
           addBlock({ id: nextId(), type: 'video', status: 'done', title: evt.title, duration: evt.duration });
-          break;
-        case 'error':
-          // 某环节出错：显示一行错误提示，对话继续（不空白）
-          addBlock({ id: nextId(), type: 'error', message: evt.message });
           break;
         case 'done':
           updateBlock(thinkingId, { status: 'done' });

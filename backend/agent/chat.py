@@ -199,17 +199,19 @@ def _stream_generator(query, history):
             context = search(tool_query, top_k=5)
             result_msg = f"命中 {len(context)} 条相关文章"
             tool_result = _format_tool_result(context)
-        except Exception as e:
-            # 数据库/隧道不可用：发 error 事件（用户可见），降级为纯聊天，不崩
+            tool_ok = True
+        except Exception:
+            # 数据库/隧道不可用：工具标记失败（ok:false，前端显示 ×），降级为纯聊天，不崩
             context = []
             result_msg = "知识库暂时无法访问"
             tool_result = "知识库暂时无法访问（可能是服务连接问题），请告知访客稍后再试，本次无需调用知识库。"
-            yield _sse({"type": "error", "message": "知识库暂时无法访问，本次回复可能不够准确。"})
+            tool_ok = False
         yield _sse(
             {
                 "type": "tool",
                 "name": "知识库检索",
                 "status": "done",
+                "ok": tool_ok,
                 "result": result_msg,
                 "related": _related_articles(context),
             }
