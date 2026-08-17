@@ -17,6 +17,7 @@ if config.LANGSMITH_API_KEY:
 
     os.environ.setdefault("LANGCHAIN_TRACING_V2", "true")
     os.environ.setdefault("LANGSMITH_API_KEY", config.LANGSMITH_API_KEY)
+    os.environ.setdefault("LANGSMITH_ENDPOINT", config.LANGSMITH_ENDPOINT)
     os.environ.setdefault("LANGSMITH_PROJECT", config.LANGSMITH_PROJECT)
 
 app = FastAPI(title="newking-agent")

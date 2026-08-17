@@ -58,4 +58,5 @@ CONTENT_DIR = (BACKEND_DIR / _get("CONTENT_DIR", "../content")).resolve()  # 内
 
 # LangSmith：全链路追踪（agent 每一步操作的日志，见 langsmith.com）
 LANGSMITH_API_KEY = _get("LANGSMITH_API_KEY")  # LangSmith API key（不填则不追踪）
+LANGSMITH_ENDPOINT = _get("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com")  # 区域端点（eu=欧洲区）
 LANGSMITH_PROJECT = _get("LANGSMITH_PROJECT", "newking-agent")  # 追踪项目名
