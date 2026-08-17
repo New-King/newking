@@ -600,6 +600,10 @@ export default function AgentChat() {
         case 'video':
           addBlock({ id: nextId(), type: 'video', status: 'done', title: evt.title, duration: evt.duration });
           break;
+        case 'error':
+          // 某环节出错：显示一行错误提示，对话继续（不空白）
+          addBlock({ id: nextId(), type: 'error', message: evt.message });
+          break;
         case 'done':
           updateBlock(thinkingId, { status: 'done' });
           break;

@@ -268,12 +268,27 @@ function VideoCard({ block }) {
   );
 }
 
+/* ---------- 错误提示：某环节出错时的一行小提示（不中断对话） ---------- */
+
+function ErrorBlock({ block }) {
+  return (
+    <div className="w-full animate-fade-in-up">
+      <p className="flex items-center gap-2 rounded-xl border border-black/[0.06] bg-card px-3.5 py-2 text-xs leading-5 text-ink-faint dark:border-white/10">
+        <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-faint" />
+        {block.message}
+      </p>
+    </div>
+  );
+}
+
 /* ---------- 统一出口 ---------- */
 
 export default function BlockRenderer({ block, paused, onDone, related }) {
   switch (block.type) {
     case 'thinking':
       return <ThinkingBlock block={block} />;
+    case 'error':
+      return <ErrorBlock block={block} />;
     case 'tool':
       return <ToolCallCard block={block} />;
     case 'text':

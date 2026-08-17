@@ -179,8 +179,15 @@ def _stream_generator(query, history):
 
     messages = _build_messages(query, history)
 
-    # 第一轮：模型决定是否调工具
-    first = llm_with_tools.invoke(messages)
+    try:
+        # 第一轮：模型决定是否调工具
+        first = llm_with_tools.invoke(messages)
+    except Exception as e:
+        # 模型调用失败：发 error 事件，不崩
+        yield _sse({"type": "error", "message": "模型服务暂时不可用，请稍后再试。"})
+        yield _sse({"type": "done"})
+        return
+
     context = []
 
     # 模型请求调用工具
@@ -192,11 +199,12 @@ def _stream_generator(query, history):
             context = search(tool_query, top_k=5)
             result_msg = f"命中 {len(context)} 条相关文章"
             tool_result = _format_tool_result(context)
-        except Exception:
-            # 数据库/隧道不可用：优雅降级，不让 SSE 流崩溃（否则界面空白）
+        except Exception as e:
+            # 数据库/隧道不可用：发 error 事件（用户可见），降级为纯聊天，不崩
             context = []
             result_msg = "知识库暂时无法访问"
             tool_result = "知识库暂时无法访问（可能是服务连接问题），请告知访客稍后再试，本次无需调用知识库。"
+            yield _sse({"type": "error", "message": "知识库暂时无法访问，本次回复可能不够准确。"})
         yield _sse(
             {
                 "type": "tool",
@@ -210,18 +218,21 @@ def _stream_generator(query, history):
         messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
         messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
     else:
-        # 模型没调工具：第一轮结果直接作为回答的一部分（但第一轮没流式，这里重新流式生成）
-        # 为保持流式体验，用普通 llm 流式生成
+        # 模型没调工具：直接进入流式生成
         pass
 
     # 第二轮：流式生成最终回答
     full_text = ""
-    stream = llm.stream(messages)
-    for chunk in stream:
-        delta = chunk.content or ""
-        if delta:
-            full_text += delta
-            yield _sse({"type": "text", "delta": delta})
+    try:
+        stream = llm.stream(messages)
+        for chunk in stream:
+            delta = chunk.content or ""
+            if delta:
+                full_text += delta
+                yield _sse({"type": "text", "delta": delta})
+    except Exception as e:
+        # 生成失败：发 error 事件，不崩（已有部分内容保留，告知中断）
+        yield _sse({"type": "error", "message": "回复生成中断，请重试。"})
     yield _sse({"type": "text_done"})
 
     # 底部：被引用块的图片 + 正文内嵌链接
