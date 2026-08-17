@@ -5,7 +5,9 @@
    - 个人信息（about / resume / contact）—— 回答"你是谁/经历/技能/怎么联系"的基础，
      不依赖检索（短身份问题检索效果差，业界标准是把身份信息做成常驻上下文）。
 2. 内容索引（供检索参考）：
-   - 博客/笔记/项目列表（几篇、分别是什么）—— 让模型知道知识库有什么。
+   - 博客：数量 + 近期 3 篇标题（博客是常被点名的，给近期标题有助模型定位）
+   - 笔记：只数量（笔记少被点名，标题占 token 且价值低）
+   - 项目：数量 + 全部标题（数量少且常被问"做过哪些项目"）
 
 从 content/ 读取真实数据，数据变了提示词自动更新。
 """
@@ -19,6 +21,12 @@ def _clean(text):
     return " ".join(line.strip() for line in text.splitlines() if line.strip())
 
 
+def _latest_titles(items, n=3):
+    """取近期 n 篇的标题（按日期降序）。"""
+    sorted_items = sorted(items, key=lambda i: i.get("date", ""), reverse=True)
+    return "、".join(i.get("title", "") for i in sorted_items[:n]) or "（暂无）"
+
+
 def build_site_context():
     """返回网站背景文本（注入到系统提示词）。"""
     data = get_content()
@@ -29,12 +37,11 @@ def build_site_context():
     resume = data.get("resume") or {}
     contact = data.get("contact") or {}
 
-    def titles(items):
-        return "、".join(i.get("title", "") for i in items) or "（暂无）"
-
     lines = []
+
+    # 网站定位（一句话）
     lines.append("【关于这个网站】")
-    lines.append("这是一个以「对话」为入口的个人网站，你是它的对话助手，代表网站主人回答访客问题。")
+    lines.append("这是一个以「对话」为入口的个人网站，你代表网站主人回答访客的问题。")
 
     # 人格底座：个人信息常驻
     if about.get("content"):
@@ -50,11 +57,11 @@ def build_site_context():
         if parts:
             lines.append(f"\n【联系方式】\n{'；'.join(parts)}")
 
-    # 内容索引：知识库有什么
+    # 内容索引：数量 + 适量标题（不占太多 token）
     lines.append("\n【网站内容（你的知识库）】")
-    lines.append(f"- 博客：共 {len(posts)} 篇，包括：{titles(posts)}")
-    lines.append(f"- 笔记：共 {len(notes)} 篇，包括：{titles(notes)}")
-    lines.append(f"- 项目：共 {len(projects)} 个，包括：{titles(projects)}")
-    lines.append("访客常问：你是谁、你的经历、你写过什么、做过哪些项目、对某技术怎么看等。")
-    lines.append("博客/笔记/项目的具体内容以检索到的资料为准；关于你个人（身份、经历、联系方式）直接以【关于我】为准。")
+    lines.append(f"- 博客：共 {len(posts)} 篇（近期：《{_latest_titles(posts, 3)}》）")
+    lines.append(f"- 笔记：共 {len(notes)} 篇")
+    lines.append(f"- 项目：共 {len(projects)} 个，包括：{'、'.join(i.get('title', '') for i in projects)}")
+    lines.append("访客常问：你是谁、你的经历、写过什么、做过哪些项目、对某技术怎么看等。")
+    lines.append("博客/笔记/项目的具体内容以检索到的资料为准；个人身份与经历直接以【关于我】为准。")
     return "\n".join(lines)
