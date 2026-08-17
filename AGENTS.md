@@ -1,7 +1,10 @@
 # 项目约定（Agent 必读）
 
 ## 技术栈
-- React 18 + Vite 5 + Tailwind CSS 3 + react-router-dom 6（纯前端，无后端，数据全部为本地 mock）。
+- 前端：React 18 + Vite 5 + Tailwind CSS 3 + react-router-dom 6。
+- 后端：Python（FastAPI + LangChain/LangGraph，`backend/agent/`）+ 服务器 Postgres(pgvector)；内容源为 `content/*.md`。
+- AI：DeepSeek（对话，function calling）+ SiliconFlow bge-large-zh-v1.5（embedding）+ LangSmith（全链路追踪）。
+- 详见 `backend/README.md`。
 
 ## UI 风格（硬性要求）
 - 全站必须遵循 **`docs/设计规范.md`** 的「深灰极简 · Apple 质感」设计系统。
@@ -50,3 +53,25 @@
 - **浏览器验证以截图 + 像素分析为准**：`get_visible_dom` / `domSnapshot` 对 opacity 不敏感（隐藏元素也报可见），只能用于确认 DOM 存在，不能判断"是否显示"。
 - **Git 操作需确认（硬性）**：commit / push 一律在用户明确要求后进行；任务完成需要提交时，先汇报结果并询问，不得擅自提交或推送。
 - 复杂功能小步提交（每轮确认后提交），方便回退。
+
+## 对话调试（回答质量差时怎么查）
+对话 Agent 回答质量差时，按下面流程定位，**禁止凭猜乱改**（详见 `backend/README.md` 第 10 节）：
+
+1. **先复现 + 看 LangSmith 轨迹**（最快）：
+   - 用 `curl -N -X POST http://127.0.0.1:8000/api/chat/stream -H "Content-Type: application/json" -d '{"query":"<问题>","history":[]}'` 复现。
+   - 到 LangSmith 后台（newking-agent 项目）看该次对话的完整轨迹：
+     模型是否调了 `search_knowledge`？检索返回了什么？prompt 拼了什么？模型实际输出是什么？
+   - 据此判断问题在哪一环（检索没命中 / prompt 误导 / 模型回答偏差）。
+
+2. **分环节验证**：
+   - 检索准不准：`python -c "from backend.agent.retrieval import search; print(search('<问题>'))"`（看返回块的 score 和 doc_id 是否相关）。
+   - 模型判断对不对：直接 curl 对话接口，看工具是否该触发/没触发。
+
+3. **依赖环境检查**（排查前先确认，避免误判为逻辑 bug）：
+   - SSH 隧道：`nc -z -w 3 127.0.0.1 5432`（连不上数据库 → 卡在"知识库检索"）。
+   - 后端进程：`curl http://127.0.0.1:8000/health`。
+   - 前端 dev server：`lsof -i :5175`。
+
+4. **改后必须验证**：修改检索/prompt 后，跑一遍「场景矩阵」确认没回归：
+   写代码/闲聊/你是谁 → 不触发工具；技术栈/Tailwind/warp/读书/项目 → 触发工具。
+   验证通过才提交。

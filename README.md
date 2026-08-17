@@ -1,40 +1,62 @@
 # New-King
 
-以「对话」为入口的个人网站
+以「对话」为入口的个人网站：首页有一个代表"本人"的数字分身 Agent，回答关于网站主人与网站内容（博客/笔记/项目）的问题。
 
-技术栈：React 18 · Vite · Tailwind CSS · react-router-dom（JavaScript / JSX，纯前端，无后端）。
+## 技术栈
+
+- **前端**：React 18 · Vite · Tailwind CSS · react-router-dom
+- **后端**：Python（FastAPI + LangChain）· 服务器 Postgres(pgvector)
+- **AI**：DeepSeek（对话 + function calling）· SiliconFlow bge-large-zh-v1.5（embedding）· LangSmith（追踪）
+- 内容源：`content/*.md`（git 即唯一内容源，编辑 md 即更新网站与 Agent）
 
 ## 快速开始
 
 ```bash
+# 前端
 npm install
-npm run dev        # 打开 http://localhost:5173
+npm run dev        # 打开 http://localhost:5175
+
+# 后端（另开终端，详见 backend/README.md）
+cd backend && ../.venv/bin/uvicorn agent.app:app --reload --port 8000
 ```
 
-其他命令：`npm run build` / `npm run preview`。
+> 后端需先开 SSH 隧道连服务器数据库（`backend/README.md` 第 7 节）。
 
 ## 目录结构
 
 ```
-src/
-  data/mockData.js         全站本地 mock 数据与日期分组
-  components/
-    Navbar.jsx             顶部居中导航 + hover 下拉面板（日期分组展示）
-    icons.jsx              内联 SVG 图标
-    PageShell.jsx          占位页统一布局
-    chat/
-      AgentChat.jsx        首页 Agent 对话容器（初始态→对话态过渡、mock 回复调度）
-      MessageItem.jsx      极简气泡（AI 居左 / 用户居右）
-      blocks.jsx           内容块：思考 / 工具调用 / 流式文字 / 图片 / 音频 / 视频（含骨架屏）
-      CodeBlock.jsx        代码块（highlight.js 高亮 + 复制按钮）
-      Typewriter.jsx       打字机逐字输出
-  pages/                   首页与四个占位页（博客 / 项目 / 笔记 / 联系）
+newking/
+├── content/             内容源（博客/笔记/项目/about/contact/resume，md + frontmatter）
+├── backend/             后端（Python Agent 服务，详见 backend/README.md）
+├── src/                 前端 React
+│   ├── data/mockData.js 日期分组工具 + 站点文案（内容本身已由后端 API 提供）
+│   ├── api.js           后端 API 封装
+│   ├── hooks/useContent.js  内容数据 hook（页面从 /api/content 拉数据）
+│   ├── components/
+│   │   ├── Navbar.jsx   顶部导航（hover 下拉：最新内容/联系，数据来自 API）
+│   │   ├── ContentDetail.jsx  文章详情页（markdown 渲染）
+│   │   ├── PageShell.jsx      页面统一布局
+│   │   └── chat/        首页对话引擎
+│   │       ├── AgentChat.jsx  对话容器（SSE 流式 + 状态机 + 轮播）
+│   │       ├── MessageItem.jsx 消息气泡 + 相关文章/引用关联
+│   │       ├── blocks.jsx     内容块渲染（思考/工具/文字/图/链接，含 markdown 与引用标签）
+│   │       ├── CodeBlock.jsx / Typewriter.jsx / TurnRail.jsx / BgGrid.jsx
+│   └── pages/           首页 + 博客/项目/笔记/联系页
+├── docs/                设计规范 / 部署指南
+└── AGENTS.md            项目约定（Agent 协作规则，含对话调试流程）
 ```
 
 ## 说明
 
-- 所有数据均为本地 mock，无任何后端、API 或存储。
-- 首页输入任意内容后回车 / 点击发送，即会播放一条演示回复，依次展示：
-  思考过程（可折叠）、工具调用（进行中 → 完成）、流式文字（打字机）、
-  图片、代码块（高亮 + 复制）、音频与视频占位。
-- 导航悬停下拉：同一天的多条内容按日期分组，日期只显示一次。
+- 首页对话 = Agent 数字分身：模型通过 **function calling 自主决定**是否检索知识库，
+  检索结果流式返回（思考 → 工具卡片 → 文字 → 媒体块 → 引用）。
+- 博客/项目/笔记页 + 导航悬停下拉，数据都来自后端 `/api/content`（由 `content/*.md` 生成）。
+- 编辑 `content/` 下任意 md → push 后自动上线 + 进 Agent 知识库（详见 `docs/部署指南.md`）。
+- 后端架构、检索策略、调试见 `backend/README.md`。
+
+## 常用命令
+
+```bash
+npm run dev / npm run build / npm run preview   # 前端
+uvicorn agent.app:app --reload --port 8000       # 后端
+```
