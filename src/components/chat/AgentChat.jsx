@@ -45,11 +45,24 @@ function runSlide(el, fromTop) {
 
 const STORAGE_KEY = 'newking_chat_messages';
 
-// 从 localStorage 恢复历史对话（用户清缓存才丢失）
+// 从 localStorage 恢复历史对话（用户清缓存才丢失）。
+// 关键：恢复后把 uid 推到已恢复消息的最大 id 之上，避免新消息 id 与旧消息冲突
+//（否则 React key 重复导致渲染异常/空白）。
 function loadMessages() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const list = JSON.parse(raw);
+      let maxId = 0;
+      for (const m of list) {
+        if (typeof m.id === 'number' && m.id > maxId) maxId = m.id;
+        for (const b of m.blocks || []) {
+          if (typeof b.id === 'number' && b.id > maxId) maxId = b.id;
+        }
+      }
+      if (maxId > uid) uid = maxId;
+      return list;
+    }
   } catch {
     /* localStorage 不可用时静默失败 */
   }
