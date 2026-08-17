@@ -188,19 +188,27 @@ def _stream_generator(query, history):
         yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
         tool_call = first.tool_calls[0]
         tool_query = (tool_call.get("args") or {}).get("query", query)
-        context = search(tool_query, top_k=5)
+        try:
+            context = search(tool_query, top_k=5)
+            result_msg = f"命中 {len(context)} 条相关文章"
+            tool_result = _format_tool_result(context)
+        except Exception:
+            # 数据库/隧道不可用：优雅降级，不让 SSE 流崩溃（否则界面空白）
+            context = []
+            result_msg = "知识库暂时无法访问"
+            tool_result = "知识库暂时无法访问（可能是服务连接问题），请告知访客稍后再试，本次无需调用知识库。"
         yield _sse(
             {
                 "type": "tool",
                 "name": "知识库检索",
                 "status": "done",
-                "result": f"命中 {len(context)} 条相关文章",
+                "result": result_msg,
                 "related": _related_articles(context),
             }
         )
         # 把模型第一轮的 tool_call 和工具结果追加进消息
         messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
-        messages.append(ToolMessage(content=_format_tool_result(context), tool_call_id=tool_call["id"]))
+        messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
     else:
         # 模型没调工具：第一轮结果直接作为回答的一部分（但第一轮没流式，这里重新流式生成）
         # 为保持流式体验，用普通 llm 流式生成
