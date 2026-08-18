@@ -238,6 +238,9 @@ html {
 }
 
 /* 详情页 markdown 正文样式（content 正文渲染） */
+.article-body {
+  white-space: normal; /* markdown 已渲染成结构化 HTML，无需保留源码换行/缩进（消除 pre-wrap 造成的空隙） */
+}
 .article-body h2 {
   font-size: 1.15rem;
   font-weight: 600;
@@ -252,29 +255,30 @@ html {
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
+/* 段落/列表紧凑间距：段落间 0.6em，避免 markdown 渲染出的大间隔 */
 .article-body p {
-  margin-bottom: 1rem;
-}
-/* 最后一段去掉底部 margin，避免回复文本结束后悬空的空白 */
-.article-body p:last-child {
-  margin-bottom: 0;
+  margin-bottom: 0.6em;
 }
 .article-body ul,
 .article-body ol {
-  margin: 0.5rem 0 1rem;
-  padding-left: 1.25rem;
+  margin: 0.4em 0 0.8em;
+  padding-left: 1.25em;
   list-style: disc;
 }
 .article-body ol {
   list-style: decimal;
 }
 .article-body li {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25em;
 }
 .article-body a {
   color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+/* 容器最后一个子元素去掉底部 margin：避免文本/列表结束后底部悬空 */
+.article-body > :last-child {
+  margin-bottom: 0;
 }
 .article-body code {
   background: rgba(0, 0, 0, 0.05);
