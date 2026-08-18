@@ -42,8 +42,8 @@ newking/
 │   │       ├── blocks.jsx     内容块渲染（思考/工具/文字/图/链接，含 markdown 与引用标签）
 │   │       ├── CodeBlock.jsx / Typewriter.jsx / TurnRail.jsx / BgGrid.jsx
 │   └── pages/           首页 + 博客/项目/笔记/联系页
-├── docs/                设计规范 / 部署指南
-└── AGENTS.md            项目约定（Agent 协作规则，含对话调试流程）
+├── docs/                前端规则 / 设计规范 / 部署指南
+└── AGENTS.md            项目约定（Agent 总规则 + 分派指引）
 ```
 
 ## 说明
