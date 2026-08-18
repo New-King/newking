@@ -255,6 +255,10 @@ html {
 .article-body p {
   margin-bottom: 1rem;
 }
+/* 最后一段去掉底部 margin，避免回复文本结束后悬空的空白 */
+.article-body p:last-child {
+  margin-bottom: 0;
+}
 .article-body ul,
 .article-body ol {
   margin: 0.5rem 0 1rem;

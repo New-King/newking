@@ -44,10 +44,17 @@ function runSlide(el, fromTop) {
 }
 
 const STORAGE_KEY = 'newking_chat_messages';
+const UID_KEY = 'newking_chat_uid';
+
+// 模块级 id 计数器：从持久化恢复（避免 HMR/刷新后 uid 重置导致新 id 与旧消息冲突）
+try {
+  const saved = parseInt(localStorage.getItem(UID_KEY), 10);
+  if (!Number.isNaN(saved) && saved > uid) uid = saved;
+} catch {
+  /* 忽略 */
+}
 
 // 从 localStorage 恢复历史对话（用户清缓存才丢失）。
-// 关键：恢复后把 uid 推到已恢复消息的最大 id 之上，避免新消息 id 与旧消息冲突
-//（否则 React key 重复导致渲染异常/空白）。
 function loadMessages() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -280,6 +287,8 @@ export default function AgentChat() {
       });
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+      // 同步持久化 uid，避免 HMR/刷新后新消息 id 与旧消息冲突
+      localStorage.setItem(UID_KEY, String(uid));
     } catch {
       /* 隐私模式等不可写时静默失败 */
     }
@@ -537,6 +546,7 @@ export default function AgentChat() {
     const thinkingId = nextId();
     const toolIds = []; // 工具卡片的 id 列表（running 记下，done 按序更新）
     let textBlockId = null; // 流式文字的块 id（首个 delta 创建，后续追加内容）
+    const thinkingDismissedRef = { current: false }; // 思考是否已结束（首个实质内容出现时）
     pendingRef.current += 1;
     setPending(pendingRef.current);
 
@@ -561,12 +571,21 @@ export default function AgentChat() {
       );
 
     const handleEvent = (evt) => {
+      // 一旦出现实质内容（工具开始/首个文本），先让"正在思考"消失
+      const dismissThinking = () => {
+        if (thinkingDismissedRef.current) return;
+        thinkingDismissedRef.current = true;
+        updateBlock(thinkingId, { status: 'done' });
+      };
       switch (evt.type) {
         case 'thinking':
-          updateBlock(thinkingId, { status: evt.status === 'done' ? 'done' : 'running' });
+          if (evt.status === 'running') {
+            updateBlock(thinkingId, { status: 'running' });
+          }
           break;
         case 'tool':
           if (evt.status === 'running') {
+            dismissThinking();
             const id = nextId();
             toolIds.push(id);
             addBlock({ id, type: 'tool', status: 'running', name: evt.name });
@@ -578,6 +597,7 @@ export default function AgentChat() {
           break;
         case 'text':
           // 流式文字：首个 delta 创建块，后续追加内容（同一个块不断变长 → 真流式）
+          dismissThinking();
           if (textBlockId == null) {
             textBlockId = nextId();
             addBlock({ id: textBlockId, type: 'text', status: 'streaming', content: evt.delta });
