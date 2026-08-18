@@ -37,7 +37,7 @@ export default function TurnRail({ turns, onSelect }) {
         style={{ width: MAX_LEN + PAD * 2, height: wrapH }}
         onMouseLeave={() => setHover(null)}
       >
-        {/* 条区：悬停激活区（pointer-events-auto 保留交互） */}
+        {/* 条区：悬停激活区（pointer-events-auto 保留交互）；离开条区即隐藏预览 */}
         <div
           className="absolute pointer-events-auto"
           style={{ left: 0, top: 0, width: MAX_LEN + PAD * 2, height: wrapH }}
@@ -50,6 +50,7 @@ export default function TurnRail({ turns, onSelect }) {
             const rawY = e.clientY - e.currentTarget.getBoundingClientRect().top;
             setHover((prev) => (prev === indexAt(rawY) ? prev : indexAt(rawY)));
           }}
+          onMouseLeave={() => setHover(null)}
           onClick={() => {
             if (hover !== null) onSelect(hover);
           }}
@@ -68,7 +69,9 @@ export default function TurnRail({ turns, onSelect }) {
                   aria-label={`跳转到第 ${i + 1} 轮对话`}
                   style={{ width: `${hover == null ? BASE_LEN : lenFor(d)}px` }}
                   className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${
-                    isFocus ? 'bg-accent' : 'bg-[#D2D2D7] dark:bg-[#3A3A3C]'
+                    isFocus
+                      ? 'bg-accent dark:bg-white'
+                      : 'bg-[#D2D2D7] dark:bg-[#3A3A3C]'
                   }`}
                 />
               );
