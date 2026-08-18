@@ -1,7 +1,35 @@
 import { useEffect, useState } from 'react';
 import { marked } from 'marked';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
+import bash from 'highlight.js/lib/languages/bash';
+import python from 'highlight.js/lib/languages/python';
+import xml from 'highlight.js/lib/languages/xml';
 import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner, IconX } from '../icons';
 import CodeBlock from './CodeBlock';
+
+// 注册 highlight.js 语言（与 CodeBlock 一致）
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('xml', xml);
+
+const escapeHtml = (s) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// markdown 代码块 → 高亮 HTML + 复制按钮（HTML 字符串，复制按钮用事件委托）
+function highlightCode(text, lang) {
+  try {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(text, { language: lang }).value;
+    }
+    return hljs.highlightAuto(text).value;
+  } catch {
+    return escapeHtml(text);
+  }
+}
 
 /* ---------- 链接：小条样式（多条横排，放不下换行） ---------- */
 
@@ -147,14 +175,27 @@ function TextSkeleton() {
 // 渲染对话文本：markdown（**加粗**、`代码`、[链接]）用 marked 解析，
 // 引用标记 [N] 替换成可点击的文章链接（href 指向该文，title 显示标题预览）。
 function renderMarkdownWithRefs(text, related) {
-  // 自定义 renderer：给所有链接加"新标签页打开 + ↗ 图标"
-  //（marked 18.x 的 renderer.link 参数是单个 token 对象，用 token.href/token.text）
+  // 自定义 renderer：给所有链接加"新标签页打开 + ↗ 图标"；代码块加高亮 + 复制按钮
   const renderer = new marked.Renderer();
   renderer.link = (token) => {
     const href = token.href || '';
     const title = token.title ? ` title="${token.title}"` : '';
     const content = token.text || '';
     return `<a href="${href}" target="_blank" rel="noreferrer"${title} class="article-link">↗ ${content}</a>`;
+  };
+  renderer.code = (token) => {
+    const lang = token.lang || '';
+    const code = token.text || '';
+    const highlighted = highlightCode(code, lang);
+    return (
+      `<div class="chat-codeblock">` +
+      `<div class="chat-codeblock-bar">` +
+      `<span class="chat-codeblock-lang">${escapeHtml(lang || 'code')}</span>` +
+      `<button type="button" class="chat-codeblock-copy" data-code="${encodeURIComponent(code)}">复制</button>` +
+      `</div>` +
+      `<pre class="chat-codeblock-pre"><code class="language-${escapeHtml(lang)}">${highlighted}</code></pre>` +
+      `</div>`
+    );
   };
   // 解析 markdown（加粗/斜体/代码/链接/列表等），裸 URL 会被 marked 转成链接
   let html = marked.parse(text, { renderer });
@@ -182,10 +223,27 @@ function TextBlock({ block, related }) {
       </div>
     );
   }
-  // 完成态：markdown 渲染 + 引用链接
+  // 处理 markdown 代码块里的"复制"按钮点击（dangerouslySetInnerHTML 里的按钮用事件委托捕获）
+  const handleContainerClick = async (e) => {
+    const btn = e.target.closest?.('.chat-codeblock-copy');
+    if (!btn) return;
+    try {
+      const code = decodeURIComponent(btn.dataset.code || '');
+      await navigator.clipboard.writeText(code);
+      const original = btn.textContent;
+      btn.textContent = '已复制';
+      setTimeout(() => {
+        btn.textContent = original;
+      }, 1600);
+    } catch {
+      /* 剪贴板不可用时静默失败 */
+    }
+  };
+  // 完成态：markdown 渲染 + 引用链接 + 代码块（高亮/复制）
   return (
     <div
       className={`${textBubble} article-body`}
+      onClick={handleContainerClick}
       dangerouslySetInnerHTML={{ __html: renderMarkdownWithRefs(block.content, related) }}
     />
   );
@@ -314,3 +372,4 @@ export default function BlockRenderer({ block, paused, onDone, related }) {
       return null;
   }
 }
+

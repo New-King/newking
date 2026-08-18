@@ -329,6 +329,52 @@ html {
   background: rgba(255, 255, 255, 0.07);
 }
 
+/* markdown 代码块（带高亮 + 复制按钮，深色风格对齐 CodeBlock） */
+.chat-codeblock {
+  margin: 0.7em 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.chat-codeblock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45em 0.9em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.chat-codeblock-lang {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72em;
+  color: rgba(255, 255, 255, 0.45);
+}
+.chat-codeblock-copy {
+  padding: 0.15em 0.6em;
+  border-radius: 6px;
+  font-size: 0.72em;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.chat-codeblock-copy:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+}
+.chat-codeblock-pre {
+  margin: 0;
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  font-size: 0.82em;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+}
+.chat-codeblock-pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
 /* 表格 */
 .article-body table {
   width: 100%;
