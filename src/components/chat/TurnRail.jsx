@@ -9,9 +9,10 @@ const MAX_LEN = 50; // 悬停焦点条长（px）
 const DECAY = 0.5; // 向两侧递减系数，形成钟形曲线
 const PAD = 8; // 矩形区域内边距
 const PANEL_W = 288; // 预览面板宽度
+const PANEL_H = 132; // 预览面板估算高度（用于垂直居中跟随焦点条）
 // 面板浮出：条区右侧。用 fixed 定位浮在对话区上方，不占用/扩展容器宽度，
 // 避免透明容器横跨对话区拦截文字复制。
-const PANEL_OFFSET_X = PAD + MAX_LEN + 12; // 面板相对条区容器左侧的偏移
+const PANEL_OFFSET_X = PAD + MAX_LEN + 8; // 面板相对条区容器左侧的偏移（收紧间距）
 
 // 钟形递减：焦点最长，向两侧按系数平滑缩短
 const lenFor = (d) => Math.round(BASE_LEN + (MAX_LEN - BASE_LEN) * Math.pow(DECAY, d));
@@ -79,12 +80,15 @@ export default function TurnRail({ turns, onSelect }) {
           </div>
         </div>
 
-        {/* 预览面板：纯展示（pointer-events-none 不拦截复制），fixed 浮出条右侧，
-            鼠标移出条区即隐藏（不跟随到中间区域） */}
+        {/* 预览面板：纯展示（pointer-events-none 不拦截复制），fixed 浮出，
+            垂直位置跟随焦点条（哪条变长就在它右侧显示） */}
         {hover !== null && turns[hover] && (
           <div
             className="pointer-events-none fixed w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
-            style={{ left: `calc(1rem + ${PANEL_OFFSET_X}px)`, top: '50%', transform: 'translateY(-50%)' }}
+            style={{
+              left: `calc(1rem + ${PANEL_OFFSET_X}px)`,
+              top: `calc(50% + ${PAD + hover * STEP - (railH / 2)}px - ${PANEL_H / 2}px)`,
+            }}
           >
             <p className="truncate text-[13px] font-medium text-ink">
               {turns[hover].question}
