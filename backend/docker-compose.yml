@@ -10,20 +10,24 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # 数据库：1Panel 的 Postgres 映射在宿主机 127.0.0.1:5432
-      # host.docker.internal = 宿主机（Linux 下需 extra_hosts）
-      # 用户名/密码从 .env 读取（不硬编码进仓库）
-      DATABASE_URL: postgresql://${POSTGRES_USER:-newking}:${POSTGRES_PASSWORD:-}@host.docker.internal:5432/${POSTGRES_DB:-newking_test}
+      # 数据库：加入 1Panel 的 postgresql 网络，用容器名 postgresql 连
+      # （1Panel Postgres 在 1panel-network，别名为 postgresql）
+      DATABASE_URL: postgresql://${POSTGRES_USER:-newking}:${POSTGRES_PASSWORD:-}@postgresql:5432/${POSTGRES_DB:-newking_test}
       # 内容目录：容器内挂载的 content
       CONTENT_DIR: /app/content
-      # --- 以下 key 请在 1Panel 编排里替换为真实值（或由 CI 注入） ---
+      # --- 以下 key 从 .env 读取（.env 在 backend/ 目录，被 gitignore，不进仓库） ---
       SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
       LANGSMITH_ENDPOINT: https://eu.api.smith.langchain.com
       LANGSMITH_PROJECT: newking-agent
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       # 把服务器上的 content 目录挂载进容器（CI 会把 content/ rsync 到这里）
-      - /opt/newking/content:/app/content
+      - /opt/server/newking/content:/app/content
+    networks:
+      - 1panel-network
+
+# 复用 1Panel 已存在的 docker 网络（Postgres 所在网络，容器名 postgresql）
+networks:
+  1panel-network:
+    external: true

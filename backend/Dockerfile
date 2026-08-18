@@ -9,8 +9,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # 先装依赖（利用 Docker 层缓存：requirements 不变则不重装）
+# 用国内 pip 镜像（阿里云），避免服务器访问国外 PyPI 超时
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    -i https://mirrors.aliyun.com/pypi/simple/ \
+    --trusted-host mirrors.aliyun.com
 
 # 复制后端代码
 COPY agent ./agent
