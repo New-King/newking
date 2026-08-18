@@ -174,6 +174,7 @@ def _stream_generator(query, history):
         api_key=DEEPSEEK_API_KEY,
         base_url=DEEPSEEK_BASE_URL,
         temperature=0.7,
+        model_kwargs={"reasoning_effort": "low"},  # 思考模式：开启，强度最低（low）
     )
     llm_with_tools = llm.bind_tools([SEARCH_TOOL])
 
