@@ -43,6 +43,8 @@ export default function TurnRail({ turns, onSelect }) {
           className="absolute pointer-events-auto"
           style={{ left: 0, top: 0, width: MAX_LEN + PAD * 2, height: wrapH }}
           onMouseEnter={(e) => {
+            // 进入定位条区域：暂停背景网格动画（避免鼠标在此区域移动触发线/圆点特效）
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: true } }));
             const rawY = e.clientY - e.currentTarget.getBoundingClientRect().top;
             setHover(indexAt(rawY));
           }}
@@ -51,11 +53,30 @@ export default function TurnRail({ turns, onSelect }) {
             const rawY = e.clientY - e.currentTarget.getBoundingClientRect().top;
             setHover((prev) => (prev === indexAt(rawY) ? prev : indexAt(rawY)));
           }}
-          onMouseLeave={() => setHover(null)}
+          onMouseLeave={() => {
+            // 离开定位条区域：恢复背景网格动画
+            window.dispatchEvent(new CustomEvent('bg-grid-pause', { detail: { add: false } }));
+            setHover(null);
+          }}
           onClick={() => {
             if (hover !== null) onSelect(hover);
           }}
         >
+          {/* 背景网格柔化层：把条区底下的网格线模糊掉，让细条浮在干净背景上；
+              用 mask 渐变让四边柔和过渡（不僵硬） */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              maskImage:
+                'linear-gradient(90deg, transparent 0%, black 30%, black 70%, transparent 100%), linear-gradient(180deg, transparent 0%, black 30%, black 70%, transparent 100%)',
+              WebkitMaskImage:
+                'linear-gradient(90deg, transparent 0%, black 30%, black 70%, transparent 100%), linear-gradient(180deg, transparent 0%, black 30%, black 70%, transparent 100%)',
+              maskComposite: 'intersect',
+              WebkitMaskComposite: 'source-in',
+            }}
+          />
           <div
             className="absolute flex flex-col items-start"
             style={{ left: PAD, top: PAD, gap: BAR_GAP }}
@@ -72,7 +93,7 @@ export default function TurnRail({ turns, onSelect }) {
                   className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${
                     isFocus
                       ? 'bg-accent dark:bg-white'
-                      : 'bg-[#D2D2D7] dark:bg-[#3A3A3C]'
+                      : 'bg-[#D2D2D7] dark:bg-[#5A5A5E]'
                   }`}
                 />
               );

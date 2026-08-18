@@ -460,8 +460,9 @@ export default function AgentChat() {
     const node = turnRefs.current[i];
     const el = scrollRef.current;
     if (!node || !el) return;
+    // 顶部偏移要避开导航栏（约 56px）+ 顶部预留条，让定位的内容完整可见
     const top =
-      node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 16;
+      node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 72;
     el.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   };
 
