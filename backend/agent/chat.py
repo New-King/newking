@@ -46,7 +46,7 @@ def _build_system_prompt():
    如：我写过一篇关于 RAG 落地的博客[2]。没用到不标。
 4. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
 5. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
-6. 除非引用，不要在回复里主动罗列链接列表。
+6. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出检索结果里的 url。
 7. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。"""
 
 
@@ -146,14 +146,23 @@ def _cited_inline_images(context, full_text):
 
 
 def _format_tool_result(context):
-    """把检索结果格式化，作为工具调用的返回消息。"""
+    """把检索结果格式化，作为工具调用的返回消息。
+
+    每条结果都带上文章的 url（唯一跳转链接），
+    这样模型在访客要"链接/文章地址"时能直接给出，而不是说不知道。
+    """
     if not context:
         return "知识库里没有找到与问题相关的内容。"
     parts = [f"知识库检索到 {len(context)} 条相关内容：\n"]
     for i, c in enumerate(context):
         md = c.get("metadata") or {}
         title = md.get("title", "未命名")
-        parts.append(f"[{i+1}] 《{title}》：{c['content']}")
+        url = md.get("url", "")
+        line = f"[{i+1}] 《{title}》"
+        if url:
+            line += f"（链接：{url}）"
+        line += f"：{c['content']}"
+        parts.append(line)
     return "\n\n".join(parts)
 
 
