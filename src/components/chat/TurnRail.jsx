@@ -53,14 +53,14 @@ export default function TurnRail({ turns, onSelect }) {
   return (
     <div className="fixed left-3 top-1/2 z-30 hidden -translate-y-1/2 md:block">
       <div
-        className="relative"
+        className="relative pointer-events-none"
         style={{ width: WRAP_W, height: wrapH }}
         onMouseLeave={() => setHover(null)}
         onMouseMove={handleMove}
       >
         {/* 条区：悬停激活区，鼠标进入才聚焦；点击条区任意位置跳转到当前焦点轮次 */}
         <div
-          className="absolute"
+          className="absolute pointer-events-auto"
           style={{ left: 0, top: 0, width: BARZONE_W, height: wrapH }}
           onMouseEnter={activate}
           onClick={() => {
@@ -92,7 +92,7 @@ export default function TurnRail({ turns, onSelect }) {
         {/* 预览面板：跟随鼠标位置，鼠标可移入并点击操作 */}
         {hover !== null && (
           <div
-            className="absolute w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
+            className="pointer-events-auto absolute w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
             style={{ left: PANEL_LEFT, top: panelTop }}
           >
             <p className="truncate text-[13px] font-medium text-ink">
