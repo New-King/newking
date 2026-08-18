@@ -12,7 +12,7 @@ const PANEL_W = 288; // 预览面板宽度
 const PANEL_H = 132; // 预览面板估算高度（用于垂直居中跟随焦点条）
 // 面板浮出：条区右侧。用 fixed 定位浮在对话区上方，不占用/扩展容器宽度，
 // 避免透明容器横跨对话区拦截文字复制。
-const PANEL_OFFSET_X = PAD + MAX_LEN + 8; // 面板相对条区容器左侧的偏移（收紧间距）
+const PANEL_OFFSET_X = PAD + MAX_LEN; // 面板紧贴变长的线右侧（无额外间隔）
 
 // 钟形递减：焦点最长，向两侧按系数平滑缩短
 const lenFor = (d) => Math.round(BASE_LEN + (MAX_LEN - BASE_LEN) * Math.pow(DECAY, d));
@@ -86,7 +86,7 @@ export default function TurnRail({ turns, onSelect }) {
           <div
             className="pointer-events-none fixed w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
             style={{
-              left: `calc(1rem + ${PANEL_OFFSET_X}px)`,
+              left: `calc(0.3rem + ${PANEL_OFFSET_X}px)`,
               top: `calc(50% + ${PAD + hover * STEP - (railH / 2)}px - ${PANEL_H / 2}px)`,
             }}
           >
