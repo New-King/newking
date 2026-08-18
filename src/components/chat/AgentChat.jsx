@@ -4,8 +4,11 @@ import MessageItem from './MessageItem';
 import TurnRail from './TurnRail';
 import BgGrid from './BgGrid';
 
-let uid = 0;
-const nextId = () => ++uid;
+// 消息/块的唯一 id：用 UUID，天然不重复（自增计数器在刷新/HMR 后会重置撞 id，故不用）
+const nextId = () =>
+  (typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 // 首页预设提问：10 条，初始态时间轴轮播展示（每次 4 条，自动向上滚动，点击直接发送）
 const SUGGESTIONS = [
@@ -44,31 +47,15 @@ function runSlide(el, fromTop) {
 }
 
 const STORAGE_KEY = 'newking_chat_messages';
-const UID_KEY = 'newking_chat_uid';
-
-// 模块级 id 计数器：从持久化恢复（避免 HMR/刷新后 uid 重置导致新 id 与旧消息冲突）
-try {
-  const saved = parseInt(localStorage.getItem(UID_KEY), 10);
-  if (!Number.isNaN(saved) && saved > uid) uid = saved;
-} catch {
-  /* 忽略 */
-}
 
 // 从 localStorage 恢复历史对话（用户清缓存才丢失）。
+// id 是 UUID，天然唯一，恢复后直接用，无需处理计数器。
 function loadMessages() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const list = JSON.parse(raw);
-      let maxId = 0;
-      for (const m of list) {
-        if (typeof m.id === 'number' && m.id > maxId) maxId = m.id;
-        for (const b of m.blocks || []) {
-          if (typeof b.id === 'number' && b.id > maxId) maxId = b.id;
-        }
-      }
-      if (maxId > uid) uid = maxId;
-      return list;
+      return Array.isArray(list) ? list : [];
     }
   } catch {
     /* localStorage 不可用时静默失败 */
@@ -287,8 +274,6 @@ export default function AgentChat() {
       });
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-      // 同步持久化 uid，避免 HMR/刷新后新消息 id 与旧消息冲突
-      localStorage.setItem(UID_KEY, String(uid));
     } catch {
       /* 隐私模式等不可写时静默失败 */
     }
