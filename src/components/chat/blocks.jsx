@@ -7,7 +7,6 @@ import bash from 'highlight.js/lib/languages/bash';
 import python from 'highlight.js/lib/languages/python';
 import xml from 'highlight.js/lib/languages/xml';
 import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner, IconX } from '../icons';
-import CodeBlock from './CodeBlock';
 
 // 注册 highlight.js 语言（与 CodeBlock 一致）
 hljs.registerLanguage('javascript', javascript);
@@ -362,8 +361,6 @@ export default function BlockRenderer({ block, paused, onDone, related }) {
       return <ImageBlock block={block} />;
     case 'link':
       return <LinkCard block={block} />;
-    case 'code':
-      return <CodeBlock block={block} />;
     case 'audio':
       return <AudioCard block={block} />;
     case 'video':
