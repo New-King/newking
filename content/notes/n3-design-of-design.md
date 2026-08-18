@@ -2,7 +2,7 @@
 title: 读《设计中的设计》
 date: 2026-07-10
 description: 原研哉的减法美学，和网站设计有不少共通之处。
-url: https://www.new-king.com/notes/n3-design-of-design
+url: https://new-king.com/notes/n3-design-of-design
 ---
 
 ## 减法即加法

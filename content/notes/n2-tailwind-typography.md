@@ -2,7 +2,7 @@
 title: Tailwind 排版与间距的取舍
 date: 2026-07-25
 description: 从字号到空间节奏，聊聊排版系统的一次重构。
-url: https://www.new-king.com/notes/n2-tailwind-typography
+url: https://new-king.com/notes/n2-tailwind-typography
 ---
 
 ## 从字号说起

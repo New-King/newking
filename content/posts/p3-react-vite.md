@@ -2,7 +2,7 @@
 title: 用 React 与 Vite 搭建现代前端
 date: 2026-07-12
 description: Vite 冷启动与 React 工程化的取舍，以及项目结构的演进。
-url: https://www.new-king.com/blog/p3-react-vite
+url: https://new-king.com/blog/p3-react-vite
 ---
 
 ## 为什么选 Vite

@@ -2,7 +2,7 @@
 title: 构建可组合的 Agent 工作流
 date: 2026-07-28
 description: 拆解 Agent 的组成单元，分享可复用工作流的搭建思路与实践。
-url: https://www.new-king.com/blog/p1-agent-workflow
+url: https://new-king.com/blog/p1-agent-workflow
 ---
 
 ## 为什么需要可组合

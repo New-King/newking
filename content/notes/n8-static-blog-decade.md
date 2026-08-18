@@ -2,7 +2,7 @@
 title: 静态博客的十年
 date: 2025-05-20
 description: 从 Jekyll 到 Astro，写作工具的变迁史。
-url: https://www.new-king.com/notes/n8-static-blog-decade
+url: https://new-king.com/notes/n8-static-blog-decade
 ---
 
 ## 工具在变，写作不变

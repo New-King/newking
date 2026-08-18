@@ -2,7 +2,7 @@
 title: 读《禅与摩托车维修艺术》
 date: 2025-10-08
 description: 关于「良质」的一些摘录与胡思乱想。
-url: https://www.new-king.com/notes/n7-zen-motorcycle
+url: https://new-king.com/notes/n7-zen-motorcycle
 ---
 
 ## 关于良质

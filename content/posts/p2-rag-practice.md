@@ -5,7 +5,7 @@ description: 从检索方案选型到线上稳定运行，记录 RAG 服务化�
 links:
   - https://python.langchain.com/docs/concepts/rag/
   - https://github.com/pgvector/pgvector
-url: https://www.new-king.com/blog/p2-rag-practice
+url: https://new-king.com/blog/p2-rag-practice
 ---
 
 ## 原型阶段的快速验证

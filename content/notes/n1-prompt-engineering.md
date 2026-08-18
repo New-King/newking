@@ -2,7 +2,7 @@
 title: 关于 prompt 工程的一点心得
 date: 2026-08-01
 description: 结构化指令的边界与技巧，从一次失败的对话说起。
-url: https://www.new-king.com/notes/n1-prompt-engineering
+url: https://new-king.com/notes/n1-prompt-engineering
 ---
 
 ## 一次失败的对话
