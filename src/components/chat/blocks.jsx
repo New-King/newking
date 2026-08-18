@@ -147,8 +147,17 @@ function TextSkeleton() {
 // 渲染对话文本：markdown（**加粗**、`代码`、[链接]）用 marked 解析，
 // 引用标记 [N] 替换成可点击的文章链接（href 指向该文，title 显示标题预览）。
 function renderMarkdownWithRefs(text, related) {
-  // 先解析 markdown（支持加粗/斜体/代码/链接/列表等）
-  let html = marked.parse(text);
+  // 自定义 renderer：给所有链接加"新标签页打开 + ↗ 图标"
+  //（marked 18.x 的 renderer.link 参数是单个 token 对象，用 token.href/token.text）
+  const renderer = new marked.Renderer();
+  renderer.link = (token) => {
+    const href = token.href || '';
+    const title = token.title ? ` title="${token.title}"` : '';
+    const content = token.text || '';
+    return `<a href="${href}" target="_blank" rel="noreferrer"${title} class="article-link">↗ ${content}</a>`;
+  };
+  // 解析 markdown（加粗/斜体/代码/链接/列表等），裸 URL 会被 marked 转成链接
+  let html = marked.parse(text, { renderer });
   // 把 [N] 替换成引用链接。用函数式替换，N 对应 related 里的文章
   html = html.replace(/\[(\d+)\]/g, (m, num) => {
     const idx = parseInt(num, 10) - 1;

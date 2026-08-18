@@ -390,3 +390,17 @@ html {
   background: var(--accent);
   color: #fff;
 }
+
+/* 对话文本里的链接（裸 URL / markdown 链接）：带 ↗ 图标，新标签页打开 */
+.article-body .article-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-all;
+}
+.article-body .article-link:hover {
+  opacity: 0.8;
+}
