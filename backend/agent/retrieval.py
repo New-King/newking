@@ -107,35 +107,88 @@ def search(query, top_k=MAX_RESULTS):
         if len(results) >= top_k:
             break
 
-    # 关键词兜底：语义检索 0 条时，用 SQL LIKE 匹配标题/简介/内容再找一遍。
-    # 解决"写过切块的文章吗"这种关键词型问题向量命中不了的情况（hybrid search 简化版）。
-    if not results:
-        results = keyword_fallback(query, top_k=top_k)
+    # 并行混合：语义结果 + 关键词命中的结果一起。
+    # 语义检索会漏掉"精确词"匹配（如 p7 大量讲 RAG 抢了 p2 的位置），
+    # 关键词 LIKE 能精确命中含该词的文章，把它补进来。
+    kw_results = keyword_fallback(query, top_k=top_k)
+    kw_docs = {r["metadata"].get("doc_id") for r in kw_results}
+    # 把关键词命中、但语义结果里没有的文档补进去
+    seen_docs = {r["metadata"].get("doc_id") for r in results}
+    for r in kw_results:
+        doc_id = r["metadata"].get("doc_id")
+        if doc_id in seen_docs:
+            continue  # 语义已返回这篇，不重复
+        # 关键词精确命中标题/简介 → 强相关，给一个靠前的"虚拟距离"（< 阈值，排进结果）
+        r["score"] = 0.40
+        results.append(r)
+        seen_docs.add(doc_id)
+        if len(results) >= top_k:
+            break
+
+    # 按分数排序（距离小=相关，排前），让精确命中的文章排在前面
+    results.sort(key=lambda x: x["score"])
 
     return results
+
+
+def _split_keywords(query):
+    """从查询词里拆出关键词，用于 LIKE 匹配。
+
+    拆法（轻量，不引分词库）：
+    - 英文/数字词：按 [a-zA-Z0-9]+ 提取（vite、react、RAG、MCP 等）
+    - 中文：按空白/标点切分，取长度>=2 的片段（避免单字误匹配）
+    返回去重后的关键词列表。
+    """
+    q = (query or "").strip()
+    if not q:
+        return []
+    # 英文/数字词
+    en = re.findall(r"[a-zA-Z0-9]+", q)
+    # 中文片段：去掉英文/数字/空白/标点后，按常见分隔切
+    zh_part = re.sub(r"[a-zA-Z0-9\s，。！？、；：""''（）()【】\[\]-]", "", q)
+    zh = [s for s in re.split(r"[,，\s]+", zh_part) if len(s.strip()) >= 2]
+    kws = [k.lower() for k in en + zh]
+    # 去重保序
+    seen = set()
+    return [k for k in kws if not (k in seen or seen.add(k))]
 
 
 def keyword_fallback(query, top_k=MAX_RESULTS):
     """关键词兜底检索：按关键词匹配标题/简介/内容（SQL LIKE）。
 
-    语义检索 0 条时调用，用关键词精确匹配，解决"标题/内容里含某词"的查询。
+    把 query 拆成多个关键词，用 OR 匹配（含任一关键词即命中），
+    解决"写过切块/vite 的文章吗"这种精确词查询语义检索命中不了的问题。
+    语义检索 0 条时调用。
     """
-    kw = (query or "").strip()
-    if not kw:
+    kws = _split_keywords(query)
+    if not kws:
         return []
-    pattern = f"%{kw}%"
     with get_conn() as conn:
-        rows = conn.execute(
-            """
+        # 动态拼 OR 条件，每篇最多保留 2 块
+        clauses = []
+        params = []
+        for kw in kws:
+            pat = f"%{kw}%"
+            clauses.append("(content ILIKE %s OR metadata->>'title' ILIKE %s OR metadata->>'description' ILIKE %s)")
+            params += [pat, pat, pat]
+        sql = f"""
             SELECT content, metadata, 0.0 AS distance
             FROM chunks
-            WHERE content LIKE %s OR metadata->>'title' LIKE %s OR metadata->>'description' LIKE %s
+            WHERE ({' OR '.join(clauses)})
             ORDER BY metadata->>'date' DESC
             LIMIT %s
-            """,
-            (pattern, pattern, pattern, top_k),
-        ).fetchall()
-    return [
-        {"content": content, "score": 0.0, "metadata": metadata}
-        for content, metadata, _ in rows
-    ]
+        """
+        params.append(top_k * 3)  # 多取一些，下面按篇去重
+        rows = conn.execute(sql, params).fetchall()
+    # 按篇去重（每篇最多2块）
+    results = []
+    per_doc = {}
+    for content, metadata, _ in rows:
+        doc_id = (metadata or {}).get("doc_id", "")
+        if per_doc.get(doc_id, 0) >= 2:
+            continue
+        per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
+        results.append({"content": content, "score": 0.0, "metadata": metadata})
+        if len(results) >= top_k:
+            break
+    return results
