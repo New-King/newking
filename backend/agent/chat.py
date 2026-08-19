@@ -200,48 +200,61 @@ def _stream_generator(query, history):
 
     context = []
 
-    # 模型请求调用工具
+    # 模型请求调用工具（可能一次性返回多个 tool_call，逐个执行并回填）
     if first.tool_calls:
-        yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
-        tool_call = first.tool_calls[0]
-        tool_query = (tool_call.get("args") or {}).get("query", query)
-        try:
-            context = search(tool_query, top_k=5)
-            result_msg = f"命中 {len(context)} 条相关文章"
-            tool_result = _format_tool_result(context)
-            tool_ok = True
-        except Exception:
-            # 数据库/隧道不可用：工具标记失败（ok:false，前端显示 ×），降级为纯聊天，不崩
-            context = []
-            result_msg = "知识库暂时无法访问"
-            tool_result = "知识库暂时无法访问（可能是服务连接问题），请告知访客稍后再试，本次无需调用知识库。"
-            tool_ok = False
-        yield _sse(
-            {
-                "type": "tool",
-                "name": "知识库检索",
-                "status": "done",
-                "ok": tool_ok,
-                "result": result_msg,
-                "related": _related_articles(context),
-            }
-        )
-        # 把模型第一轮的 tool_call 和工具结果追加进消息
-        messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
-        messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
+        context = []
+        for tool_call in first.tool_calls:
+            if tool_call.get("name") != "search_knowledge":
+                # 非检索工具：占位回填，避免"assistant 带 tool_calls 必须有对应 tool message"报错
+                messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
+                messages.append(ToolMessage(content="（无此工具）", tool_call_id=tool_call["id"]))
+                continue
+            yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
+            tool_query = (tool_call.get("args") or {}).get("query", query)
+            try:
+                found = search(tool_query, top_k=5)
+                result_msg = f"命中 {len(found)} 条相关文章"
+                tool_result = _format_tool_result(found)
+                tool_ok = True
+            except Exception:
+                # 数据库/隧道不可用：工具标记失败（ok:false，前端显示 ×），降级为纯聊天，不崩
+                found = []
+                result_msg = "知识库暂时无法访问"
+                tool_result = "知识库暂时无法访问（可能是服务连接问题），请告知访客稍后再试，本次无需调用知识库。"
+                tool_ok = False
+            yield _sse(
+                {
+                    "type": "tool",
+                    "name": "知识库检索",
+                    "status": "done",
+                    "ok": tool_ok,
+                    "result": result_msg,
+                    "related": _related_articles(found),
+                }
+            )
+            context.extend(found)
+            # 把这一轮 tool_call 和工具结果追加进消息（每个 tool_call 都要有对应 ToolMessage）
+            messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
+            messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
     else:
         # 模型没调工具：直接进入流式生成
         pass
 
     # 第二轮：流式生成最终回答
+    # 兜底：若模型输出未格式化的 <tool_call> 文本（本方案只做一轮工具调用，
+    # 模型想再查时可能会用文本模拟调用），把它过滤掉，不让它漏到前端变乱码。
     full_text = ""
     try:
         stream = llm.stream(messages)
         for chunk in stream:
             delta = chunk.content or ""
-            if delta:
-                full_text += delta
-                yield _sse({"type": "text", "delta": delta})
+            if not delta:
+                continue
+            # 过滤模型用纯文本模拟的工具调用标签
+            if re.search(r"<\s*tool_call", delta) or delta.lstrip().startswith("<"):
+                continue
+            full_text += delta
+            yield _sse({"type": "text", "delta": delta})
     except Exception as e:
         # 生成失败：发 error 事件，不崩（已有部分内容保留，告知中断）
         yield _sse({"type": "error", "message": "回复生成中断，请重试。"})
