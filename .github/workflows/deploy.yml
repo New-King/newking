@@ -1,40 +1,34 @@
-# 自动部署流水线：push 到 main → 构建静态文件 → SSH 同步到 1Panel 服务器
-# 原理：GitHub 云端跑一个"虚拟电脑"(ubuntu-latest)，
-#       依次执行下面 5 个步骤，完成后自动销毁。
+# 自动部署流水线：push 到 main → 前端构建 + 后端容器更新 → SSH 同步到服务器
+# 前端：构建 dist → rsync 到网站目录
+# 后端：同步 backend + content → docker compose 重建 → 触发索引
 name: 自动部署
 
 on:
   push:
     branches: [main]
-  workflow_dispatch: # 手动触发按钮（测试用，不用 push 也能跑）
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. 把仓库代码下载到虚拟电脑
       - name: 拉取代码
         uses: actions/checkout@v4
 
-      # 2. 安装 Node.js（前端构建需要）
+      # ---------- 前端 ----------
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm # 缓存依赖，加速下次构建
+          cache: npm
 
-      # 3. 按 package-lock.json 安装依赖
       - name: 安装依赖
         run: npm ci
 
-      # 4. 打包：生成 dist/ 静态文件（就是你说的"打包"步骤）
       - name: 构建静态文件
         run: npm run build
 
-      # 5. 用 SSH 私钥连接服务器，rsync 同步 dist/ 到网站目录
-      #    --delete = 删除服务器上已不存在的旧文件（如 1Panel 默认的 404.html）
-      #    secrets = GitHub 仓库里加密保存的配置，不会出现在代码里
-      - name: 同步到服务器
+      - name: 同步前端到服务器
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
@@ -43,3 +37,38 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no" \
             dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_TARGET }}/
+
+      # ---------- 后端 ----------
+      - name: 同步后端代码 + 内容到服务器
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no"
+          # 同步 backend 代码
+          rsync -avz -e "$SSH" backend/ root@${{ secrets.SERVER_HOST }}:/opt/server/newking/backend/
+          # 同步 content 内容
+          rsync -avz -e "$SSH" content/ root@${{ secrets.SERVER_HOST }}:/opt/server/newking/content/
+
+      - name: 重建并重启后端容器
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # 从 GitHub Secrets 注入 key 到容器环境变量（不写 .env 文件，key 不落盘）
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no \
+            root@${{ secrets.SERVER_HOST }} '
+            cd /opt/server/newking/backend
+            POSTGRES_USER=newking \
+            POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+            POSTGRES_DB=newking_test \
+            SILICONFLOW_API_KEY="${{ secrets.SILICONFLOW_API_KEY }}" \
+            DEEPSEEK_API_KEY="${{ secrets.DEEPSEEK_API_KEY }}" \
+            LANGSMITH_API_KEY="${{ secrets.LANGSMITH_API_KEY }}" \
+            docker compose up -d --build
+          '
+
+      - name: 触发知识库索引
+        run: |
+          sleep 5
+          curl -s -X POST https://new-king.com/api/index/index || echo "索引触发失败（可能后端刚重启未就绪）"
