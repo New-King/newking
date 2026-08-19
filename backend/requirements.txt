@@ -4,5 +4,6 @@ python-dotenv
 openai
 langchain-openai
 langchain-core
+langchain-text-splitters
 psycopg[binary]
 pyyaml
