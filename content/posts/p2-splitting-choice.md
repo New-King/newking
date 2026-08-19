@@ -2,7 +2,7 @@
 title: 换掉手写切块：一次"该不该用现成组件"的纠结
 date: 2026-08-19
 description: 起因是我问了一句"我们这么写是不是主流"，结果从查证到对比到换掉自研实现，折腾了一轮。记录下真实的经过。
-url: https://new-king.com/blog/p7-splitting-choice
+url: https://new-king.com/blog/p2-splitting-choice
 ---
 
 ## 起因是一句质疑
