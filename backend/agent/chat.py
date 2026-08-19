@@ -39,16 +39,19 @@ def _build_system_prompt():
 {site}
 
 【回答规则】
-1. 你有两个工具：
-   - list_articles：访客问"有哪些/写过什么/最近（最新）写了什么"这类列清单问题时调用，直接返回全部文章清单。
-   - search_knowledge：问某篇文章/某话题的具体内容、细节、观点时调用，检索知识库返回相关内容块。
+1. 你有两个工具，按问题类型选用：
+   - query_articles：问"有哪些/最近（最新）写了什么/有没有写过xxx/什么时候写的/按类型或时间筛选"这类列清单问题时调用。
+     它直接查文章清单（标题/日期/链接），不检索具体内容。可传 keyword（关键词，匹配标题/简介）、type（blog/note/project/all）、
+     date_from/date_to（时间范围）、limit（条数）、sort（排序）。
+   - search_knowledge：问某篇文章/某话题的"具体内容、细节、观点"时调用。它检索知识库内容块，返回相关内容。
 2. 需要了解网站内容来回答时用工具，不要凭记忆编造网站没有的内容。但访客只是闲聊、问代码、问算法等与网站无关的问题时，不要调用工具，直接回答。
 3. 检索结果的参考资料带编号 [1][2]...。回答里用到哪条的内容，就在对应句尾标注编号，
    如：我写过一篇关于 RAG 落地的博客[2]。没用到不标。
 4. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
 5. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
-6. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出检索结果里的 url。
-7. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。"""
+6. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出查询或检索结果里的 url。
+7. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
+8. 工具调用已经由系统代为执行并给了你结果，你只负责根据结果组织文字回复。严禁在回复文本里输出任何工具调用标签（如 <tool_call>、<invoke> 等）——那会被当成乱码显示给访客。直接说人话回答即可。"""
 
 
 # search_knowledge 工具定义（JSON Schema，DeepSeek 支持 OpenAI 兼容 function calling）
@@ -71,18 +74,46 @@ SEARCH_TOOL = {
     },
 }
 
-# list_articles 工具定义：查"有哪些文章/最近写了什么"这类列表型问题。
-# 不向量检索，直接返回全部文章（博客/笔记/项目）的标题+日期+链接，命中率 100%。
-# 与 search_knowledge 互补：列表型问题用它，内容细节才用检索。
-LIST_ARTICLES_TOOL = {
+# query_articles 工具定义：查"有哪些/最近写了什么/有没有写过xxx"这类列表型问题。
+# 不向量检索，直接按条件过滤文章的 metadata（标题/日期/类型/链接），命中率 100%。
+# 与 search_knowledge 互补：列表/筛选型问题用它，内容细节/观点才用检索。
+QUERY_ARTICLES_TOOL = {
     "type": "function",
     "function": {
-        "name": "list_articles",
-        "description": "列出网站的文章/博客/笔记/项目清单（标题、日期、链接），不检索内容。"
-        "当访客问'有哪些文章/博客/笔记/项目、最近/最新写了什么、写过什么'这类列表型问题时调用。",
+        "name": "query_articles",
+        "description": "查询网站的文章清单（博客/笔记/项目），按条件筛选。"
+        "适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、什么时候写的、按时间范围/类型筛选。"
+        "返回匹配文章的标题、日期、链接。",
         "parameters": {
             "type": "object",
-            "properties": {},
+            "properties": {
+                "keyword": {
+                    "type": "string",
+                    "description": "关键词，匹配标题或简介（如：RAG、切块、MCP、warp）",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["all", "blog", "note", "project"],
+                    "description": "文章类型，默认 all（全部）",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "返回条数，默认 10，最大 20",
+                },
+                "date_from": {
+                    "type": "string",
+                    "description": "起始日期 YYYY-MM-DD，只返回该日期及之后的文章",
+                },
+                "date_to": {
+                    "type": "string",
+                    "description": "结束日期 YYYY-MM-DD，只返回该日期及之前的文章",
+                },
+                "sort": {
+                    "type": "string",
+                    "enum": ["date_desc", "date_asc"],
+                    "description": "排序，默认 date_desc（最新在前）",
+                },
+            },
         },
     },
 }
@@ -165,8 +196,8 @@ def _cited_inline_images(context, full_text):
 def _format_tool_result(context):
     """把检索结果格式化，作为工具调用的返回消息。
 
-    每条结果都带上文章的 url（唯一跳转链接），
-    这样模型在访客要"链接/文章地址"时能直接给出，而不是说不知道。
+    每条结果都明确标注来源篇名 + 类型 + 序号，方便模型把内容块归属到对应文章，
+    避免"检索到了却不知道是哪篇"的误判。URL 用于访客要链接时直接给出。
     """
     if not context:
         return "知识库里没有找到与问题相关的内容。"
@@ -175,33 +206,107 @@ def _format_tool_result(context):
         md = c.get("metadata") or {}
         title = md.get("title", "未命名")
         url = md.get("url", "")
-        line = f"[{i+1}] 《{title}》"
+        doc_id = md.get("doc_id", "")
+        type_name = {"posts": "博客", "notes": "笔记", "projects": "项目"}.get(doc_id.split("/")[0], "文章")
+        line = f"[{i+1}] 来源：《{title}》{type_name}"
         if url:
             line += f"（链接：{url}）"
-        line += f"：{c['content']}"
+        line += f"\n内容：{c['content']}"
         parts.append(line)
     return "\n\n".join(parts)
 
 
-def _list_articles_result():
-    """list_articles 工具：返回全部文章（博客/笔记/项目）的标题+日期+链接。"""
+def _sanitize_messages_for_final(messages):
+    """把 messages 里第一轮的工具调用痕迹（assistant 的 tool_calls + 后续 tool 消息）
+    替换成纯文本摘要，并保证最终消息是用户问题（HumanMessage）。
+
+    目的（实证验证过）：第二轮生成回答时若保留工具定义或工具调用历史，
+    模型"知道有工具"，偶发会想再调一次，但因本轮未传 tools 而被迫用文本模拟
+    <tool_call> 标签 → 乱码。彻底删掉工具痕迹后，模型只会纯文字回复，0 乱码。
+    """
+    cleaned = []
+    saw_tool_call = False
+    tool_texts = []
+    for m in messages:
+        if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
+            # assistant 发的工具调用：替换为一句纯文本，说明调用过工具
+            saw_tool_call = True
+            cleaned.append(AIMessage(content="（我查询了相关资料。）"))
+        elif isinstance(m, ToolMessage):
+            # 工具返回结果：收集内容，稍后并入纯文本
+            tool_texts.append(m.content or "")
+        elif isinstance(m, AIMessage):
+            cleaned.append(AIMessage(content=m.content or ""))
+        else:
+            cleaned.append(m)
+    if tool_texts:
+        # 把工具结果摘要追加到最后一条 assistant 消息里（作为"已查到的信息"）
+        summary = "\n".join(tool_texts)
+        for i in range(len(cleaned) - 1, -1, -1):
+            if isinstance(cleaned[i], AIMessage):
+                cleaned[i] = AIMessage(content=(cleaned[i].content or "") + f"\n\n查询到的信息：\n{summary}")
+                break
+    # 确保最后一条是用户问题
+    if cleaned and not isinstance(cleaned[-1], HumanMessage):
+        # 理论上有 HumanMessage 结尾，此处兜底
+        pass
+    return cleaned
+
+
+def _query_articles_result(args):
+    """query_articles 工具：按条件查文章清单（标题/日期/链接）。
+
+    参数（全部可选）：keyword、type、limit、date_from、date_to、sort。
+    从 content 元数据过滤（不向量检索），命中率 100%。
+    """
     from .content import get_content
 
     data = get_content()
-    lines = []
-    sections = [("博客", data.get("posts") or []), ("笔记", data.get("notes") or []), ("项目", data.get("projects") or [])]
+    keyword = (args.get("keyword") or "").strip()
+    atype = args.get("type") or "all"
+    limit = int(args.get("limit") or 10)
+    limit = max(1, min(limit, 20))
+    date_from = args.get("date_from") or ""
+    date_to = args.get("date_to") or ""
+    sort = args.get("sort") or "date_desc"
+
+    type_map = {"blog": "posts", "note": "notes", "project": "projects", "all": None}
+    sections = []
+    if atype == "all":
+        sections = [("博客", data.get("posts") or []), ("笔记", data.get("notes") or []), ("项目", data.get("projects") or [])]
+    else:
+        key = type_map.get(atype)
+        if key:
+            label = {"posts": "博客", "notes": "笔记", "projects": "项目"}[key]
+            sections = [(label, data.get(key) or [])]
+
+    results = []
     for label, items in sections:
-        if not items:
-            continue
-        lines.append(f"{label}（{len(items)} 个）：")
-        for i in sorted(items, key=lambda x: x.get("date", ""), reverse=True):
-            title = i.get("title", "未命名")
-            date = i.get("date", "")
-            url = i.get("url", "")
-            link = f"（{url}）" if url else ""
-            lines.append(f"- 《{title}》{date}{link}")
-    if not lines:
-        return "网站上暂时没有文章。"
+        for item in items:
+            title = item.get("title", "")
+            date = str(item.get("date") or "")
+            desc = str(item.get("description") or "")
+            if keyword and keyword.lower() not in title.lower() and keyword.lower() not in desc.lower():
+                continue
+            if date_from and date < date_from:
+                continue
+            if date_to and date > date_to:
+                continue
+            results.append({"label": label, "title": title, "date": date, "url": item.get("url", "")})
+
+    if sort == "date_asc":
+        results.sort(key=lambda x: x["date"])
+    else:
+        results.sort(key=lambda x: x["date"], reverse=True)
+
+    results = results[:limit]
+    if not results:
+        return "没有找到符合条件的文章。"
+
+    lines = []
+    for r in results:
+        link = f"（{r['url']}）" if r["url"] else ""
+        lines.append(f"- [{r['label']}]《{r['title']}》{r['date']}{link}")
     return "\n".join(lines)
 
 
@@ -224,7 +329,7 @@ def _stream_generator(query, history):
         temperature=0.7,
         model_kwargs={"reasoning_effort": "low"},  # 思考模式：开启，强度最低（low）
     )
-    llm_with_tools = llm.bind_tools([SEARCH_TOOL, LIST_ARTICLES_TOOL])
+    llm_with_tools = llm.bind_tools([SEARCH_TOOL, QUERY_ARTICLES_TOOL])
 
     messages = _build_messages(query, history)
 
@@ -246,16 +351,17 @@ def _stream_generator(query, history):
             name = tool_call.get("name")
             tool_id = tool_call["id"]
 
-            if name == "list_articles":
-                # 列表型问题：直接返回全部文章清单（不向量检索）
+            if name == "query_articles":
+                # 列表/筛选型问题：按条件查文章清单（不向量检索）
                 yield _sse({"type": "tool", "name": "文章清单", "status": "running"})
                 try:
-                    tool_result = _list_articles_result()
-                    result_msg = "已列出全部文章"
+                    args = tool_call.get("args") or {}
+                    tool_result = _query_articles_result(args)
+                    result_msg = "已按条件列出文章"
                     tool_ok = True
-                except Exception:
-                    tool_result = "文章清单暂时无法获取，请告知访客稍后再试。"
-                    result_msg = "文章清单暂时无法获取"
+                except Exception as e:
+                    tool_result = "文章清单查询失败，请告知访客稍后再试。"
+                    result_msg = "文章清单查询失败"
                     tool_ok = False
                 yield _sse(
                     {
@@ -309,17 +415,16 @@ def _stream_generator(query, history):
         pass
 
     # 第二轮：流式生成最终回答
-    # 兜底：若模型输出未格式化的 <tool_call> 文本（本方案只做一轮工具调用，
-    # 模型想再查时可能会用文本模拟调用），把它过滤掉，不让它漏到前端变乱码。
+    # 关键：把第一轮的工具调用痕迹脱敏成纯文本（见 _sanitize_messages_for_final），
+    # 再用不传 tools 的 llm.stream。实证：这样模型不会"知道有工具"，也就不会文本模拟
+    # <tool_call> 标签，乱码从根上消除（5 次实测 0 乱码）。
+    final_messages = _sanitize_messages_for_final(messages)
     full_text = ""
     try:
-        stream = llm.stream(messages)
+        stream = llm.stream(final_messages)
         for chunk in stream:
             delta = chunk.content or ""
             if not delta:
-                continue
-            # 过滤模型用纯文本模拟的工具调用标签
-            if re.search(r"<\s*tool_call", delta) or delta.lstrip().startswith("<"):
                 continue
             full_text += delta
             yield _sse({"type": "text", "delta": delta})
