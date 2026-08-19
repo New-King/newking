@@ -39,9 +39,10 @@ def _build_system_prompt():
 {site}
 
 【回答规则】
-1. 当你需要了解网站内容（博客/笔记/项目/博主看法）来回答问题，或问题涉及网站里可能有的内容时，
-   使用 search_knowledge 工具检索知识库。不要凭记忆编造网站没有的内容。
-2. 问题与网站无关（写代码、算法、闲聊、常识问题）时，不要调用工具，直接凭你的能力回答。
+1. 你有两个工具：
+   - list_articles：访客问"有哪些/写过什么/最近（最新）写了什么"这类列清单问题时调用，直接返回全部文章清单。
+   - search_knowledge：问某篇文章/某话题的具体内容、细节、观点时调用，检索知识库返回相关内容块。
+2. 需要了解网站内容来回答时用工具，不要凭记忆编造网站没有的内容。但访客只是闲聊、问代码、问算法等与网站无关的问题时，不要调用工具，直接回答。
 3. 检索结果的参考资料带编号 [1][2]...。回答里用到哪条的内容，就在对应句尾标注编号，
    如：我写过一篇关于 RAG 落地的博客[2]。没用到不标。
 4. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
@@ -66,6 +67,22 @@ SEARCH_TOOL = {
                 }
             },
             "required": ["query"],
+        },
+    },
+}
+
+# list_articles 工具定义：查"有哪些文章/最近写了什么"这类列表型问题。
+# 不向量检索，直接返回全部文章（博客/笔记/项目）的标题+日期+链接，命中率 100%。
+# 与 search_knowledge 互补：列表型问题用它，内容细节才用检索。
+LIST_ARTICLES_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "list_articles",
+        "description": "列出网站的文章/博客/笔记/项目清单（标题、日期、链接），不检索内容。"
+        "当访客问'有哪些文章/博客/笔记/项目、最近/最新写了什么、写过什么'这类列表型问题时调用。",
+        "parameters": {
+            "type": "object",
+            "properties": {},
         },
     },
 }
@@ -166,6 +183,28 @@ def _format_tool_result(context):
     return "\n\n".join(parts)
 
 
+def _list_articles_result():
+    """list_articles 工具：返回全部文章（博客/笔记/项目）的标题+日期+链接。"""
+    from .content import get_content
+
+    data = get_content()
+    lines = []
+    sections = [("博客", data.get("posts") or []), ("笔记", data.get("notes") or []), ("项目", data.get("projects") or [])]
+    for label, items in sections:
+        if not items:
+            continue
+        lines.append(f"{label}（{len(items)} 个）：")
+        for i in sorted(items, key=lambda x: x.get("date", ""), reverse=True):
+            title = i.get("title", "未命名")
+            date = i.get("date", "")
+            url = i.get("url", "")
+            link = f"（{url}）" if url else ""
+            lines.append(f"- 《{title}》{date}{link}")
+    if not lines:
+        return "网站上暂时没有文章。"
+    return "\n".join(lines)
+
+
 def _stream_generator(query, history):
     """SSE 事件生成器（agentic loop 最小形态）。
 
@@ -185,7 +224,7 @@ def _stream_generator(query, history):
         temperature=0.7,
         model_kwargs={"reasoning_effort": "low"},  # 思考模式：开启，强度最低（low）
     )
-    llm_with_tools = llm.bind_tools([SEARCH_TOOL])
+    llm_with_tools = llm.bind_tools([SEARCH_TOOL, LIST_ARTICLES_TOOL])
 
     messages = _build_messages(query, history)
 
@@ -204,11 +243,40 @@ def _stream_generator(query, history):
     if first.tool_calls:
         context = []
         for tool_call in first.tool_calls:
-            if tool_call.get("name") != "search_knowledge":
-                # 非检索工具：占位回填，避免"assistant 带 tool_calls 必须有对应 tool message"报错
+            name = tool_call.get("name")
+            tool_id = tool_call["id"]
+
+            if name == "list_articles":
+                # 列表型问题：直接返回全部文章清单（不向量检索）
+                yield _sse({"type": "tool", "name": "文章清单", "status": "running"})
+                try:
+                    tool_result = _list_articles_result()
+                    result_msg = "已列出全部文章"
+                    tool_ok = True
+                except Exception:
+                    tool_result = "文章清单暂时无法获取，请告知访客稍后再试。"
+                    result_msg = "文章清单暂时无法获取"
+                    tool_ok = False
+                yield _sse(
+                    {
+                        "type": "tool",
+                        "name": "文章清单",
+                        "status": "done",
+                        "ok": tool_ok,
+                        "result": result_msg,
+                        "related": [],
+                    }
+                )
                 messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
-                messages.append(ToolMessage(content="（无此工具）", tool_call_id=tool_call["id"]))
+                messages.append(ToolMessage(content=tool_result, tool_call_id=tool_id))
                 continue
+
+            if name != "search_knowledge":
+                # 未知工具：占位回填，避免"assistant 带 tool_calls 必须有对应 tool message"报错
+                messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
+                messages.append(ToolMessage(content="（无此工具）", tool_call_id=tool_id))
+                continue
+
             yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
             tool_query = (tool_call.get("args") or {}).get("query", query)
             try:
@@ -235,7 +303,7 @@ def _stream_generator(query, history):
             context.extend(found)
             # 把这一轮 tool_call 和工具结果追加进消息（每个 tool_call 都要有对应 ToolMessage）
             messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
-            messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
+            messages.append(ToolMessage(content=tool_result, tool_call_id=tool_id))
     else:
         # 模型没调工具：直接进入流式生成
         pass
