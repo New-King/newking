@@ -93,12 +93,49 @@ def search(query, top_k=MAX_RESULTS):
         ).fetchall()
 
     results = []
+    per_doc = {}  # doc_id -> 已保留的块数（去重，避免单篇刷屏掩盖其他文章）
     for content, metadata, distance in rows:
         if float(distance) > RELEVANCE_THRESHOLD:
             break  # 已按距离升序，后面的更远，全部不相关
+        doc_id = (metadata or {}).get("doc_id", "")
+        if per_doc.get(doc_id, 0) >= 2:
+            continue  # 同一篇最多保留 2 块，让其他文章有机会进入结果
+        per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
         results.append(
             {"content": content, "score": float(distance), "metadata": metadata}
         )
         if len(results) >= top_k:
             break
+
+    # 关键词兜底：语义检索 0 条时，用 SQL LIKE 匹配标题/简介/内容再找一遍。
+    # 解决"写过切块的文章吗"这种关键词型问题向量命中不了的情况（hybrid search 简化版）。
+    if not results:
+        results = keyword_fallback(query, top_k=top_k)
+
     return results
+
+
+def keyword_fallback(query, top_k=MAX_RESULTS):
+    """关键词兜底检索：按关键词匹配标题/简介/内容（SQL LIKE）。
+
+    语义检索 0 条时调用，用关键词精确匹配，解决"标题/内容里含某词"的查询。
+    """
+    kw = (query or "").strip()
+    if not kw:
+        return []
+    pattern = f"%{kw}%"
+    with get_conn() as conn:
+        rows = conn.execute(
+            """
+            SELECT content, metadata, 0.0 AS distance
+            FROM chunks
+            WHERE content LIKE %s OR metadata->>'title' LIKE %s OR metadata->>'description' LIKE %s
+            ORDER BY metadata->>'date' DESC
+            LIMIT %s
+            """,
+            (pattern, pattern, pattern, top_k),
+        ).fetchall()
+    return [
+        {"content": content, "score": 0.0, "metadata": metadata}
+        for content, metadata, _ in rows
+    ]
