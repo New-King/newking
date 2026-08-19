@@ -47,8 +47,8 @@ jobs:
           SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no"
           # 同步 backend 代码
           rsync -avz -e "$SSH" backend/ root@${{ secrets.SERVER_HOST }}:/opt/server/newking/backend/
-          # 同步 content 内容
-          rsync -avz -e "$SSH" content/ root@${{ secrets.SERVER_HOST }}:/opt/server/newking/content/
+          # 同步 content 内容（--delete：删除服务器上已不存在的文件，如被删除/重命名的文章）
+          rsync -avz --delete -e "$SSH" content/ root@${{ secrets.SERVER_HOST }}:/opt/server/newking/content/
 
       - name: 重建并重启后端容器
         run: |
