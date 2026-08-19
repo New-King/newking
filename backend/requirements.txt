@@ -5,5 +5,9 @@ openai
 langchain-openai
 langchain-core
 langchain-text-splitters
+langchain-classic
+langchain-community
+rank-bm25
+jieba
 psycopg[binary]
 pyyaml

@@ -1,7 +1,16 @@
-"""检索模块：把用户问题变成向量，在知识库里找出最相关的内容块。
+"""检索模块：混合检索（语义向量 + BM25 关键词，RRF 融合）。
 
-流程：问题 → 查询路由判断（是否需要检索）→ bge-large-zh-v1.5 向量化 →
-      pgvector 余弦距离找候选 → 相关性阈值过滤。
+架构（业界成熟做法，复用 LangChain 组件）：
+  语义检索  ──┐
+              ├─▶ EnsembleRetriever（RRF 逆序秩融合）──▶ 结果
+  BM25关键词 ─┘
+
+- 语义检索：pgvector 余弦距离（ChunksVectorRetriever，查现有 chunks 表）。
+  这是我们保留的定制：连数据库、按余弦距离排序、相关性阈值过滤、按篇去重。
+- 关键词检索：BM25Retriever（LangChain 官方组件），jieba 中文分词，
+  精准匹配"专有名词/产品名"等语义检索易漏的词。
+- 融合：EnsembleRetriever（LangChain 官方组件，langchain_classic），
+  用 RRF（Reciprocal Rank Fusion）融合两路结果，id_key 去重。
 
 查询路由（needs_retrieval）—— 业界分层的做法：
   L0 规则层（便宜、快）：问候/寒暄/道谢词表拦截、乱码检测（无中文字符）。
@@ -9,14 +18,22 @@
   这两层组合解决"闲聊/乱码/问候也去检索"的问题；
   更复杂的（如"你是谁"这种需要检索的短问）留给向量阈值放行。
 
-相关性阈值（RELEVANCE_THRESHOLD = 0.58）：
-- 余弦距离 ≤ 阈值 = 语义相关（保留）
-- 余弦距离 > 阈值 = 不相关（过滤，如乱码/与知识库无关）
+为什么用 EnsembleRetriever 而不是手写：
+  手写"语义+关键词合并排序"容易踩坑（拆词不准、融合权重不标准），
+  LangChain 提供现成的 EnsembleRetriever（RRF 融合）+ BM25Retriever（jieba 分词），
+  是业界标准做法，后续好维护。见 AGENTS.md"复用成熟框架组件"守则。
 
-为什么不做 rerank（重排）：实测 SiliconFlow 的 bge-reranker-v2-m3 对中文帮倒忙，
-bge-large-zh-v1.5 的向量检索本身已够准。
+为什么向量检索用自定义 retriever 而非 PGVector：
+  PGVector 要求自己的表结构（langchain_pg_embedding），无法直接读我们现有
+  chunks 表，迁移需重灌数据+改 indexer。我们的向量检索已用裸 SQL 稳定运行，
+  包成 BaseRetriever 即可接入 EnsembleRetriever，改动最小、不迁数据。
 """
 import re
+
+from langchain_core.documents import Document
+from langchain_core.retrievers import BaseRetriever
+from langchain_community.retrievers import BM25Retriever
+from langchain_classic.retrievers.ensemble import EnsembleRetriever
 
 from .config import SILICONFLOW_API_KEY, SILICONFLOW_BASE_URL
 from .db import get_conn
@@ -30,6 +47,9 @@ RELEVANCE_THRESHOLD = 0.55
 RECALL_TOP_K = 10
 # 最终最多返回的块数
 MAX_RESULTS = 5
+# 融合权重：语义略高（语义理解更重要），关键词次之（精准词补充）
+VECTOR_WEIGHT = 0.6
+BM25_WEIGHT = 0.4
 
 # L0 规则层：明确不需要检索的输入（问候/寒暄/道谢/无意义）
 _NAVIGATION_PHRASES = {
@@ -65,130 +85,146 @@ def needs_retrieval(query):
     return True
 
 
+class ChunksVectorRetriever(BaseRetriever):
+    """语义向量检索器：查现有 pgvector chunks 表。
+
+    保留原有定制逻辑：余弦距离排序 + 相关性阈值过滤 + 按篇去重（每篇限 2 块）。
+    实现 BaseRetriever 接口，供 EnsembleRetriever 组合。
+    """
+
+    top_k: int = MAX_RESULTS
+
+    def _get_relevant_documents(self, query):
+        embeddings = make_embeddings()
+        query_vec = embeddings.embed_query(query)
+        with get_conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT content, metadata, embedding <=> %s::vector AS distance
+                FROM chunks
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (query_vec, query_vec, RECALL_TOP_K),
+            ).fetchall()
+
+        results = []
+        per_doc = {}
+        for content, metadata, distance in rows:
+            if float(distance) > RELEVANCE_THRESHOLD:
+                break
+            doc_id = (metadata or {}).get("doc_id", "")
+            if per_doc.get(doc_id, 0) >= 2:
+                continue
+            per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
+            results.append(
+                Document(
+                    page_content=content,
+                    metadata=metadata or {},
+                )
+            )
+            if len(results) >= self.top_k:
+                break
+        return results
+
+
+# BM25 检索器：惰性单例（首次 search 时从 content 加载全部文档建索引，之后复用）
+_bm25_retriever = None
+_bm25_doc_count = 0
+
+
+def _build_bm25_retriever():
+    """构建 BM25 检索器：从 content 加载全部文档（标题+正文），jieba 中文分词。
+
+    由于 content 会变化（增删文章），这里按"文档数量变化"判断是否需要重建。
+    """
+    global _bm25_retriever, _bm25_doc_count
+    from .content import get_content
+
+    data = get_content()
+    posts = data.get("posts") or []
+    notes = data.get("notes") or []
+    projects = data.get("projects") or []
+
+    # 类型 → 数据库 doc_id 的目录名（doc_id 形如 posts/p1-personal-site.md）
+    # 注意：url 里是 /blog/，但数据库目录是 posts/，所以直接用类型变量而非 url 反推。
+    sections = [
+        ("posts", data.get("posts") or []),
+        ("notes", data.get("notes") or []),
+        ("projects", data.get("projects") or []),
+    ]
+
+    texts = []
+    metadatas = []
+    for dirname, items in sections:
+        for item in items:
+            raw_id = item.get("id", "")
+            doc_id = f"{dirname}/{raw_id}.md"
+            texts.append(f"{item.get('title', '')}\n{item.get('description', '')}\n{item.get('content', '')}")
+            metadatas.append({
+                "doc_id": doc_id,
+                "title": item.get("title", ""),
+                "url": item.get("url", ""),
+                "date": str(item.get("date") or ""),
+            })
+
+    count = len(texts)
+    if _bm25_retriever is not None and count == _bm25_doc_count:
+        return _bm25_retriever
+
+    _bm25_doc_count = count
+    _bm25_retriever = BM25Retriever.from_texts(texts, metadatas=metadatas)
+    _bm25_retriever.k = MAX_RESULTS * 3  # 多取一些，融合后再由 EnsembleRetriever 截断
+    # jieba 中文分词（BM25 默认按字符切分，jieba 效果更好）
+    try:
+        import jieba
+
+        def _tokenize(text):
+            return list(jieba.cut(text))
+
+        _bm25_retriever.preprocess_func = _tokenize
+    except ImportError:
+        pass  # 无 jieba 时退回默认字符切分
+    return _bm25_retriever
+
+
+def _build_ensemble():
+    """构建混合检索器（语义 + BM25，RRF 融合，按 doc_id 去重）。"""
+    vector_retriever = ChunksVectorRetriever()
+    bm25_retriever = _build_bm25_retriever()
+    return EnsembleRetriever(
+        retrievers=[vector_retriever, bm25_retriever],
+        weights=[VECTOR_WEIGHT, BM25_WEIGHT],
+        id_key="doc_id",  # 用 doc_id 去重（同一篇的块只保留一个），替代手写按篇去重
+    )
+
+
 def search(query, top_k=MAX_RESULTS):
-    """检索与问题相关的内容块（含查询路由 + 相关性阈值过滤）。
+    """混合检索：语义向量 + BM25 关键词，RRF 融合后返回最相关的内容块。
 
     参数：
         query：用户的问题（字符串）。
         top_k：最多返回几个块（默认 5）。
     返回：
-        列表，每个元素 {content, score（余弦距离）, metadata}。
+        列表，每个元素 {content, score（RRF融合分）, metadata}。
         查询路由判定不需要检索，或没有任何相关块时，返回空列表。
     """
     if not needs_retrieval(query):
         return []
 
-    embeddings = make_embeddings()
-    query_vec = embeddings.embed_query(query)
+    ensemble = _build_ensemble()
+    docs = ensemble.invoke(query)
+    docs = docs[:top_k]
 
-    with get_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT content, metadata, embedding <=> %s::vector AS distance
-            FROM chunks
-            ORDER BY embedding <=> %s::vector
-            LIMIT %s
-            """,
-            (query_vec, query_vec, RECALL_TOP_K),
-        ).fetchall()
-
+    # 转成统一返回结构（与原先一致，供 chat.py 使用）
+    # score 用"排名分数"（越靠前越大），表示相关性；EnsembleRetriever 已按 RRF 排序。
     results = []
-    per_doc = {}  # doc_id -> 已保留的块数（去重，避免单篇刷屏掩盖其他文章）
-    for content, metadata, distance in rows:
-        if float(distance) > RELEVANCE_THRESHOLD:
-            break  # 已按距离升序，后面的更远，全部不相关
-        doc_id = (metadata or {}).get("doc_id", "")
-        if per_doc.get(doc_id, 0) >= 2:
-            continue  # 同一篇最多保留 2 块，让其他文章有机会进入结果
-        per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
+    for i, doc in enumerate(docs):
         results.append(
-            {"content": content, "score": float(distance), "metadata": metadata}
+            {
+                "content": doc.page_content,
+                "score": 1.0 / (i + 1),  # 位置分数，越靠前越大
+                "metadata": doc.metadata or {},
+            }
         )
-        if len(results) >= top_k:
-            break
-
-    # 并行混合：语义结果 + 关键词命中的结果一起。
-    # 语义检索会漏掉"精确词"匹配（如 p7 大量讲 RAG 抢了 p2 的位置），
-    # 关键词 LIKE 能精确命中含该词的文章，把它补进来。
-    kw_results = keyword_fallback(query, top_k=top_k)
-    kw_docs = {r["metadata"].get("doc_id") for r in kw_results}
-    # 把关键词命中、但语义结果里没有的文档补进去
-    seen_docs = {r["metadata"].get("doc_id") for r in results}
-    for r in kw_results:
-        doc_id = r["metadata"].get("doc_id")
-        if doc_id in seen_docs:
-            continue  # 语义已返回这篇，不重复
-        # 关键词精确命中标题/简介 → 强相关，给一个靠前的"虚拟距离"（< 阈值，排进结果）
-        r["score"] = 0.40
-        results.append(r)
-        seen_docs.add(doc_id)
-        if len(results) >= top_k:
-            break
-
-    # 按分数排序（距离小=相关，排前），让精确命中的文章排在前面
-    results.sort(key=lambda x: x["score"])
-
-    return results
-
-
-def _split_keywords(query):
-    """从查询词里拆出关键词，用于 LIKE 匹配。
-
-    拆法（轻量，不引分词库）：
-    - 英文/数字词：按 [a-zA-Z0-9]+ 提取（vite、react、RAG、MCP 等）
-    - 中文：按空白/标点切分，取长度>=2 的片段（避免单字误匹配）
-    返回去重后的关键词列表。
-    """
-    q = (query or "").strip()
-    if not q:
-        return []
-    # 英文/数字词
-    en = re.findall(r"[a-zA-Z0-9]+", q)
-    # 中文片段：去掉英文/数字/空白/标点后，按常见分隔切
-    zh_part = re.sub(r"[a-zA-Z0-9\s，。！？、；：""''（）()【】\[\]-]", "", q)
-    zh = [s for s in re.split(r"[,，\s]+", zh_part) if len(s.strip()) >= 2]
-    kws = [k.lower() for k in en + zh]
-    # 去重保序
-    seen = set()
-    return [k for k in kws if not (k in seen or seen.add(k))]
-
-
-def keyword_fallback(query, top_k=MAX_RESULTS):
-    """关键词兜底检索：按关键词匹配标题/简介/内容（SQL LIKE）。
-
-    把 query 拆成多个关键词，用 OR 匹配（含任一关键词即命中），
-    解决"写过切块/vite 的文章吗"这种精确词查询语义检索命中不了的问题。
-    语义检索 0 条时调用。
-    """
-    kws = _split_keywords(query)
-    if not kws:
-        return []
-    with get_conn() as conn:
-        # 动态拼 OR 条件，每篇最多保留 2 块
-        clauses = []
-        params = []
-        for kw in kws:
-            pat = f"%{kw}%"
-            clauses.append("(content ILIKE %s OR metadata->>'title' ILIKE %s OR metadata->>'description' ILIKE %s)")
-            params += [pat, pat, pat]
-        sql = f"""
-            SELECT content, metadata, 0.0 AS distance
-            FROM chunks
-            WHERE ({' OR '.join(clauses)})
-            ORDER BY metadata->>'date' DESC
-            LIMIT %s
-        """
-        params.append(top_k * 3)  # 多取一些，下面按篇去重
-        rows = conn.execute(sql, params).fetchall()
-    # 按篇去重（每篇最多2块）
-    results = []
-    per_doc = {}
-    for content, metadata, _ in rows:
-        doc_id = (metadata or {}).get("doc_id", "")
-        if per_doc.get(doc_id, 0) >= 2:
-            continue
-        per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
-        results.append({"content": content, "score": 0.0, "metadata": metadata})
-        if len(results) >= top_k:
-            break
     return results
