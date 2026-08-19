@@ -13,13 +13,14 @@
 
 本文件职责：实现上面这条管线，对外提供一个 index_all() 主入口。
 """
-import hashlib   # 计算哈希（内容指纹）用
-import json      # 元数据转成 JSON 字符串存库
-import re        # 正则，用来识别 markdown 标题行
+import hashlib
+import json
+import re
 from pathlib import Path
 
-import httpx     # 直接调 SiliconFlow embedding API
-import yaml      # 解析 markdown 头部的 frontmatter（YAML 格式）
+import httpx
+import yaml
+from langchain_text_splitters import ExperimentalMarkdownSyntaxTextSplitter
 
 from .config import CONTENT_DIR, EMBEDDING_MODEL, SILICONFLOW_API_KEY, SILICONFLOW_BASE_URL
 from .db import get_conn, init_db
@@ -131,6 +132,22 @@ def split_by_headings(body):
     return chunks
 
 
+def split_by_markdown_syntax(body):
+    """用 LangChain 的 ExperimentalMarkdownSyntaxTextSplitter 切块。
+
+    比自研的 split_by_headings 更智能：不仅按标题，还识别代码块、表格、
+    引用、列表等 markdown 结构，让这些结构保持完整、单独成块。
+
+    strip_headers=False：标题保留在块内容里（不排除），同时 metadata 也有
+    Header 字段——既保留主题信息，又获得智能结构切分。
+
+    返回：Document 对象列表，每个有 page_content（块文本）和 metadata
+    （自动带标题、代码语言等，如 {'Header 2': 'xxx', 'Code': 'python'}）。
+    """
+    splitter = ExperimentalMarkdownSyntaxTextSplitter(strip_headers=False)
+    return splitter.split_text(body)
+
+
 def content_hash(text):
     """计算一段内容的 SHA-256 哈希（内容指纹）。
 
@@ -209,9 +226,13 @@ def index_all():
 
             # 走到这说明内容变了（或首次入库）：重新处理这篇
             meta, body = parse_md(text)    # 拆元数据和正文
-            chunks = split_by_headings(body)  # 按标题切块
-            if not chunks:                 # 这篇没有可切的内容就跳过
+
+            docs = split_by_markdown_syntax(body)  # LangChain 按 markdown 语法切块
+            if not docs:
                 continue
+
+            chunks = [d.page_content for d in docs]  # 块文本列表
+            auto_meta = [d.metadata or {} for d in docs]  # LangChain 自动 metadata
 
             vectors = embeddings.embed_documents(chunks)  # 把整批块一起向量化（一次请求）
 
@@ -226,7 +247,8 @@ def index_all():
                 )
                 # 逐块插入 chunks 表：块文本 + 向量 + 元数据
                 for i, (chunk, vec) in enumerate(zip(chunks, vectors)):
-                    metadata = json_safe({**meta, "doc_id": doc_id, "chunk_index": i})
+                    # 合并 frontmatter(meta) + LangChain 自动 metadata + doc_id/chunk_index
+                    metadata = json_safe({**meta, **auto_meta[i], "doc_id": doc_id, "chunk_index": i})
                     cur.execute(
                         "INSERT INTO chunks (doc_id, chunk_index, content, metadata, embedding) "
                         "VALUES (%s, %s, %s, %s, %s)",
