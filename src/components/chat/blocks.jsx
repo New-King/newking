@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { marked } from 'marked';
+import { marked, Parser } from 'marked';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
@@ -177,7 +177,8 @@ function renderMarkdownWithRefs(text) {
   renderer.link = (token) => {
     const href = token.href || '';
     const title = token.title ? ` title="${token.title}"` : '';
-    const content = token.text || '';
+    const parser = new Parser({ renderer });
+    const content = token.tokens ? parser.parseInline(token.tokens) : (token.text || '');
     return `<a href="${href}" target="_blank" rel="noreferrer"${title} class="article-link">↗ ${content}</a>`;
   };
   renderer.code = (token) => {
