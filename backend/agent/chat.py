@@ -39,17 +39,19 @@ def _build_system_prompt():
 {site}
 
 【回答规则】
-1. 你有两个工具，按问题类型选用：
-   - query_articles：问"有哪些/最近（最新）写了什么/有没有写过xxx/什么时候写的/按类型或时间筛选"这类列清单问题时调用。
-     它直接查文章清单（标题/日期/链接），不检索具体内容。可传 keyword（关键词，匹配标题/简介）、type（blog/note/project/all）、
-     date_from/date_to（时间范围）、limit（条数）、sort（排序）。
+1. 你有两个工具，按问题类型选用，一次只调用一个工具、只传一个最相关的关键词：
+   - query_articles：问"有哪些/最近（最新）写了什么/有没有写过xxx/按类型筛选"这类列清单问题时调用。
+     它直接查文章清单（标题/日期/链接），不检索具体内容。可传 keyword（关键词，匹配标题/简介，如需多词用逗号分隔）、
+     type（blog/note/project/all）、limit（条数）、sort（排序）。
    - search_knowledge：问某篇文章/某话题的"具体内容、细节、观点"时调用。它检索知识库内容块，返回相关内容。
+   不要为了"查全"一次调用同一个工具多次——一次调用就够，关键词用逗号分隔放在一个 keyword/query 里。
 2. 需要了解网站内容来回答时用工具，不要凭记忆编造网站没有的内容。但访客只是闲聊、问代码、问算法等与网站无关的问题时，不要调用工具，直接回答。
 3. 检索结果的参考资料带编号 [1][2]...。回答里用到哪条的内容，就在对应句尾标注编号，
    如：我写过一篇关于 RAG 落地的博客[2]。没用到不标。
 4. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
 5. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
 6. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出查询或检索结果里的 url。
+   给链接时直接用裸 URL（如 https://xxx）或 markdown 链接 [文字](url)，不要用中文或英文括号把 URL 包起来（如（https://xxx）），否则前端会把括号显示出来。
 7. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
 8. 工具调用已经由系统代为执行并给了你结果，你只负责根据结果组织文字回复。严禁在回复文本里输出任何工具调用标签（如 <tool_call>、<invoke> 等）——那会被当成乱码显示给访客。直接说人话回答即可。"""
 
@@ -77,19 +79,22 @@ SEARCH_TOOL = {
 # query_articles 工具定义：查"有哪些/最近写了什么/有没有写过xxx"这类列表型问题。
 # 不向量检索，直接按条件过滤文章的 metadata（标题/日期/类型/链接），命中率 100%。
 # 与 search_knowledge 互补：列表/筛选型问题用它，内容细节/观点才用检索。
+# 参数刻意精简（keyword/type/limit/sort）：不提供时间范围（模型不确定当天日期，
+# 硬塞时间参数容易出错），参数少模型也更容易填对。
 QUERY_ARTICLES_TOOL = {
     "type": "function",
     "function": {
         "name": "query_articles",
         "description": "查询网站的文章清单（博客/笔记/项目），按条件筛选。"
-        "适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、什么时候写的、按时间范围/类型筛选。"
+        "适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、按类型筛选。"
         "返回匹配文章的标题、日期、链接。",
         "parameters": {
             "type": "object",
             "properties": {
                 "keyword": {
                     "type": "string",
-                    "description": "关键词，匹配标题或简介（如：RAG、切块、MCP、warp）",
+                    "description": "关键词，匹配标题或简介（如：RAG、切块、MCP、warp）。"
+                    "如需多个关键词，用逗号分隔放在这一个字段里（如：vite, react）。",
                 },
                 "type": {
                     "type": "string",
@@ -99,14 +104,6 @@ QUERY_ARTICLES_TOOL = {
                 "limit": {
                     "type": "integer",
                     "description": "返回条数，默认 10，最大 20",
-                },
-                "date_from": {
-                    "type": "string",
-                    "description": "起始日期 YYYY-MM-DD，只返回该日期及之后的文章",
-                },
-                "date_to": {
-                    "type": "string",
-                    "description": "结束日期 YYYY-MM-DD，只返回该日期及之前的文章",
                 },
                 "sort": {
                     "type": "string",
@@ -266,9 +263,10 @@ def _query_articles_result(args):
     atype = args.get("type") or "all"
     limit = int(args.get("limit") or 10)
     limit = max(1, min(limit, 20))
-    date_from = args.get("date_from") or ""
-    date_to = args.get("date_to") or ""
     sort = args.get("sort") or "date_desc"
+
+    # keyword 支持逗号分隔多词：任一词命中即算匹配（OR）
+    keywords = [k.strip().lower() for k in re.split(r"[,，\s]+", keyword) if k.strip()]
 
     type_map = {"blog": "posts", "note": "notes", "project": "projects", "all": None}
     sections = []
@@ -286,14 +284,17 @@ def _query_articles_result(args):
             title = item.get("title", "")
             date = str(item.get("date") or "")
             desc = str(item.get("description") or "")
-            if keyword and keyword.lower() not in title.lower() and keyword.lower() not in desc.lower():
-                continue
-            if date_from and date < date_from:
-                continue
-            if date_to and date > date_to:
-                continue
-            results.append({"label": label, "title": title, "date": date, "url": item.get("url", "")})
-
+            # 关键词 OR 匹配：任一关键词命中标题或简介
+            if keywords:
+                matched = any(
+                    kw in title.lower() or kw in desc.lower() for kw in keywords
+                )
+                if not matched:
+                    continue
+            results.append({
+                "label": label, "title": title, "date": date, "url": item.get("url", ""),
+                "doc_id": item.get("id", ""),
+            })
     if sort == "date_asc":
         results.sort(key=lambda x: x["date"])
     else:
@@ -303,11 +304,20 @@ def _query_articles_result(args):
     if not results:
         return "没有找到符合条件的文章。"
 
+    # URL 单独成行给模型，不包裹括号；配合系统提示词让模型输出链接时用裸 URL。
     lines = []
     for r in results:
-        link = f"（{r['url']}）" if r["url"] else ""
-        lines.append(f"- [{r['label']}]《{r['title']}》{r['date']}{link}")
-    return "\n".join(lines)
+        line = f"- [{r['label']}]《{r['title']}》{r['date']}"
+        if r["url"]:
+            line += f"\n  {r['url']}"
+        lines.append(line)
+    text = "\n".join(lines)
+    # 同时返回结构化结果（url/title），供 chat 侧写入 context，让 [N] 引用能生成链接块
+    structured = [
+        {"content": r["title"], "metadata": {"url": r["url"], "title": r["title"], "doc_id": r.get("doc_id", "")}}
+        for r in results
+    ]
+    return text, structured
 
 
 def _stream_generator(query, history):
@@ -347,22 +357,45 @@ def _stream_generator(query, history):
     # 模型请求调用工具（可能一次性返回多个 tool_call，逐个执行并回填）
     if first.tool_calls:
         context = []
+        seen_tools = {}  # 工具名 -> 合并后的关键词集合（同名工具去重，一次只执行一个）
         for tool_call in first.tool_calls:
             name = tool_call.get("name")
             tool_id = tool_call["id"]
+            args = tool_call.get("args") or {}
+
+            # 同名工具去重：模型有时一次返回多个相同工具（多路召回，如 MCP/mcp 各一次）。
+            # 这里合并成一次执行——后续的同名调用不再重复建卡片，只回填占位并合并关键词。
+            if name in seen_tools:
+                # 合并关键词（query_articles 合并 keyword，search_knowledge 合并 query）
+                if name == "query_articles" and args.get("keyword"):
+                    kw = seen_tools[name].get("_kws", [])
+                    kws = [x.strip() for x in re.split(r"[,，\s]+", str(args["keyword"])) if x.strip()]
+                    seen_tools[name]["_kws"] = kw + [x for x in kws if x not in kw]
+                elif name == "search_knowledge" and args.get("query"):
+                    q = seen_tools[name].get("_qs", [])
+                    if str(args["query"]) not in q:
+                        q.append(str(args["query"]))
+                        seen_tools[name]["_qs"] = q
+                # 回填占位，避免 "assistant 带 tool_calls 必须有对应 tool message" 报错
+                messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
+                messages.append(ToolMessage(content="（已合并到上一轮同类检索）", tool_call_id=tool_id))
+                continue
 
             if name == "query_articles":
                 # 列表/筛选型问题：按条件查文章清单（不向量检索）
+                seen_tools[name] = {"_kws": []}
                 yield _sse({"type": "tool", "name": "文章清单", "status": "running"})
                 try:
-                    args = tool_call.get("args") or {}
-                    tool_result = _query_articles_result(args)
+                    tool_result, article_items = _query_articles_result(args)
                     result_msg = "已按条件列出文章"
                     tool_ok = True
                 except Exception as e:
-                    tool_result = "文章清单查询失败，请告知访客稍后再试。"
+                    tool_result, article_items = "文章清单查询失败，请告知访客稍后再试。", []
                     result_msg = "文章清单查询失败"
                     tool_ok = False
+                # 把返回的文章写入 context，让 [N] 引用能生成链接块、卡片能展开
+                for ai in article_items:
+                    context.append(ai)
                 yield _sse(
                     {
                         "type": "tool",
@@ -370,7 +403,7 @@ def _stream_generator(query, history):
                         "status": "done",
                         "ok": tool_ok,
                         "result": result_msg,
-                        "related": [],
+                        "related": _related_articles(context),
                     }
                 )
                 messages.append(AIMessage(content=first.content or "", tool_calls=[tool_call]))
@@ -383,6 +416,8 @@ def _stream_generator(query, history):
                 messages.append(ToolMessage(content="（无此工具）", tool_call_id=tool_id))
                 continue
 
+            # search_knowledge：内容检索
+            seen_tools[name] = {"_qs": []}
             yield _sse({"type": "tool", "name": "知识库检索", "status": "running"})
             tool_query = (tool_call.get("args") or {}).get("query", query)
             try:
