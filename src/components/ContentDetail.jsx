@@ -26,7 +26,22 @@ export default function ContentDetail({ type }) {
   }, [id]);
 
   return (
-    <PageShell eyebrow={EYEBROW[type]}>
+    <PageShell
+      eyebrow={EYEBROW[type]}
+      headerRight={
+        // 返回列表：与 BLOG/NOTES 标题同一行，放最右边
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) navigate(-1);
+            else navigate(LIST_ROUTE[type] || '/'); // 无历史时退回对应列表页
+          }}
+          className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
+        >
+          ← 返回列表
+        </button>
+      }
+    >
       {loading ? (
         <p className="py-8 text-sm text-ink-faint">加载中…</p>
       ) : !item ? (
@@ -38,22 +53,9 @@ export default function ContentDetail({ type }) {
         </div>
       ) : (
         <article>
-          {/* 返回列表：放在标题区右侧（时间上方），样式沿用原"返回列表"链接，非按钮 */}
-          <div className="mb-4 flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline justify-between gap-4">
             <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.history.length > 1) navigate(-1);
-                  else navigate(LIST_ROUTE[type] || '/'); // 无历史时退回对应列表页
-                }}
-                className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
-              >
-                ← 返回列表
-              </button>
-              <p className="text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
-            </div>
+            <p className="shrink-0 text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
           </div>
           {item.description && (
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{item.description}</p>
