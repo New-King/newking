@@ -30,7 +30,7 @@ export default function NotesPage() {
                 to={n.to}
                 className="group rounded-lg border border-black/[0.06] bg-card p-5 transition-colors duration-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/[0.06]"
               >
-                <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <p className="truncate text-[15px] font-medium leading-snug text-ink">
                     {n.title}
                   </p>

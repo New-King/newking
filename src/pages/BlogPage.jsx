@@ -31,7 +31,7 @@ export default function BlogPage() {
                   className="group -mx-3 block rounded-lg px-3 py-5 transition-colors duration-200 hover:bg-black/[0.04] dark:hover:bg-white/10"
                 >
                   {/* 标题行：标题左、日期右，两端对齐 */}
-                  <div className="flex items-baseline justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4">
                     <p className="text-[16px] leading-snug text-ink">
                       {p.title}
                     </p>

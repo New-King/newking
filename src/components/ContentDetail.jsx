@@ -52,8 +52,8 @@ export default function ContentDetail({ type }) {
           </Link>
         </div>
       ) : (
-        <article>
-          <div className="flex items-baseline justify-between gap-4">
+        <article className="mt-6">
+          <div className="flex items-start justify-between gap-4">
             <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
             <p className="shrink-0 text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
           </div>

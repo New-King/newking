@@ -170,7 +170,7 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-5 p-5">
             <CoverThumb shape={item.cover} active />
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <p className="truncate text-[17px] font-medium leading-snug text-ink">
                   {item.title}
                 </p>
