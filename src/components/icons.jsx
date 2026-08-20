@@ -68,6 +68,16 @@ export const IconGlobe = ({ className }) => (
   </svg>
 );
 
+export const IconTrash = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M3 6h18" />
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <line x1="10" y1="11" x2="10" y2="17" />
+    <line x1="14" y1="11" x2="14" y2="17" />
+  </svg>
+);
+
 export const IconMenu = ({ className }) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <line x1="3" y1="6" x2="21" y2="6" />

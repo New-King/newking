@@ -468,7 +468,21 @@ export default function AgentChat() {
 
   const onBlockDone = (blockId) => doneResolversRef.current[blockId]?.();
 
-  /* 停止当前回复：中止 SSE 流，清理未完成块（真流式下无法续跑，停止=中止） */
+  /* 清空聊天记录：回到初始主页（预设问题轮播）状态 */
+  const handleClear = () => {
+    activeControllerRef.current?.abort(); // 中止进行中的流式回复
+    pendingRef.current = 0;
+    setPending(0);
+    setPaused(false);
+    setMessages([]);
+    setStarted(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* 静默 */
+    }
+  };
+
   const handlePause = () => {
     if (pending <= 0) return;
     activeControllerRef.current?.abort();
@@ -732,7 +746,7 @@ export default function AgentChat() {
 
       {/* 左侧快速定位条组 */}
       {started && turns.length >= 2 && (
-        <TurnRail turns={turnSummaries} onSelect={jumpToTurn} />
+        <TurnRail turns={turnSummaries} onSelect={jumpToTurn} onClear={handleClear} />
       )}
 
       {!started ? (

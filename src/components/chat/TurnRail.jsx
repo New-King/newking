@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconGlobe } from '../icons';
+import { IconGlobe, IconTrash } from '../icons';
 
 const BAR_H = 2; // 条高（px）
 const BAR_GAP = 13.6; // 条间距（px）
@@ -20,11 +20,13 @@ const lenFor = (d) => Math.round(BASE_LEN + (MAX_LEN - BASE_LEN) * Math.pow(DECA
 // 左侧快速定位条组：每条横杠代表一轮问答。
 // 简单交互：鼠标悬停到条区才显示预览面板（纯展示，pointer-events-none 不拦截复制）；
 // 鼠标移出条区，预览隐藏。点击条跳转该轮。
-export default function TurnRail({ turns, onSelect }) {
+export default function TurnRail({ turns, onSelect, onClear }) {
   const [hover, setHover] = useState(null);
 
   const railH = turns.length * BAR_H + (turns.length - 1) * BAR_GAP;
-  const wrapH = railH + PAD * 2;
+  // 底部给删除按钮留出空间
+  const CLEAR_H = 40; // 删除按钮区域高度
+  const wrapH = railH + PAD * 2 + CLEAR_H;
 
   /* 由鼠标在条区内的 Y 计算焦点条（最近邻） */
   const indexAt = (rawY) =>
@@ -84,20 +86,35 @@ export default function TurnRail({ turns, onSelect }) {
             {turns.map((t, i) => {
               const d = hover == null ? -1 : Math.abs(i - hover);
               const isFocus = hover != null && d === 0;
+              // 问题2：最下面那根线（最后一轮）常态加深，同 hover 焦点色
+              const isLast = i === turns.length - 1;
+              const barColor =
+                isFocus || (isLast && hover == null)
+                  ? 'bg-accent dark:bg-white'
+                  : 'bg-[#D2D2D7] dark:bg-[#5A5A5E]';
               return (
                 <button
                   key={i}
                   type="button"
                   aria-label={`跳转到第 ${i + 1} 轮对话`}
                   style={{ width: `${hover == null ? BASE_LEN : lenFor(d)}px` }}
-                  className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${
-                    isFocus
-                      ? 'bg-accent dark:bg-white'
-                      : 'bg-[#D2D2D7] dark:bg-[#5A5A5E]'
-                  }`}
+                  className={`h-[2px] cursor-default rounded-full transition-all duration-300 ease-smooth ${barColor}`}
                 />
               );
             })}
+
+            {/* 问题1：底部删除按钮，清空聊天记录 */}
+            <button
+              type="button"
+              aria-label="清空聊天记录"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear && onClear();
+              }}
+              className="mt-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-accent/10 hover:text-accent dark:hover:bg-white/10"
+            >
+              <IconTrash className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
