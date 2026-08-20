@@ -24,8 +24,8 @@ export default function TurnRail({ turns, onSelect, onClear }) {
   const [hover, setHover] = useState(null);
 
   const railH = turns.length * BAR_H + (turns.length - 1) * BAR_GAP;
-  // 底部给删除按钮留出空间
-  const CLEAR_H = 40; // 删除按钮区域高度
+  // 读条区 + 底部独立留给删除按钮（与读条分离，避免 hover 误触发）
+  const CLEAR_H = 44; // 删除按钮区域高度（读条下方独立空间）
   const wrapH = railH + PAD * 2 + CLEAR_H;
 
   /* 由鼠标在条区内的 Y 计算焦点条（最近邻） */
@@ -102,21 +102,23 @@ export default function TurnRail({ turns, onSelect, onClear }) {
                 />
               );
             })}
-
-            {/* 问题1：底部删除按钮，清空聊天记录 */}
-            <button
-              type="button"
-              aria-label="清空聊天记录"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClear && onClear();
-              }}
-              className="mt-3 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-accent/10 hover:text-accent dark:hover:bg-white/10"
-            >
-              <IconTrash className="h-3.5 w-3.5" />
-            </button>
           </div>
         </div>
+
+        {/* 问题1：删除按钮 —— 独立放在读条区下方，与读条分离。
+            不放在条区内部，避免鼠标移到垃圾桶时误触发读条的 hover。 */}
+        <button
+          type="button"
+          aria-label="清空聊天记录"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClear && onClear();
+          }}
+          className="absolute left-[7px] cursor-pointer rounded-full text-ink-faint transition-colors hover:text-accent dark:hover:text-white"
+          style={{ top: PAD + railH + 8 }}
+        >
+          <IconTrash className="h-[14px] w-[14px]" />
+        </button>
 
         {/* 预览面板：纯展示（pointer-events-none 不拦截复制），fixed 浮出，
             垂直位置跟随焦点条（哪条变长就在它右侧显示） */}
