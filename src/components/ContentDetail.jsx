@@ -38,21 +38,22 @@ export default function ContentDetail({ type }) {
         </div>
       ) : (
         <article>
-          {/* 返回上一个界面（从对话页链接跳转过来时可回到对话）。
-              样式沿用原"返回列表"链接，非按钮 */}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.history.length > 1) navigate(-1);
-              else navigate(LIST_ROUTE[type] || '/'); // 无历史时退回对应列表页
-            }}
-            className="mb-4 cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
-          >
-            ← 返回
-          </button>
-          <div className="flex items-baseline justify-between gap-4">
+          {/* 返回列表：放在标题区右侧（时间上方），样式沿用原"返回列表"链接，非按钮 */}
+          <div className="mb-4 flex items-baseline justify-between gap-4">
             <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
-            <p className="shrink-0 text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.history.length > 1) navigate(-1);
+                  else navigate(LIST_ROUTE[type] || '/'); // 无历史时退回对应列表页
+                }}
+                className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
+              >
+                ← 返回列表
+              </button>
+              <p className="text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
+            </div>
           </div>
           {item.description && (
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{item.description}</p>

@@ -114,7 +114,7 @@ export default function TurnRail({ turns, onSelect, onClear }) {
             e.stopPropagation();
             onClear && onClear();
           }}
-          className="absolute left-[7px] cursor-pointer rounded-full text-ink-faint transition-colors hover:text-accent dark:hover:text-white"
+          className="pointer-events-auto absolute left-[7px] cursor-pointer rounded-full text-ink-faint transition-colors hover:text-accent dark:hover:text-white"
           style={{ top: PAD + railH + 8 }}
         >
           <IconTrash className="h-[14px] w-[14px]" />
