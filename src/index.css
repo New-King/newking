@@ -309,7 +309,8 @@ html {
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* 代码块（``` 包裹，pre > code） */
+/* 代码块（``` 包裹，pre > code）——由 chat-codeblock 结构接管样式，
+   此处仅为未被 chat-codeblock 包裹的 <pre> 提供后备样式 */
 .article-body pre {
   margin: 0.6em 0;
   padding: 0.8em 1em;
@@ -323,7 +324,7 @@ html {
   background: none;
   padding: 0;
   font-size: inherit;
-  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .dark .article-body pre {
   background: rgba(255, 255, 255, 0.07);
