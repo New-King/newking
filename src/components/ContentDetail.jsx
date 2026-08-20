@@ -62,8 +62,7 @@ export default function ContentDetail({ type }) {
           )}
           {/* markdown 正文 */}
           <div
-            className="mt-8 space-y-5 text-[15px] leading-7 text-ink"
-            // marked 输出的 HTML 已在下方 index.css 里定义样式类（article-body）
+            className="article-body mt-8 space-y-5 text-[15px] leading-7 text-ink"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </article>
