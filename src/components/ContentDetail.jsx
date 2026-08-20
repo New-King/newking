@@ -43,7 +43,7 @@ marked.use({
         `<div class="chat-codeblock">` +
         `<div class="chat-codeblock-bar">` +
         `<span class="chat-codeblock-lang">${langLabel}</span>` +
-        `<button class="chat-codeblock-copy" data-code="${encodeURIComponent(text)}">复制</button>` +
+        `<button class="chat-codeblock-copy">复制</button>` +
         `</div>` +
         `<pre class="chat-codeblock-pre"><code>${highlighted}</code></pre>` +
         `</div>\n`
@@ -71,12 +71,25 @@ export default function ContentDetail({ type }) {
   const handleCopy = useCallback((e) => {
     const btn = e.target.closest('.chat-codeblock-copy');
     if (!btn) return;
-    const raw = decodeURIComponent(btn.dataset.code || '');
-    if (!raw) return;
-    navigator.clipboard.writeText(raw).then(() => {
+    const code = btn.closest('.chat-codeblock')?.querySelector('code');
+    if (!code) return;
+    const text = code.textContent || '';
+    const doCopy = (p) => p.then(() => {
       btn.textContent = '已复制';
       setTimeout(() => { btn.textContent = '复制'; }, 1500);
     });
+    if (navigator.clipboard) {
+      doCopy(navigator.clipboard.writeText(text));
+    } else {
+      // fallback: textarea + execCommand
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      doCopy(Promise.resolve(document.execCommand('copy')));
+      document.body.removeChild(ta);
+    }
   }, []);
 
   useEffect(() => {
