@@ -169,11 +169,9 @@ function TextSkeleton() {
   );
 }
 
-// 引用标签的 CSS 由 index.css 里的 .ref-link 定义（hover 浮窗用 title 属性显示）
-
-// 渲染对话文本：markdown（**加粗**、`代码`、[链接]）用 marked 解析，
-// 引用标记 [N] 替换成可点击的文章链接（href 指向该文，title 显示标题预览）。
-function renderMarkdownWithRefs(text, related) {
+// 渲染对话文本：markdown（**加粗**、`代码`、[链接]、裸URL）用 marked 解析，
+// 链接/图片直接渲染，不再用 [N] 引用标注（模型已会直接输出真实链接）。
+function renderMarkdownWithRefs(text) {
   // 自定义 renderer：给所有链接加"新标签页打开 + ↗ 图标"；代码块加高亮 + 复制按钮
   const renderer = new marked.Renderer();
   renderer.link = (token) => {
@@ -197,18 +195,7 @@ function renderMarkdownWithRefs(text, related) {
     );
   };
   // 解析 markdown（加粗/斜体/代码/链接/列表等），裸 URL 会被 marked 转成链接
-  let html = marked.parse(text, { renderer });
-  // 把 [N] 替换成引用链接。用函数式替换，N 对应 related 里的文章
-  html = html.replace(/\[(\d+)\]/g, (m, num) => {
-    const idx = parseInt(num, 10) - 1;
-    const item = related && related[idx];
-    if (!item) return m;
-    return (
-      `<a class="ref-link" href="${item.url}" target="_blank" rel="noreferrer" ` +
-      `title="点击打开：${item.title}">${num}</a>`
-    );
-  });
-  return html;
+  return marked.parse(text, { renderer });
 }
 
 function TextBlock({ block, related }) {
@@ -238,12 +225,12 @@ function TextBlock({ block, related }) {
       /* 剪贴板不可用时静默失败 */
     }
   };
-  // 完成态：markdown 渲染 + 引用链接 + 代码块（高亮/复制）
+  // 完成态：markdown 渲染 + 代码块（高亮/复制）
   return (
     <div
       className={`${textBubble} article-body`}
       onClick={handleContainerClick}
-      dangerouslySetInnerHTML={{ __html: renderMarkdownWithRefs(block.content, related) }}
+      dangerouslySetInnerHTML={{ __html: renderMarkdownWithRefs(block.content) }}
     />
   );
 }

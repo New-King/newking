@@ -46,14 +46,12 @@ def _build_system_prompt():
    - search_knowledge：问某篇文章/某话题的"具体内容、细节、观点"时调用。它检索知识库内容块，返回相关内容。
    不要为了"查全"一次调用同一个工具多次——一次调用就够，关键词用英文逗号,分隔放在一个 keyword/query 里。
 2. 需要了解网站内容来回答时用工具，不要凭记忆编造网站没有的内容。但访客只是闲聊、问代码、问算法等与网站无关的问题时，不要调用工具，直接回答。
-3. 检索结果的参考资料带编号 [1][2]...。回答里用到哪条的内容，就在对应句尾标注编号，
-   如：我写过一篇关于 RAG 落地的博客[2]。没用到不标。
-4. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
-5. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
-6. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出查询或检索结果里的 url。
+3. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
+4. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
+5. 除非引用，不要在回复里主动罗列链接列表。但当访客明确要"链接/文章地址/在哪看"时，直接给出查询或检索结果里的 url。
    给链接时直接用裸 URL（如 https://xxx）或 markdown 链接 [文字](url)，不要用中文或英文括号把 URL 包起来（如（https://xxx）），否则前端会把括号显示出来。
-7. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
-8. 工具调用已经由系统代为执行并给了你结果，你只负责根据结果组织文字回复。严禁在回复文本里输出任何工具调用标签（如 <tool_call>、<invoke> 等）——那会被当成乱码显示给访客。直接说人话回答即可。"""
+6. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
+7. 工具调用已经由系统代为执行并给了你结果，你只负责根据结果组织文字回复。严禁在回复文本里输出任何工具调用标签（如 <tool_call>、<invoke> 等）——那会被当成乱码显示给访客。直接说人话回答即可。"""
 
 
 # search_knowledge 工具定义（JSON Schema，DeepSeek 支持 OpenAI 兼容 function calling）
@@ -141,26 +139,6 @@ def _build_messages(query, history):
     return messages
 
 
-def _cited_inline_links(context, full_text):
-    """收集"被引用块的正文内嵌链接"，作为底部链接块。"""
-    cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
-    blocks = []
-    seen = set()
-    for i, item in enumerate(context):
-        if (i + 1) not in cited:
-            continue
-        md = item.get("metadata") or {}
-        for link in md.get("links") or []:
-            if link not in seen:
-                seen.add(link)
-                blocks.append({"type": "link", "url": link, "title": "相关链接"})
-        for text, url in re.findall(r"(?<!!)\[([^\]]+)\]\((https?://[^)\s]+)\)", item["content"]):
-            if url not in seen:
-                seen.add(url)
-                blocks.append({"type": "link", "url": url, "title": text[:40] or "相关链接"})
-    return blocks
-
-
 def _related_articles(context):
     """收集检索到的相关文章列表（供工具卡片展开显示）。"""
     seen = set()
@@ -175,21 +153,6 @@ def _related_articles(context):
     return items
 
 
-def _cited_inline_images(context, full_text):
-    """收集被引用块的正文内嵌图片（markdown ![alt](url)），作为图片块。"""
-    cited = set(int(n) for n in re.findall(r"\[(\d+)\]", full_text))
-    blocks = []
-    seen = set()
-    for i, item in enumerate(context):
-        if (i + 1) not in cited:
-            continue
-        for alt, url in re.findall(r"!\[([^\]]*)\]\((https?://[^)\s]+)\)", item["content"]):
-            if url not in seen:
-                seen.add(url)
-                blocks.append({"type": "image", "src": url, "caption": alt or (item.get("metadata") or {}).get("title")})
-    return blocks
-
-
 def _format_tool_result(context):
     """把检索结果格式化，作为工具调用的返回消息。
 
@@ -199,15 +162,15 @@ def _format_tool_result(context):
     if not context:
         return "知识库里没有找到与问题相关的内容。"
     parts = [f"知识库检索到 {len(context)} 条相关内容：\n"]
-    for i, c in enumerate(context):
+    for c in context:
         md = c.get("metadata") or {}
         title = md.get("title", "未命名")
         url = md.get("url", "")
         doc_id = md.get("doc_id", "")
         type_name = {"posts": "博客", "notes": "笔记", "projects": "项目"}.get(doc_id.split("/")[0], "文章")
-        line = f"[{i+1}] 来源：《{title}》{type_name}"
+        line = f"来源：《{title}》{type_name}"
         if url:
-            line += f"（链接：{url}）"
+            line += f" {url}"
         line += f"\n内容：{c['content']}"
         parts.append(line)
     return "\n\n".join(parts)
@@ -467,13 +430,6 @@ def _stream_generator(query, history):
         # 生成失败：发 error 事件，不崩（已有部分内容保留，告知中断）
         yield _sse({"type": "error", "message": "回复生成中断，请重试。"})
     yield _sse({"type": "text_done"})
-
-    # 底部：被引用块的图片 + 正文内嵌链接
-    if context:
-        for block in _cited_inline_images(context, full_text):
-            yield _sse(block)
-        for block in _cited_inline_links(context, full_text):
-            yield _sse(block)
 
     yield _sse({"type": "done"})
 
