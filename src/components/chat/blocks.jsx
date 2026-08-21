@@ -50,7 +50,7 @@ function LinkCard({ block }) {
 /* ---------- 思考过程：仅保留「正在思考」加载态（颜色深浅脉动），不展示思考内容 ---------- */
 
 function ThinkingBlock({ block }) {
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(() => block.status === 'done');
 
   useEffect(() => {
     if (block.status === 'done') {

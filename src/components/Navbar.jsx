@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { formatDateShort, latestGroups, SITE_QUOTE } from '../data/mockData';
+import { formatDateShort, latestGroups } from '../data/mockData';
 import { useContent } from '../hooks/useContent';
 import { IconMail, IconMenu, IconPhone, IconX } from './icons';
 
@@ -8,18 +8,12 @@ const IDLE_MS = 5000; // 鼠标闲置多久后隐藏导航
 
 // 联系方式的兜底（内容 API 拉取前先用空壳；有数据后替换）
 const NAV = [
-  { label: '首页', to: '/', quote: true, width: 'w-80' },
+  { label: '首页', to: '/' },
   { label: '博客', to: '/blog', type: 'posts', width: 'w-72' },
   { label: '项目', to: '/projects', type: 'projects', width: 'w-72' },
   { label: '笔记', to: '/notes', type: 'notes', width: 'w-72' },
   { label: '联系', to: '/contact', contact: true, width: 'w-64' },
 ];
-
-function QuotePanel() {
-  return (
-    <p className="px-3 py-2 text-center text-[13px] leading-6 text-ink-muted">{SITE_QUOTE}</p>
-  );
-}
 
 function ListPanel({ groups }) {
   return (
@@ -165,7 +159,7 @@ export default function Navbar() {
       <nav aria-label="主导航" className="mx-auto hidden h-14 max-w-4xl items-center justify-center px-4 md:flex">
         <ul className="flex items-center">
           {NAV.map((item) => {
-            const hasPanel = item.groups || item.contact || item.quote;
+            const hasPanel = item.groups || item.contact;
             const isOpen = open === item.label;
             return (
               <li
@@ -204,9 +198,7 @@ export default function Navbar() {
                     <div
                       className={`${item.width} surface-elevated rounded-2xl border border-black/[0.06] p-2.5 dark:border-white/[0.06]`}
                     >
-                      {item.quote ? (
-                        <QuotePanel />
-                      ) : item.contact ? (
+                      {item.contact ? (
                         <ContactPanel contact={data?.contact} />
                       ) : (
                         <ListPanel groups={itemGroups(item)} />

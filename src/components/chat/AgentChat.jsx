@@ -55,7 +55,15 @@ function loadMessages() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const list = JSON.parse(raw);
-      return Array.isArray(list) ? list : [];
+      if (!Array.isArray(list)) return [];
+      // 恢复时去掉 thinking 块（仅流式过程中的 UI，不应持久化）
+      return list
+        .map((m) =>
+          m.role === 'user'
+            ? m
+            : { ...m, blocks: (m.blocks || []).filter((b) => b.type !== 'thinking') }
+        )
+        .filter((m) => m.role === 'user' || (m.blocks && m.blocks.length > 0));
     }
   } catch {
     /* localStorage 不可用时静默失败 */
@@ -272,7 +280,8 @@ export default function AgentChat() {
         return {
           ...m,
           blocks: (m.blocks || []).filter(
-            (b) => !['loading', 'running', 'streaming'].includes(b.status)
+            (b) =>
+              b.type !== 'thinking' && !['loading', 'running', 'streaming'].includes(b.status)
           ),
         };
       })
