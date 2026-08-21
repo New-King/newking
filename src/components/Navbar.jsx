@@ -159,7 +159,7 @@ export default function Navbar() {
       <nav aria-label="主导航" className="mx-auto hidden h-14 max-w-4xl items-center justify-center px-4 md:flex">
         <ul className="flex items-center">
           {NAV.map((item) => {
-            const hasPanel = item.groups || item.contact;
+            const hasPanel = item.type || item.contact;
             const isOpen = open === item.label;
             return (
               <li
