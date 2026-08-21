@@ -216,10 +216,18 @@ export default function AgentChat() {
     }
   };
   // 滚轮：原生监听（React onWheel 是 passive，无法 preventDefault 阻止页面滚动）。
-  // 滚动距离直接映射列表位移 + 速度转惯性，边界弹性
+  // 依赖 started：轮播区在对话时会卸载，清空后 DOM 重建，必须在回到初始态时重新绑定。
   useEffect(() => {
+    if (started) {
+      carouselDraggingRef.current = false;
+      carouselAutoPausedRef.current = false;
+      cancelAnimationFrame(carouselRafRef.current);
+      clearTimeout(carouselAutoTimerRef.current);
+      return;
+    }
     const el = carouselListRef.current?.parentElement;
     if (!el) return;
+    carouselApply();
     const onWheel = (e) => {
       e.preventDefault();
       cancelAnimationFrame(carouselRafRef.current);
@@ -231,7 +239,7 @@ export default function AgentChat() {
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, []);
+  }, [started]);
 
   const formRef = useRef(null);
   const inputElRef = useRef(null);
@@ -474,6 +482,10 @@ export default function AgentChat() {
     pendingRef.current = 0;
     setPending(0);
     setPaused(false);
+    carouselDraggingRef.current = false;
+    carouselAutoPausedRef.current = false;
+    cancelAnimationFrame(carouselRafRef.current);
+    clearTimeout(carouselAutoTimerRef.current);
     setMessages([]);
     setStarted(false);
     try {

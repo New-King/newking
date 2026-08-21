@@ -6,8 +6,6 @@ export default {
     extend: {
       fontFamily: {
         sans: [
-          'Inter',
-          'Noto Sans SC',
           'PingFang SC',
           'Hiragino Sans GB',
           'Microsoft YaHei',
