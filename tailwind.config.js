@@ -17,6 +17,7 @@ export default {
       // 设计令牌（CSS 变量，支持 alpha）：深浅两套值定义在 index.css 的 :root / .dark
       colors: {
         page: 'rgb(var(--page) / <alpha-value>)', // 页面底色
+        shell: 'rgb(var(--shell) / <alpha-value>)', // 顶栏 / 对话块（深色专用层）
         card: 'rgb(var(--card) / <alpha-value>)', // 卡片 / 输入框白
         ink: {
           DEFAULT: 'rgb(var(--ink) / <alpha-value>)',

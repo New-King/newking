@@ -2,7 +2,7 @@ import BlockRenderer from './blocks';
 
 function WaitingDots() {
   return (
-    <div className="flex h-9 w-16 items-center justify-center gap-1.5 rounded-2xl bg-card shadow-apple">
+    <div className="flex h-9 w-16 items-center justify-center gap-1.5 rounded-2xl surface-chat">
       {[0, 1, 2].map((i) => (
         <span
           key={i}
@@ -19,7 +19,7 @@ export default function MessageItem({ message, onBlockDone }) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[75%] animate-fade-in-up whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 text-[15px] leading-relaxed text-white shadow-apple">
+        <div className="max-w-[75%] animate-fade-in-up whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 text-[15px] leading-relaxed text-white shadow-apple dark:border dark:border-white/[0.08] dark:bg-shell dark:text-ink dark:shadow-none">
           {message.text}
         </div>
       </div>

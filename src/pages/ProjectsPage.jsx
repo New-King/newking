@@ -165,7 +165,7 @@ export default function ProjectsPage() {
         {/* 主展示卡片（key 强制重挂载 → 预览从头播放） */}
         <div
           key={item.id}
-          className="animate-[fade-in-up_0.4s_ease_both] relative rounded-lg border border-black/[0.06] bg-card dark:border-white/10"
+          className="animate-[fade-in-up_0.4s_ease_both] relative surface-elevated rounded-lg border border-black/[0.06] dark:border-white/[0.06]"
         >
           <div className="flex items-center gap-5 p-5">
             <CoverThumb shape={item.cover} active />
@@ -174,11 +174,11 @@ export default function ProjectsPage() {
                 <p className="truncate text-[17px] font-medium leading-snug text-ink">
                   {item.title}
                 </p>
-                <p className="shrink-0 text-xs tabular-nums text-ink-faint">
+                <p className="shrink-0 text-xs tabular-nums text-ink-muted">
                   {formatDate(item.date)}
                 </p>
               </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
                 {item.description}
               </p>
             </div>
@@ -207,7 +207,7 @@ export default function ProjectsPage() {
           >
             <CoverThumb shape={item.cover} active={i === index} small />
             {/* 悬停显示项目名称 */}
-            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-black/[0.08] bg-card px-2 py-1 text-[11px] text-ink-soft opacity-0 shadow-apple transition-opacity duration-150 group-hover:opacity-100 dark:border-white/15">
+            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-black/[0.08] surface-elevated px-2 py-1 text-[11px] text-ink-soft opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:border-white/[0.08]">
               {item.title}
             </span>
           </button>

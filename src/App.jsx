@@ -30,7 +30,7 @@ function ThemeToggle() {
       type="button"
       onClick={() => setDark((d) => !d)}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="fixed left-3 top-3 z-[60] flex h-8 items-center rounded-full border border-black/[0.08] bg-white/90 px-3.5 text-[11px] font-medium uppercase tracking-[0.15em] text-ink-soft shadow-apple backdrop-blur transition-colors hover:text-ink dark:border-white/10 dark:bg-[#1C1C1E]/90"
+      className="site-theme-toggle fixed left-3 top-3 z-[60] flex h-8 items-center rounded-full px-3.5 text-[11px] font-medium uppercase tracking-[0.15em] text-ink-soft shadow-apple transition-colors hover:text-ink dark:shadow-none"
     >
       {dark ? 'Light' : 'Dark'}
     </button>

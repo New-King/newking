@@ -126,7 +126,7 @@ export default function ContentDetail({ type }) {
         <article className="mt-6" ref={bodyRef}>
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
-            <p className="shrink-0 text-xs tabular-nums text-ink-faint">{formatDate(item.date)}</p>
+            <p className="shrink-0 text-xs tabular-nums text-ink-muted">{formatDate(item.date)}</p>
           </div>
           {item.description && (
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{item.description}</p>

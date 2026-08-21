@@ -6,6 +6,8 @@
    浅色在 :root，深色在 .dark（<html class="dark">） */
 :root {
   --page: 245 245 247; /* #F5F5F7 暖白底 */
+  --shell: 255 255 255; /* 浅色下同 card；深色下为对话块 */
+  --nav: 255 255 255; /* 浅色下不用；深色下为顶栏/主题按钮 */
   --card: 255 255 255;
   --ink: 29 29 31; /* #1D1D1F 主文字 */
   --ink-soft: 58 58 60;
@@ -25,23 +27,25 @@
 }
 
 .dark {
-  --page: 10 10 12; /* #0A0A0C 深色底 */
-  --card: 28 28 30; /* #1C1C1E 卡片 */
-  --ink: 245 245 247; /* 浅色文字 */
-  --ink-soft: 212 212 217;
-  --ink-muted: 160 160 166;
-  --ink-faint: 120 120 126;
-  --accent: 58 58 60; /* 按钮/气泡：比底亮的灰 */
-  --accent-hover: 72 72 76;
-  --accent-soft: 44 44 46;
-  --shadow-apple: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
-  --shadow-apple-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --shadow-apple-input: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --page: 50 50 51; /* #323233 页面/网格底色（较亮一层） */
+  --shell: 38 38 40; /* 对话块 */
+  --nav: 29 29 29; /* #1D1D1D 顶栏 / 主题按钮（比对话块更深） */
+  --card: 40 40 41; /* #282829 列表卡片等中间层 */
+  --ink: 224 224 224; /* #E0E0E0 主文字 */
+  --ink-soft: 176 176 178; /* #B0B0B2 */
+  --ink-muted: 168 168 170; /* #A8A8AA */
+  --ink-faint: 122 122 125; /* #7A7A7D 日期/辅助（比 #666 更易读） */
+  --accent: 72 72 73; /* #484849 按钮（风暴灰系，低饱和） */
+  --accent-hover: 90 90 91; /* #5A5A5B */
+  --accent-soft: 38 38 39; /* #262627 */
+  --shadow-apple: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-apple-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-apple-input: 0 0 0 1px rgba(255, 255, 255, 0.08);
   /* 深色下网格"变深"效果反向为"变亮" */
-  --grid-line: #2c2c2e;
-  --grid-line-hot: #8e8e93;
-  --grid-dot: #3a3a3c;
-  --grid-dot-hot: #a1a1a6;
+  --grid-line: #454546;
+  --grid-line-hot: #8a8a8c;
+  --grid-dot: #4e4e50;
+  --grid-dot-hot: #9a9a9c;
 }
 
 @layer base {
@@ -50,7 +54,15 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-page text-ink;
+    @apply text-ink;
+    background-color: rgb(var(--page));
+  }
+  .dark body {
+    background-color: rgb(var(--page));
+    background-image: radial-gradient(ellipse 120% 70% at 50% -12%, rgba(255, 255, 255, 0.045), transparent 52%);
+    background-repeat: no-repeat;
+    background-size: 100% 100vh;
+    background-attachment: fixed;
   }
 }
 
@@ -87,7 +99,69 @@
   background-color: rgba(0, 113, 227, 0.12);
 }
 .dark ::selection {
-  background-color: rgba(99, 102, 241, 0.35);
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* 深色浮层：细边框 + 微提亮，替代高对比色块 */
+@layer components {
+  .surface-elevated {
+    @apply bg-card shadow-apple;
+  }
+  .dark .surface-elevated {
+    @apply shadow-none;
+    background-color: rgb(var(--card));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  /* 对话块：--shell + 细边框与背景区分 */
+  .surface-chat {
+    @apply bg-card shadow-apple;
+  }
+  .dark .surface-chat {
+    @apply shadow-none;
+    background-color: rgb(var(--shell));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  /* 顶栏：深色下必须纯色，避免 bg-white/80 与 dark:bg-shell 冲突导致半透明发灰 */
+  .site-nav {
+    @apply border-b border-black/[0.08] bg-white/80 backdrop-blur-xl;
+  }
+  .dark .site-nav {
+    background-color: rgb(var(--nav));
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .site-nav-mobile {
+    @apply border-b border-black/[0.08] bg-white;
+  }
+  .dark .site-nav-mobile {
+    background-color: rgb(var(--nav));
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  .site-theme-toggle {
+    @apply border border-black/[0.08] bg-white/90 backdrop-blur;
+  }
+  .dark .site-theme-toggle {
+    background-color: rgb(var(--nav));
+    border-color: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* 博客/笔记列表卡片：无描边，靠底色分层 */
+  .list-card {
+    @apply block rounded-lg surface-elevated p-5 transition-colors duration-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.03];
+  }
+  /* 对话「跳到底部」：深色下与对话块同色，避免 bg-white/95 盖过 dark: 变体 */
+  .chat-scroll-bottom {
+    @apply border border-black/[0.08] bg-white/95 text-ink shadow-apple backdrop-blur;
+  }
+  .dark .chat-scroll-bottom {
+    background-color: rgb(var(--shell));
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* 首页网格背景遮罩（复刻 Aceternity mask-radial-from-10%）：
@@ -97,47 +171,35 @@
   mask-image: radial-gradient(ellipse at center, transparent 10%, black);
 }
 
-/* 「正在思考」加载态：一条粗白光在文字上向右扫过，扫完后停顿 5 秒再出现 */
+/* 「正在思考」：渐变只在字形内扫过（background-clip:text），避免光柱跑出字外 */
 .think-sweep {
-  position: relative;
   display: inline-block;
-  overflow: hidden;
-}
-.think-sweep::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -50%;
-  width: 40%;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0) 100%
+    rgb(var(--ink-muted)) 0%,
+    rgb(var(--ink-muted)) 38%,
+    rgb(var(--ink)) 50%,
+    rgb(var(--ink-muted)) 62%,
+    rgb(var(--ink-muted)) 100%
   );
-  animation: think-sweep 5s linear infinite;
-  animation-delay: 1s;
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: think-sweep-text 6.38s linear infinite;
+  animation-delay: 2s;
 }
-/* 深色模式下文字是浅色，白色光柱看不见 → 改用深色光柱扫过 */
-.dark .think-sweep::after {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-/* 周期 6.38s = 扫动 1.38s + 停顿 5s；首个周期前先延迟 2s；扫动阶段在画面外开始、画面外结束，循环无回跳 */
-@keyframes think-sweep {
+/* 周期 6.38s = 扫动 1.38s + 停顿 5s */
+@keyframes think-sweep-text {
   0% {
-    transform: translateX(0) rotate(10deg);
+    background-position: 100% center;
   }
   21.6% {
-    transform: translateX(400%) rotate(10deg);
+    background-position: 0% center;
   }
   100% {
-    transform: translateX(400%) rotate(10deg);
+    background-position: 0% center;
   }
 }
 
@@ -209,7 +271,7 @@
     transition-duration: 0.01ms !important;
   }
   /* 「正在思考」的扫光效果是用户要求的加载反馈，予以保留 */
-  .think-sweep::after {
+  .think-sweep {
     animation-duration: 6.38s !important;
     animation-iteration-count: infinite !important;
   }

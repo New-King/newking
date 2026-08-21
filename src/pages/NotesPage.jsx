@@ -25,21 +25,17 @@ export default function NotesPage() {
           {/* 轻量双列卡片：标题 + 摘要 + 日期（移动端单列） */}
           <div className="grid gap-4 sm:grid-cols-2">
             {g.items.map((n) => (
-              <Link
-                key={n.id}
-                to={n.to}
-                className="group rounded-lg border border-black/[0.06] bg-card p-5 transition-colors duration-200 hover:bg-black/[0.03] dark:border-white/10 dark:hover:bg-white/[0.06]"
-              >
+              <Link key={n.id} to={n.to} className="list-card group">
                 <div className="flex items-start justify-between gap-3">
                   <p className="truncate text-[15px] font-medium leading-snug text-ink">
                     {n.title}
                   </p>
-                  <p className="shrink-0 text-xs tabular-nums text-ink-faint">
+                  <p className="shrink-0 text-xs tabular-nums text-ink-muted">
                     {formatDate(n.date)}
                   </p>
                 </div>
                 {n.excerpt && (
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
                     {n.excerpt}
                   </p>
                 )}

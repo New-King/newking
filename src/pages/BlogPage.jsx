@@ -22,25 +22,22 @@ export default function BlogPage() {
               {g.year}
             </h2>
           )}
-          {/* 更新日志式列表：每条 = 标题 + MM/DD 日期，发丝分隔线 */}
-          <ul className="divide-y divide-black/[0.06] dark:divide-white/15">
+          {/* 更新日志式列表：每条独立卡片 */}
+          <ul className="space-y-px">
             {g.items.map((p) => (
               <li key={p.id}>
-                <Link
-                  to={p.to}
-                  className="group -mx-3 block rounded-lg px-3 py-5 transition-colors duration-200 hover:bg-black/[0.04] dark:hover:bg-white/10"
-                >
+                <Link to={p.to} className="list-card group">
                   {/* 标题行：标题左、日期右，两端对齐 */}
                   <div className="flex items-start justify-between gap-4">
                     <p className="text-[16px] leading-snug text-ink">
                       {p.title}
                     </p>
-                    <p className="shrink-0 text-xs tabular-nums text-ink-faint">
+                    <p className="shrink-0 text-xs tabular-nums text-ink-muted">
                       {formatDate(p.date)}
                     </p>
                   </div>
                   {p.excerpt && (
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
                       {p.excerpt}
                     </p>
                   )}

@@ -38,7 +38,7 @@ function LinkCard({ block }) {
       href={block.url}
       target="_blank"
       rel="noreferrer"
-      className="inline-flex max-w-full animate-fade-in-up items-center gap-1.5 rounded-full border border-black/[0.08] bg-card px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-accent/40 hover:text-ink dark:border-white/10"
+      className="inline-flex max-w-full animate-fade-in-up items-center gap-1.5 rounded-full border border-black/[0.08] surface-chat px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-accent/40 hover:text-ink dark:border-white/[0.08]"
     >
       <IconLink className="h-3 w-3 shrink-0 text-ink-faint" />
       <span className="truncate">{block.title || block.url}</span>
@@ -68,7 +68,7 @@ function ThinkingBlock({ block }) {
         block.status === 'done' ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <span className="think-sweep text-sm text-ink-faint">正在思考</span>
+      <span className="think-sweep text-sm">正在思考</span>
     </div>
   );
 }
@@ -84,7 +84,7 @@ function ToolCallCard({ block }) {
   const expandable = !running && !pausedState && related.length > 0;
   return (
     <div className="w-full animate-fade-in-up">
-      <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-2 shadow-apple">
+      <div className="flex items-center gap-3 rounded-2xl surface-chat px-4 py-2">
         <span
           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
             running || pausedState
@@ -95,9 +95,9 @@ function ToolCallCard({ block }) {
           }`}
         >
           {running ? (
-            <IconSpinner className="h-3 w-3 text-ink-faint" />
+            <IconSpinner className="h-3 w-3 text-ink-muted" />
           ) : pausedState ? (
-            <IconPause className="h-3 w-3 text-ink-faint" />
+            <IconPause className="h-3 w-3 text-ink-muted" />
           ) : failed ? (
             <IconX className="h-3 w-3 text-red-500 dark:text-red-400" />
           ) : (
@@ -106,7 +106,7 @@ function ToolCallCard({ block }) {
         </span>
         <p
           className={`min-w-0 flex-1 truncate text-xs leading-5 ${
-            failed ? 'text-red-600 dark:text-red-400' : 'text-ink-faint'
+            failed ? 'text-red-600 dark:text-red-400' : 'text-ink-soft'
           }`}
         >
           {running ? (
@@ -126,7 +126,7 @@ function ToolCallCard({ block }) {
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? '收起相关文章' : '展开相关文章'}
             aria-expanded={open}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
           >
             <IconArrowDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
           </button>
@@ -134,7 +134,7 @@ function ToolCallCard({ block }) {
       </div>
       {/* 展开的相关文章列表 */}
       {expandable && open && (
-        <div className="mt-1 space-y-0.5 rounded-2xl border border-black/[0.06] bg-card px-3 py-2 dark:border-white/10">
+        <div className="mt-1 space-y-0.5 rounded-2xl border border-black/[0.06] surface-chat px-3 py-2 dark:border-white/[0.06]">
           {related.map((r) => (
             <a
               key={r.url}
@@ -143,9 +143,9 @@ function ToolCallCard({ block }) {
               rel="noreferrer"
               className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-xs text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
             >
-              <IconGlobe className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+              <IconGlobe className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
               <span className="min-w-0 flex-1 truncate">{r.title}</span>
-              <span className="text-ink-faint">↗</span>
+              <span className="text-ink-muted">↗</span>
             </a>
           ))}
         </div>
@@ -157,11 +157,11 @@ function ToolCallCard({ block }) {
 /* ---------- 流式文字 ---------- */
 
 const textBubble =
-  'w-full whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-card px-4 py-3 text-[15px] leading-7 text-ink shadow-apple';
+  'w-full whitespace-pre-wrap rounded-2xl rounded-tl-sm surface-chat px-4 py-3 text-[15px] leading-7 text-ink';
 
 function TextSkeleton() {
   return (
-    <div className="w-full animate-pulse space-y-2.5 rounded-2xl bg-card px-4 py-3.5 shadow-apple">
+    <div className="surface-chat w-full animate-pulse space-y-2.5 rounded-2xl px-4 py-3.5">
       <div className="h-3 w-11/12 rounded bg-neutral-200/80 dark:bg-white/15" />
       <div className="h-3 w-full rounded bg-neutral-200/80 dark:bg-white/15" />
       <div className="h-3 w-3/4 rounded bg-neutral-200/80 dark:bg-white/15" />
@@ -206,7 +206,7 @@ function TextBlock({ block, related }) {
     return (
       <div className={`${textBubble} animate-fade-in-up`}>
         {block.content}
-        <span className="animate-blink text-ink-faint">▍</span>
+        <span className="animate-blink text-ink-muted">▍</span>
       </div>
     );
   }
@@ -249,7 +249,7 @@ function ImageBlock({ block }) {
       <img
         src={block.src}
         alt={block.caption || '示意图'}
-        className="w-full rounded-2xl bg-card shadow-apple"
+        className="w-full rounded-2xl surface-chat"
       />
       {block.caption && <figcaption className="mt-2 text-xs text-ink-faint">{block.caption}</figcaption>}
     </figure>
@@ -266,7 +266,7 @@ function AudioCard({ block }) {
     return <div className="h-[76px] w-full animate-pulse rounded-2xl bg-neutral-100 dark:bg-white/10" />;
   }
   return (
-    <div className="w-full animate-fade-in-up rounded-2xl bg-card p-4 shadow-apple">
+    <div className="surface-chat w-full animate-fade-in-up rounded-2xl p-4">
       <div className="flex items-center gap-4">
         <button
           type="button"

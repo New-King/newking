@@ -114,7 +114,7 @@ export default function TurnRail({ turns, onSelect, onClear }) {
             e.stopPropagation();
             onClear && onClear();
           }}
-          className="pointer-events-auto absolute left-[7px] cursor-pointer rounded-full text-ink-faint transition-colors hover:text-accent dark:hover:text-white"
+          className="pointer-events-auto absolute left-[7px] cursor-pointer rounded-full text-ink-muted transition-colors hover:text-accent dark:text-ink-soft dark:hover:text-white"
           style={{ top: PAD + railH + 8 }}
         >
           <IconTrash className="h-[14px] w-[14px]" />
@@ -124,7 +124,7 @@ export default function TurnRail({ turns, onSelect, onClear }) {
             垂直位置跟随焦点条（哪条变长就在它右侧显示） */}
         {hover !== null && turns[hover] && (
           <div
-            className="pointer-events-none fixed w-72 rounded-2xl border border-black/[0.06] bg-card p-3.5 shadow-apple-lg dark:border-white/10"
+            className="pointer-events-none fixed w-72 surface-chat rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/[0.06]"
             style={{
               left: `calc(0.3rem + ${PANEL_OFFSET_X}px)`,
               top: `calc(50% + ${PAD + hover * STEP - (railH / 2)}px - ${PANEL_H / 2}px)`,
@@ -136,7 +136,7 @@ export default function TurnRail({ turns, onSelect, onClear }) {
             <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-ink-muted">
               {turns[hover].reply}
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-faint">
+            <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
               <IconGlobe className="h-3.5 w-3.5" />
               跳转至此轮（点击左侧条）
             </div>

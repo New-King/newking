@@ -157,7 +157,7 @@ export default function Navbar() {
   return (
     <>
       <header
-      className={`fixed inset-x-0 top-0 z-50 border-b border-black/[0.08] bg-white/80 backdrop-blur-xl transition-all duration-300 ease-smooth dark:border-white/10 dark:bg-[#0A0A0C]/80 ${
+      className={`site-nav fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-smooth ${
         hidden ? 'pointer-events-none -translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
     >
@@ -187,7 +187,7 @@ export default function Navbar() {
                     <>
                       {item.label}
                       <span
-                        className={`absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-ink transition-all duration-300 dark:bg-white/80 ${
+                        className={`absolute inset-x-4 -bottom-px h-px rounded-full bg-ink transition-all duration-300 dark:bg-white/50 ${
                           isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
                         }`}
                       />
@@ -202,7 +202,7 @@ export default function Navbar() {
                     }`}
                   >
                     <div
-                      className={`${item.width} rounded-2xl border border-black/[0.06] bg-card p-2.5 shadow-apple-lg dark:border-white/10`}
+                      className={`${item.width} surface-elevated rounded-2xl border border-black/[0.06] p-2.5 dark:border-white/[0.06]`}
                     >
                       {item.quote ? (
                         <QuotePanel />
@@ -235,7 +235,7 @@ export default function Navbar() {
 
       {/* 移动端：抽屉面板（实心白，无毛玻璃，省移动端 GPU） */}
       <div
-        className={`absolute inset-x-0 top-full z-50 border-b border-black/[0.08] bg-white transition-all duration-200 ease-smooth md:hidden dark:border-white/10 dark:bg-card ${
+        className={`site-nav-mobile absolute inset-x-0 top-full z-50 transition-all duration-200 ease-smooth md:hidden ${
           drawerOpen ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-1 opacity-0'
         }`}
       >
