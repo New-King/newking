@@ -853,7 +853,7 @@ export default function AgentChat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="输入你想了解的内容…"
               aria-label="输入你想了解的内容"
-              className="w-full rounded-full border border-black/[0.08] surface-chat py-3.5 pl-5 pr-14 text-[15px] text-ink outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple dark:border-white/[0.08] dark:focus:shadow-apple-input"
+              className="w-full rounded-full border border-black/[0.08] surface-chat py-3.5 pl-5 pr-14 text-[15px] text-ink outline-none transition-all duration-200 placeholder:text-ink-faint focus:shadow-apple dark:border-transparent dark:focus:shadow-apple-input"
             />
             {/* 生成中：发送按钮原位变为暂停按钮，无法连续发送；对话结束或暂停后恢复发送 */}
             {pending > 0 && !paused ? (

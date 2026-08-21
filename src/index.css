@@ -27,10 +27,10 @@
 }
 
 .dark {
-  --page: 50 50 51; /* #323233 页面/网格底色（较亮一层） */
-  --shell: 38 38 40; /* 对话块 */
-  --nav: 29 29 29; /* #1D1D1D 顶栏 / 主题按钮（比对话块更深） */
-  --card: 40 40 41; /* #282829 列表卡片等中间层 */
+  --page: 36 36 38; /* #242426 网格底色（最暗一层） */
+  --shell: 52 52 54; /* #343436 对话块：比 page 亮，镜像浅色「白卡浮在灰底」 */
+  --nav: 29 29 29; /* #1D1D1D 顶栏 / 主题按钮 */
+  --card: 44 44 46; /* 列表卡片等中间层 */
   --ink: 224 224 224; /* #E0E0E0 主文字 */
   --ink-soft: 176 176 178; /* #B0B0B2 */
   --ink-muted: 168 168 170; /* #A8A8AA */
@@ -38,9 +38,10 @@
   --accent: 72 72 73; /* #484849 按钮（风暴灰系，低饱和） */
   --accent-hover: 90 90 91; /* #5A5A5B */
   --accent-soft: 38 38 39; /* #262627 */
-  --shadow-apple: 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-apple-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-apple-input: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --user-bubble: 23 23 23; /* 用户气泡：与浅色 accent 同色，保持角色一致 */
+  --shadow-apple: 0 2px 10px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-apple-lg: 0 6px 20px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.14);
+  --shadow-apple-input: 0 2px 8px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.1);
   /* 深色下网格"变深"效果反向为"变亮" */
   --grid-line: #454546;
   --grid-line-hot: #8a8a8c;
@@ -110,16 +111,29 @@
   .dark .surface-elevated {
     @apply shadow-none;
     background-color: rgb(var(--card));
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    box-shadow: var(--shadow-apple);
   }
-  /* 对话块：--shell + 细边框与背景区分 */
+  /* 对话块：比 page 亮一层 + 柔和阴影（不用 1px 描边） */
   .surface-chat {
     @apply bg-card shadow-apple;
   }
   .dark .surface-chat {
-    @apply shadow-none;
     background-color: rgb(var(--shell));
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow:
+      var(--shadow-apple),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  /* 用户气泡：深浅模式同一角色——深底 + 白字 */
+  .chat-bubble-user {
+    @apply bg-accent text-white shadow-apple;
+  }
+  .dark .chat-bubble-user {
+    background-color: rgb(var(--user-bubble));
+    color: rgb(245 245 247);
+    border: none;
+    box-shadow:
+      0 2px 12px rgba(0, 0, 0, 0.22),
+      0 1px 2px rgba(0, 0, 0, 0.14);
   }
   /* 顶栏：深色下必须纯色，避免 bg-white/80 与 dark:bg-shell 冲突导致半透明发灰 */
   .site-nav {
@@ -147,9 +161,17 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  /* 博客/笔记列表卡片：无描边，靠底色分层 */
+  /* 博客/笔记列表卡片：hover 仅改底色，阴影/尺寸不变 */
   .list-card {
-    @apply block rounded-lg surface-elevated p-5 transition-colors duration-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.03];
+    @apply block rounded-lg surface-elevated p-5;
+    transition: background-color 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .list-card:hover {
+    background-color: rgb(var(--page));
+  }
+  .dark .list-card:hover {
+    background-color: rgb(var(--shell));
+    box-shadow: var(--shadow-apple);
   }
   /* 对话「跳到底部」：深色下与对话块同色，避免 bg-white/95 盖过 dark: 变体 */
   .chat-scroll-bottom {
@@ -157,8 +179,8 @@
   }
   .dark .chat-scroll-bottom {
     background-color: rgb(var(--shell));
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: none;
+    border-color: transparent;
+    box-shadow: var(--shadow-apple);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
