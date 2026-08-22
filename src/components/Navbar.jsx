@@ -5,6 +5,8 @@ import { useContent } from '../hooks/useContent';
 import { IconMail, IconMenu, IconPhone, IconX } from './icons';
 
 const IDLE_MS = 5000; // 鼠标闲置多久后隐藏导航
+const NAV_BAR_H_PX = 56; // 与 h-14 一致
+const NAV_WAKE_ZONE_PX = NAV_BAR_H_PX * 2; // 鼠标进入顶部约两条栏高才唤出菜单
 
 // 联系方式的兜底（内容 API 拉取前先用空壳；有数据后替换）
 const NAV = [
@@ -20,7 +22,7 @@ function ListPanel({ groups }) {
     <div className="space-y-3 p-1">
       {groups.map((g) => (
         <div key={g.date} className="flex gap-2">
-          <span className="w-11 shrink-0 pt-1 text-center text-[11px] tabular-nums text-ink-faint">
+          <span className="w-11 shrink-0 pt-1 text-center text-[11px] tabular-nums text-ink-faint dark:text-ink-muted">
             {formatDateShort(g.date)}
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -43,13 +45,12 @@ function ListPanel({ groups }) {
 function ContactPanel({ contact }) {
   return (
     <div className="space-y-0.5 p-1">
-      <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-ink-faint">联系方式</p>
       {contact?.email && (
         <a
           href={`mailto:${contact.email}`}
           className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
         >
-          <IconMail className="h-4 w-4 shrink-0 text-ink-faint" />
+          <IconMail className="h-4 w-4 shrink-0 text-ink-faint dark:text-ink-muted" />
           {contact.email}
         </a>
       )}
@@ -58,7 +59,7 @@ function ContactPanel({ contact }) {
           href={`tel:${contact.phone}`}
           className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-ink-soft transition-colors hover:bg-neutral-100 dark:hover:bg-white/10"
         >
-          <IconPhone className="h-4 w-4 shrink-0 text-ink-faint" />
+          <IconPhone className="h-4 w-4 shrink-0 text-ink-faint dark:text-ink-muted" />
           {contact.phone}
         </a>
       )}
@@ -76,6 +77,7 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const idleTimerRef = useRef(null);
   const autoHideRef = useRef(false);
+  const hiddenRef = useRef(false);
   const { data } = useContent();
 
   // 按导航项类型从内容数据里取该类型的列表（供 hover 下拉展示最新几条）
@@ -103,10 +105,11 @@ export default function Navbar() {
 
   // 导航可见性变化时通知页面（聊天区据此调整顶部预留条与滚动位置）
   useEffect(() => {
+    hiddenRef.current = hidden;
     window.dispatchEvent(new CustomEvent('nav-visibility', { detail: { hidden } }));
   }, [hidden]);
 
-  // 显示导航：鼠标交互立即恢复，并重置闲置计时（到时仅在启用自动隐藏时隐藏）
+  // 显示导航并重置闲置计时
   const show = useCallback(() => {
     clearTimeout(idleTimerRef.current);
     setHidden(false);
@@ -114,6 +117,22 @@ export default function Navbar() {
       if (autoHideRef.current) setHidden(true);
     }, IDLE_MS);
   }, []);
+
+  // 自动隐藏开启时：隐藏态仅顶部热区唤出；已显示时任意移动可续期
+  const maybeWakeOnMove = useCallback(
+    (e) => {
+      if (!autoHideRef.current) {
+        show();
+        return;
+      }
+      if (hiddenRef.current) {
+        if (e.clientY <= NAV_WAKE_ZONE_PX) show();
+      } else {
+        show();
+      }
+    },
+    [show]
+  );
 
   useEffect(() => {
     if (!canAutoHide) return; // 触屏/移动端：导航常显，不做闲置隐藏
@@ -131,22 +150,30 @@ export default function Navbar() {
       clearTimeout(idleTimerRef.current);
       setHidden(false);
     };
-    // 鼠标交互（移动、点击、滚轮）显示导航；打字（按键）不算鼠标移动，不唤醒。
-    // 注意：不能用 scroll —— 聊天区自动滚动也会触发 scroll 事件，会把刚隐藏的导航又唤醒。
-    const WAKERS = ['mousemove', 'mousedown', 'wheel', 'touchstart'];
+    // 鼠标移入顶部热区才唤出；已显示时移动可续期。滚轮不用于从隐藏态唤醒。
+    const onMouseDown = (e) => {
+      if (!autoHideRef.current || e.clientY <= NAV_WAKE_ZONE_PX) show();
+    };
+    const onWheel = () => {
+      if (!autoHideRef.current || !hiddenRef.current) show();
+    };
     window.addEventListener('nav-hide', onNavHide);
     window.addEventListener('nav-autohide-on', onAutoOn);
     window.addEventListener('nav-autohide-off', onAutoOff);
-    WAKERS.forEach((ev) => window.addEventListener(ev, show, { passive: true }));
+    window.addEventListener('mousemove', maybeWakeOnMove, { passive: true });
+    window.addEventListener('mousedown', onMouseDown, { passive: true });
+    window.addEventListener('wheel', onWheel, { passive: true });
     show(); // 初始：显示并启动闲置计时
     return () => {
       clearTimeout(idleTimerRef.current);
       window.removeEventListener('nav-hide', onNavHide);
       window.removeEventListener('nav-autohide-on', onAutoOn);
       window.removeEventListener('nav-autohide-off', onAutoOff);
-      WAKERS.forEach((ev) => window.removeEventListener(ev, show));
+      window.removeEventListener('mousemove', maybeWakeOnMove);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('wheel', onWheel);
     };
-  }, [show, canAutoHide]);
+  }, [show, maybeWakeOnMove, canAutoHide]);
 
   return (
     <>
