@@ -10,6 +10,9 @@ const nextId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
+const NAV_BAR_H_PX = 56; // 与顶栏 h-14 一致
+const JUMP_TOP_PAD = 16; // 目标轮次与视口顶部的留白
+
 // 首页预设提问：10 条，初始态时间轴轮播展示（每次 4 条，自动向上滚动，点击直接发送）
 const SUGGESTIONS = [
   '做下自我介绍',
@@ -477,9 +480,10 @@ export default function AgentChat() {
     const node = turnRefs.current[i];
     const el = scrollRef.current;
     if (!node || !el) return;
-    // 顶部偏移要避开导航栏（约 56px）+ 顶部预留条，让定位的内容完整可见
+    // 顶栏显示时避开导航高度；隐藏时顶栏不占位，仅留少量顶部留白
+    const topOffset = navHidden ? JUMP_TOP_PAD : NAV_BAR_H_PX + JUMP_TOP_PAD;
     const top =
-      node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 72;
+      node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - topOffset;
     el.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   };
 
