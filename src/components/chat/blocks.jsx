@@ -99,14 +99,14 @@ function ToolCallCard({ block }) {
           ) : pausedState ? (
             <IconPause className="h-3 w-3 text-ink-muted" />
           ) : failed ? (
-            <IconX className="h-3 w-3 text-red-500 dark:text-red-400" />
+            <IconX className="h-3 w-3 text-red-500 dark:text-red-300" />
           ) : (
             <IconCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
           )}
         </span>
         <p
           className={`min-w-0 flex-1 truncate text-xs leading-5 ${
-            failed ? 'text-red-600 dark:text-red-400' : 'text-ink-soft'
+            failed ? 'text-red-600 dark:text-red-300' : 'text-ink-soft'
           }`}
         >
           {running ? (

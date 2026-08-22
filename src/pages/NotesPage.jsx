@@ -35,7 +35,7 @@ export default function NotesPage() {
                   </p>
                 </div>
                 {n.excerpt && (
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
                     {n.excerpt}
                   </p>
                 )}

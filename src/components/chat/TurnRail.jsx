@@ -133,10 +133,10 @@ export default function TurnRail({ turns, onSelect, onClear }) {
             <p className="truncate text-[13px] font-medium text-ink">
               {turns[hover].question}
             </p>
-            <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-ink-muted">
+            <p className="mt-1.5 line-clamp-3 text-xs leading-5 text-ink-soft">
               {turns[hover].reply}
             </p>
-            <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-3 flex items-center gap-1.5 text-xs text-ink-soft">
               <IconGlobe className="h-3.5 w-3.5" />
               跳转至此轮（点击左侧条）
             </div>

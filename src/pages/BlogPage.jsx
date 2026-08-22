@@ -37,7 +37,7 @@ export default function BlogPage() {
                     </p>
                   </div>
                   {p.excerpt && (
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
                       {p.excerpt}
                     </p>
                   )}
