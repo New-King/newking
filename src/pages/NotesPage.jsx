@@ -16,8 +16,8 @@ export default function NotesPage() {
       ) : (
         groups.map((g, i) => (
         <section key={g.year} className={i > 0 ? 'mt-16' : ''}>
-          {/* 仅往年显示年份标题（changelog 惯例，同博客页） */}
-          {i > 0 && (
+          {/* 【临时】最新年份分区也显示右侧年份大标题（如 2046）；恢复 changelog 惯例：改回 i > 0 */}
+          {(true /* ORIGINAL: i > 0 */) && (
             <h2 className="mb-4 text-right text-[28px] font-bold tracking-tight text-ink">
               {g.year}
             </h2>

@@ -344,6 +344,13 @@ html {
 }
 .article-body strong { font-weight: 600; color: var(--ink); }
 .article-body em { font-style: italic; }
+.article-body small {
+  display: block;
+  margin-top: 0.35em;
+  font-size: 0.85em;
+  line-height: 1.65;
+  color: rgb(var(--ink-faint));
+}
 
 /* 列表 */
 .article-body ul,

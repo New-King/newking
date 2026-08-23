@@ -152,10 +152,17 @@ export const notes = [
 
 // ---- 日期分组 ----
 
-// 短日期：2026-08-01 → 08/01（页面列表用）
+// 短日期：详情页右上角、博客/笔记/项目列表用
+// 【临时】始终显示完整年份（含当年），便于 2046 笔记等展示年份。
+// 恢复「当年不显示年份」：删掉下面 return，取消注释 ORIGINAL 块即可。
 export function formatDate(iso) {
-  const [, m, d] = iso.split('-');
-  return `${m}/${d}`;
+  const [y, m, d] = iso.split('-');
+  return `${y}/${m}/${d}`;
+
+  // --- ORIGINAL: 当年只显示月/日，非当年显示完整年份 ---
+  // const currentYear = String(new Date().getFullYear());
+  // if (y === currentYear) return `${m}/${d}`;
+  // return `${y}/${m}/${d}`;
 }
 
 export function formatDateShort(iso) {
