@@ -10,6 +10,12 @@ const PREVIEW_BY_ID = {
   j6: { scene: 'canvas' },
   j1: { scene: 'terminal', lines: ['正在连接集群…', '正在拉取指标…', '正在执行指令…', '任务完成 ✓'] },
   j2: { scene: 'form', input: 'portfolio.json', result: '已生成 12 个页面 ✓' },
+  j7: {
+    scene: 'transfer',
+    code: ['A', '3', '7', '2', 'K'],
+    file: 'design-spec.pdf',
+    size: '2.4 MB',
+  },
 };
 
 // 封面几何图形（中性色，随主题色）—— 每个项目一种
