@@ -1,8 +1,8 @@
 ---
 title: box-newking — 文件快传
 date: 2026-08-24
-description: 像取快递一样取文件：无需注册，上传获码、输码即取，部署于 box.new-king.com。
-cover: triangle
+description: 像取快递一样取文件：无需注册，上传获码、输码即取取取取取取取取取取取取取取取。
+cover: box
 url: https://box.new-king.com
 ---
 

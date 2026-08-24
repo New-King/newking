@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PageShell from '../components/PageShell';
 import DemoPreview from '../components/projects/DemoPreview';
+import BoxCoverIcon from '../components/projects/BoxCoverIcon';
 import { formatDate } from '../data/mockData';
 import { useContent } from '../hooks/useContent';
 
@@ -57,8 +58,10 @@ const COVER_SHAPES = {
 };
 
 // 封面缩略图（含细网格线，深浅模式自适应）
-function CoverThumb({ shape, active, small }) {
-  return (
+function CoverThumb({ shape, active, small, href }) {
+  const iconSize = small ? 26 : 44;
+
+  const thumb = (
     <div
       className={`relative shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-black/[0.04] via-black/[0.01] to-black/[0.08] dark:from-white/[0.05] dark:via-transparent dark:to-white/[0.1] ${
         small ? 'h-12 w-12' : 'h-24 w-24'
@@ -70,13 +73,77 @@ function CoverThumb({ shape, active, small }) {
           active ? 'opacity-100' : 'opacity-60'
         }`}
       >
-        {COVER_SHAPES[shape]}
+        {shape === 'box' ? (
+          <BoxCoverIcon size={iconSize} strokeWidth={1.5} />
+        ) : (
+          COVER_SHAPES[shape]
+        )}
+      </div>
+    </div>
+  );
+
+  if (href && shape === 'box') {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block shrink-0 rounded-md transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        aria-label="访问项目官网"
+      >
+        {thumb}
+      </a>
+    );
+  }
+
+  return thumb;
+}
+
+// 左右箭头点击区：独立组件（局部距离状态，避免 mousemove 重渲染整个页面）
+function ProjectMeta({ title, date, description, url }) {
+  return (
+    <div className="flex min-h-24 min-w-0 flex-1 flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <p className="truncate text-[17px] font-medium leading-snug text-ink">{title}</p>
+        <p className="shrink-0 text-xs tabular-nums text-ink-muted">{formatDate(date)}</p>
+      </div>
+      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">{description}</p>
+      <div className="mt-auto h-5 pt-0.5">
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex min-w-0 items-center gap-1.5 text-xs text-ink-muted transition-colors hover:text-ink"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+              aria-hidden
+            >
+              <path d="M15 3h6v6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 14 21 3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="truncate underline decoration-black/10 underline-offset-2 transition-colors group-hover:decoration-black/25 dark:decoration-white/15 dark:group-hover:decoration-white/30">
+              {url}
+            </span>
+          </a>
+        ) : null}
       </div>
     </div>
   );
 }
 
-// 左右箭头点击区：独立组件（局部距离状态，避免 mousemove 重渲染整个页面）
 function ArrowZone({ direction, onClick, label }) {
   const [dist, setDist] = useState(0);
   return (
@@ -174,20 +241,13 @@ export default function ProjectsPage() {
           className="animate-[fade-in-up_0.4s_ease_both] relative surface-elevated rounded-lg border border-black/[0.06] dark:border-white/[0.06]"
         >
           <div className="flex items-center gap-5 p-5">
-            <CoverThumb shape={item.cover} active />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <p className="truncate text-[17px] font-medium leading-snug text-ink">
-                  {item.title}
-                </p>
-                <p className="shrink-0 text-xs tabular-nums text-ink-muted">
-                  {formatDate(item.date)}
-                </p>
-              </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-                {item.description}
-              </p>
-            </div>
+            <CoverThumb shape={item.cover} active href={item.url} />
+            <ProjectMeta
+              title={item.title}
+              date={item.date}
+              description={item.description}
+              url={item.url}
+            />
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={item} active />
