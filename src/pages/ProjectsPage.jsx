@@ -59,13 +59,17 @@ const COVER_SHAPES = {
 
 // 封面缩略图（含细网格线，深浅模式自适应）
 function CoverThumb({ shape, active, small, href }) {
+  const [boxHovered, setBoxHovered] = useState(false);
   const iconSize = small ? 26 : 44;
+  const isBox = shape === 'box';
 
   const thumb = (
     <div
       className={`relative shrink-0 overflow-hidden rounded-md bg-gradient-to-br from-black/[0.04] via-black/[0.01] to-black/[0.08] dark:from-white/[0.05] dark:via-transparent dark:to-white/[0.1] ${
         small ? 'h-12 w-12' : 'h-24 w-24'
       }`}
+      onMouseEnter={isBox ? () => setBoxHovered(true) : undefined}
+      onMouseLeave={isBox ? () => setBoxHovered(false) : undefined}
     >
       <div className="absolute inset-0 [background-image:linear-gradient(to_right,var(--grid-line)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid-line)_1px,transparent_1px)] [background-size:14px_14px]" />
       <div
@@ -73,8 +77,8 @@ function CoverThumb({ shape, active, small, href }) {
           active ? 'opacity-100' : 'opacity-60'
         }`}
       >
-        {shape === 'box' ? (
-          <BoxCoverIcon size={iconSize} strokeWidth={1.5} />
+        {isBox ? (
+          <BoxCoverIcon hovered={boxHovered} size={iconSize} strokeWidth={1.5} />
         ) : (
           COVER_SHAPES[shape]
         )}
@@ -82,7 +86,7 @@ function CoverThumb({ shape, active, small, href }) {
     </div>
   );
 
-  if (href && shape === 'box') {
+  if (href && isBox) {
     return (
       <a
         href={href}
@@ -90,6 +94,8 @@ function CoverThumb({ shape, active, small, href }) {
         rel="noopener noreferrer"
         className="block shrink-0 rounded-md transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
         aria-label="访问项目官网"
+        onFocus={() => setBoxHovered(true)}
+        onBlur={() => setBoxHovered(false)}
       >
         {thumb}
       </a>
