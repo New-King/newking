@@ -13,6 +13,7 @@
   "resume":   {...}    # 个人简介
 }
 每个列表项：{ id, title, date, description, cover, video, links }
+posts / notes / projects 列表按 date 倒序返回（新 → 旧）。
 """
 from .config import CONTENT_DIR
 from .indexer import parse_md, json_safe
@@ -20,6 +21,11 @@ from .indexer import parse_md, json_safe
 # 目录名 → 内容类型 + 前端路由前缀
 _TYPE_BY_DIR = {"posts": "posts", "notes": "notes", "projects": "projects"}
 _ROUTE_BY_DIR = {"posts": "/blog", "notes": "/notes", "projects": "/projects"}
+
+
+def _sort_by_date_desc(items):
+    """列表按 frontmatter date 倒序（新 → 旧）。"""
+    return sorted(items, key=lambda item: item.get("date", ""), reverse=True)
 
 
 def _load_all():
@@ -62,6 +68,9 @@ def _load_all():
             "to": f"{_ROUTE_BY_DIR[dirname]}/{rel.stem}",
         }
         result[type_name].append(json_safe(item))
+
+    for key in ("posts", "notes", "projects"):
+        result[key] = _sort_by_date_desc(result[key])
 
     return result
 
