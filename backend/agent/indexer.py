@@ -91,6 +91,18 @@ def parse_md(text):
     return meta, body
 
 
+def is_draft(meta):
+    """frontmatter 标记 draft: true 时，不对外展示、不进知识库。"""
+    value = (meta or {}).get("draft")
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "yes", "1")
+    return bool(value)
+
+
 def split_by_headings(body):
     """按标题切块：一个标题 + 它下面的内容 = 一个块。
 
@@ -191,6 +203,10 @@ def iter_docs():
         if not base.exists():
             continue
         for path in sorted(base.rglob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            meta, _ = parse_md(text)
+            if is_draft(meta):
+                continue
             yield path.relative_to(CONTENT_DIR).as_posix(), path
 
 

@@ -16,7 +16,7 @@
 posts / notes / projects 列表按 date 倒序返回（新 → 旧）。
 """
 from .config import CONTENT_DIR
-from .indexer import parse_md, json_safe
+from .indexer import parse_md, json_safe, is_draft
 
 # 目录名 → 内容类型 + 前端路由前缀
 _TYPE_BY_DIR = {"posts": "posts", "notes": "notes", "projects": "projects"}
@@ -56,6 +56,8 @@ def _load_all():
         dirname = rel.parts[0]
         type_name = _TYPE_BY_DIR.get(dirname)
         if not type_name:
+            continue
+        if is_draft(meta):
             continue
         item = {
             "id": rel.stem,
