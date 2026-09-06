@@ -19,9 +19,11 @@ SSE 事件协议（前端 AgentChat 按此渲染）：
 """
 import json
 import re
+from typing import Literal
 
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
 from .config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
@@ -53,66 +55,6 @@ def _build_system_prompt():
    不要在回复里一次性罗列一大堆链接；只在谈到某篇时附上那一篇的链接即可。
 6. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
 7. 工具调用已经由系统代为执行并给了你结果，你只负责根据结果组织文字回复。严禁在回复文本里输出任何工具调用标签（如 <tool_call>、<invoke> 等）——那会被当成乱码显示给访客。直接说人话回答即可。"""
-
-
-# search_knowledge 工具定义（JSON Schema，DeepSeek 支持 OpenAI 兼容 function calling）
-SEARCH_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "search_knowledge",
-        "description": "检索网站的知识库（博客/笔记/项目内容），返回与问题最相关的内容块。"
-        "当问题涉及网站内容、或需要确认网站是否写过相关内容时调用。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "要检索的问题或关键词，尽量简洁（如：RAG 博客、warp 终端）",
-                }
-            },
-            "required": ["query"],
-        },
-    },
-}
-
-# query_articles 工具定义：查"有哪些/最近写了什么/有没有写过xxx"这类列表型问题。
-# 不向量检索，直接按条件过滤文章的 metadata（标题/日期/类型/链接），命中率 100%。
-# 与 search_knowledge 互补：列表/筛选型问题用它，内容细节/观点才用检索。
-# 参数刻意精简（keyword/type/limit/sort）：不提供时间范围（模型不确定当天日期，
-# 硬塞时间参数容易出错），参数少模型也更容易填对。
-QUERY_ARTICLES_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "query_articles",
-        "description": "查询网站的文章清单（博客/笔记/项目），按条件筛选。"
-        "适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、按类型筛选。"
-        "返回匹配文章的标题、日期、链接。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "keyword": {
-                    "type": "string",
-                    "description": "关键词，匹配标题或简介（如：RAG、切块、MCP、warp）。"
-                    "如需多个关键词，用英文逗号分隔放在这一个字段里（如：vite,react）。",
-                },
-                "type": {
-                    "type": "string",
-                    "enum": ["all", "blog", "note", "project"],
-                    "description": "文章类型，默认 all（全部）",
-                },
-                "limit": {
-                    "type": "integer",
-                    "description": "返回条数，默认 10，最大 20",
-                },
-                "sort": {
-                    "type": "string",
-                    "enum": ["date_desc", "date_asc"],
-                    "description": "排序，默认 date_desc（最新在前）",
-                },
-            },
-        },
-    },
-}
 
 
 def _sse(data: dict) -> str:
@@ -284,6 +226,46 @@ def _query_articles_result(args):
     return text, structured
 
 
+# 工具定义：LangChain @tool 自动生成 JSON Schema，供 bind_tools / function calling 使用。
+# 执行逻辑仍在 _stream_generator 里（需 SSE 卡片、context 结构化数据），此处仅声明模型可见的接口。
+@tool
+def search_knowledge(query: str) -> str:
+    """检索网站的知识库（博客/笔记/项目内容），返回与问题最相关的内容块。
+    当问题涉及网站内容、或需要确认网站是否写过相关内容时调用。
+
+    Args:
+        query: 要检索的问题或关键词，尽量简洁（如：RAG 博客、warp 终端）
+    """
+    return _format_tool_result(search(query, top_k=5))
+
+
+@tool
+def query_articles(
+    keyword: str = "",
+    type: Literal["all", "blog", "note", "project"] = "all",
+    limit: int = 10,
+    sort: Literal["date_desc", "date_asc"] = "date_desc",
+) -> str:
+    """查询网站的文章清单（博客/笔记/项目），按条件筛选。
+    适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、按类型筛选。
+    返回匹配文章的标题、日期、链接。
+
+    Args:
+        keyword: 关键词，匹配标题或简介（如：RAG、切块、MCP、warp）。
+            如需多个关键词，用英文逗号分隔放在这一个字段里（如：vite,react）。
+        type: 文章类型，默认 all（全部）
+        limit: 返回条数，默认 10，最大 20
+        sort: 排序，默认 date_desc（最新在前）
+    """
+    text, _ = _query_articles_result(
+        {"keyword": keyword, "type": type, "limit": limit, "sort": sort}
+    )
+    return text
+
+
+CHAT_TOOLS = [query_articles, search_knowledge]
+
+
 def _stream_generator(query, history):
     """SSE 事件生成器（agentic loop 最小形态）。
 
@@ -303,7 +285,7 @@ def _stream_generator(query, history):
         temperature=0.7,
         model_kwargs={"reasoning_effort": "low"},  # 思考模式：开启，强度最低（low）
     )
-    llm_with_tools = llm.bind_tools([SEARCH_TOOL, QUERY_ARTICLES_TOOL])
+    llm_with_tools = llm.bind_tools(CHAT_TOOLS)
 
     messages = _build_messages(query, history)
 
