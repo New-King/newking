@@ -1,11 +1,17 @@
 # 自动部署流水线：push 到 main → 前端构建 + 后端容器更新 → SSH 同步到服务器
 # 前端：构建 dist → rsync 到网站目录
 # 后端：同步 backend + content → docker compose 重建 → 触发索引
+# 说明：纯文档改动（docs/、README.md、AGENTS.md）不触发部署，避免无意义地重建后端容器。
+#     注意 paths-ignore 不要写成 '**/*.md'，那会连 content/**/*.md 一起忽略，导致发文章不部署。
 name: 自动部署
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'AGENTS.md'
   workflow_dispatch:
 
 jobs:
