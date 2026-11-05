@@ -118,3 +118,17 @@ export const IconLink = ({ className }) => (
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </svg>
 );
+
+// AI 入口：四角星（不用彩色，沿用当前文字色）
+export const IconSparkle = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+    <path d="M12 8.5c.7 2 1.8 3.1 3.8 3.8-2 .7-3.1 1.8-3.8 3.8-.7-2-1.8-3.1-3.8-3.8 2-.7 3.1-1.8 3.8-3.8Z" />
+  </svg>
+);
+
+export const IconChevron = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <polyline points="9 6 15 12 9 18" />
+  </svg>
+);

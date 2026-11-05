@@ -1,6 +1,6 @@
 """内容 API 模块：把 content/*.md 解析成结构化 JSON，供前端页面展示。
 
-作用：前端博客/笔记/项目页面，以及导航栏"最新内容"，都从这里拿数据。
+作用：前端左侧目录、博客/笔记/项目列表与详情页，都从这里拿数据。
 不再用前端写死的 mockData，内容变更后实时反映。
 
 返回结构（按类型分组）：
@@ -43,7 +43,7 @@ def _load_all():
             if name in result:
                 item = json_safe({**meta, "id": name, "content": body})
                 if name == "contact":
-                    # 从正文里提取 email / phone（供导航"联系方式"下拉使用）
+                    # 从正文里提取 email / phone（供侧栏底部与联系页使用）
                     import re as _re
                     email = _re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", body)
                     phone = _re.search(r"1[3-9][\d-]{8,11}", body)

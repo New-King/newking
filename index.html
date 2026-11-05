@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon2-rounded.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="以对话为入口的个人网站 —— 首页、博客、项目、笔记、联系" />
+    <meta name="description" content="New-King 的个人网站：博客、笔记、项目与 AI 对话" />
     <title>New-King</title>
+    <script>
+      // 首屏前应用主题，避免刷新时先闪一下浅色
+      try {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

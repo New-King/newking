@@ -6,7 +6,7 @@
   - 不需要（"写个快速排序"）→ 模型直接回答，不调工具
   执行工具后把结果回填，模型基于结果生成最终回答。
 
-SSE 事件协议（前端 AgentChat 按此渲染）：
+SSE 事件协议（前端 ChatDock / useChat 按此渲染）：
     每行是 data: <json>，用空行分隔。
     事件类型：
       {"type": "thinking", "status": "running"}   思考中

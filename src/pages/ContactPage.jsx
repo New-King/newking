@@ -3,14 +3,19 @@ import { useContent } from '../hooks/useContent';
 import { IconMail, IconPhone } from '../components/icons';
 
 export default function ContactPage() {
-  const { data, loading } = useContent();
+  const { data, loading, error } = useContent();
   const contact = data?.contact ?? {};
 
   return (
     <PageShell eyebrow="Contact">
-      <div className="space-y-3">
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">
+        {contact?.title || '联系方式'}
+      </h1>
+      <div className="mt-6 space-y-3">
         {loading ? (
           <p className="py-4 text-sm text-ink-faint">加载中…</p>
+        ) : error ? (
+          <p className="py-4 text-sm text-ink-faint">内容加载失败，请确认后端服务已启动。</p>
         ) : (
           <>
             {contact.email && (

@@ -66,6 +66,6 @@ def chat(req: ChatRequest):
 def content():
     """返回全站内容（博客/笔记/项目/about/contact/resume）。
 
-    前端博客/笔记/项目页面 + 导航"最新内容"都从这拉。
+    前端的左侧目录、列表页与详情页都从这里拉数据。
     """
     return get_content()

@@ -135,35 +135,9 @@
       0 2px 12px rgba(0, 0, 0, 0.22),
       0 1px 2px rgba(0, 0, 0, 0.14);
   }
-  /* 顶栏：深色下必须纯色，避免 bg-white/80 与 dark:bg-shell 冲突导致半透明发灰 */
-  .site-nav {
-    @apply border-b border-black/[0.08] bg-white/80 backdrop-blur-xl;
-  }
-  .dark .site-nav {
-    background-color: rgb(var(--nav));
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .site-nav-mobile {
-    @apply border-b border-black/[0.08] bg-white;
-  }
-  .dark .site-nav-mobile {
-    background-color: rgb(var(--nav));
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-  }
-  .site-theme-toggle {
-    @apply border border-black/[0.08] bg-white/90 backdrop-blur;
-  }
-  .dark .site-theme-toggle {
-    background-color: rgb(var(--nav));
-    border-color: rgba(255, 255, 255, 0.08);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
   /* 博客/笔记列表卡片：hover 仅改底色，阴影/尺寸不变 */
   .list-card {
-    @apply block rounded-lg surface-elevated p-5;
+    @apply block rounded-2xl surface-elevated p-5;
     transition: background-color 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
   }
   .list-card:hover {
@@ -172,17 +146,6 @@
   .dark .list-card:hover {
     background-color: rgb(var(--shell));
     box-shadow: var(--shadow-apple);
-  }
-  /* 对话「跳到底部」：深色下与对话块同色，避免 bg-white/95 盖过 dark: 变体 */
-  .chat-scroll-bottom {
-    @apply border border-black/[0.08] bg-white/95 text-ink shadow-apple backdrop-blur;
-  }
-  .dark .chat-scroll-bottom {
-    background-color: rgb(var(--shell));
-    border-color: transparent;
-    box-shadow: var(--shadow-apple);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 
@@ -297,20 +260,6 @@
     animation-duration: 6.38s !important;
     animation-iteration-count: infinite !important;
   }
-}
-
-/* 首页聊天页：禁用浏览器橡皮筋/弹性滚动（微信 WebView 无此效果，浏览器需对齐；仅聊天页生效） */
-body.chat-page {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* 首页聊天页：min-height 用 dvh（动态视口）——100vh 在移动浏览器是"地址栏收起时"的高度，
-   地址栏展开时会溢出产生滚动条（微信无地址栏所以正常），dvh 实时跟随可视区，永不溢出。
-   先写 100vh 兜底（旧浏览器），再写 100dvh 覆盖。 */
-.chat-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
 }
 
 /* 移动端点击体验优化（避坑指南） */

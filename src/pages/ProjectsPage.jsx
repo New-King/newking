@@ -110,7 +110,7 @@ function ProjectMeta({ title, date, description, url }) {
   return (
     <div className="flex min-h-24 min-w-0 flex-1 flex-col">
       <div className="flex items-start justify-between gap-3">
-        <p className="truncate text-[17px] font-medium leading-snug text-ink">{title}</p>
+        <p className="line-clamp-2 min-w-0 flex-1 text-[17px] font-medium leading-snug text-ink">{title}</p>
         <p className="shrink-0 text-xs tabular-nums text-ink-muted">{formatDate(date)}</p>
       </div>
       <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">{description}</p>
@@ -150,47 +150,8 @@ function ProjectMeta({ title, date, description, url }) {
   );
 }
 
-function ArrowZone({ direction, onClick, label }) {
-  const [dist, setDist] = useState(0);
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      onMouseMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const d = direction === 'left' ? rect.right - e.clientX : e.clientX - rect.left;
-        setDist(Math.max(0, Math.min(1, d / rect.width)));
-      }}
-      onMouseLeave={() => setDist(0)}
-      className={`group absolute top-0 bottom-0 z-10 hidden items-center text-ink-faint transition-colors duration-200 hover:text-ink sm:flex ${
-        direction === 'left'
-          ? 'left-[calc(-50vw+336px)] w-[calc(50vw-320px)] justify-end pr-10'
-          : 'right-[calc(-50vw+336px)] w-[calc(50vw-320px)] justify-start pl-10'
-      }`}
-    >
-      <svg
-        width={32 + Math.round(dist * 20)}
-        height={32 + Math.round(dist * 20)}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        className={`transition-transform duration-200 ${
-          direction === 'left' ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'
-        }`}
-      >
-        <path
-          d={direction === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
-  );
-}
-
 export default function ProjectsPage() {
-  const { data, loading } = useContent();
+  const { data, loading, error } = useContent();
   const projects = data?.projects ?? [];
   const [index, setIndex] = useState(0);
 
@@ -203,13 +164,32 @@ export default function ProjectsPage() {
   const total = projects.length;
   const p = projects[index];
 
-  const next = () => setIndex((i) => (i + 1) % total);
-  const prev = () => setIndex((i) => (i - 1 + total) % total);
+  const next = () => total > 1 && setIndex((i) => (i + 1) % total);
+  const prev = () => total > 1 && setIndex((i) => (i - 1 + total) % total);
 
   if (loading) {
     return (
       <PageShell eyebrow="Projects">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
         <p className="py-8 text-sm text-ink-faint">加载中…</p>
+      </PageShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageShell eyebrow="Projects">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
+        <p className="py-8 text-sm text-ink-faint">内容加载失败，请确认后端服务已启动。</p>
+      </PageShell>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <PageShell eyebrow="Projects">
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
+        <p className="py-8 text-sm text-ink-faint">还没有项目。</p>
       </PageShell>
     );
   }
@@ -222,9 +202,10 @@ export default function ProjectsPage() {
 
   return (
     <PageShell eyebrow="Projects">
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
       {/* 相册式展示：当前项目 + 自动播放预览；左右箭头 / 滑动 / 缩略图切换 */}
       <div
-        className="relative"
+        className="relative mt-6"
         onTouchStart={(e) => {
           touchX.current = e.touches[0].clientX;
         }}
@@ -236,15 +217,41 @@ export default function ProjectsPage() {
           touchX.current = null;
         }}
       >
-        {/* 页码指示 */}
-        <div className="mb-4 flex justify-end text-xs tabular-nums text-ink-faint">
-          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        {/* 切换控件 + 页码：箭头放进主区，避免侧栏挤压后仍按视口宽度定位 */}
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={prev}
+              disabled={total <= 1}
+              aria-label="上一个项目"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[0.1] dark:hover:border-white/[0.2]"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              disabled={total <= 1}
+              aria-label="下一个项目"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[0.1] dark:hover:border-white/[0.2]"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <div className="text-xs tabular-nums text-ink-faint">
+            {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+          </div>
         </div>
 
         {/* 主展示卡片（key 强制重挂载 → 预览从头播放） */}
         <div
           key={item.id}
-          className="animate-[fade-in-up_0.4s_ease_both] relative surface-elevated rounded-lg border border-black/[0.06] dark:border-white/[0.06]"
+          className="animate-[fade-in-up_0.4s_ease_both] relative surface-elevated rounded-2xl border border-black/[0.06] dark:border-white/[0.06]"
         >
           <div className="flex items-center gap-5 p-5">
             <CoverThumb shape={item.cover} active href={item.url} />
@@ -257,9 +264,6 @@ export default function ProjectsPage() {
           </div>
           {/* 预览动画：常驻自动播放 */}
           <DemoPreview p={item} active />
-          {/* 左右箭头：铺满视口边缘到卡片，离卡片越远箭头越大（独立组件局部状态） */}
-          <ArrowZone direction="left" onClick={prev} label="上一个项目" />
-          <ArrowZone direction="right" onClick={next} label="下一个项目" />
         </div>
 
       </div>

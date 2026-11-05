@@ -1,243 +1,27 @@
-import demoImg from '../assets/demo.svg';
+// 站点文案与日期工具。
+// 博客/笔记/项目的正文与列表数据统一来自后端 /api/content，不再在前端写死。
 
-// 全站本地 mock 数据 —— 纯前端，无任何后端依赖。
-
-// 悬停导航「首页」时展示的站点文案（可配置）
 export const SITE_QUOTE =
   '在AI极速发展的时代，任何你觉得了不起的新奇想法，都会在第二天怦然坠地。';
 
-export const posts = [
-  {
-    id: 'p1',
-    title: '构建可组合的 Agent 工作流',
-    date: '2026-07-28',
-    excerpt: '拆解 Agent 的组成单元，分享可复用工作流的搭建思路与实践。',
-    to: '/blog',
-  },
-  {
-    id: 'p2',
-    title: 'RAG 落地实践：从原型到生产',
-    date: '2026-07-20',
-    excerpt: '从检索方案选型到线上稳定运行，记录 RAG 服务化的关键决策。',
-    to: '/blog',
-  },
-  {
-    id: 'p3',
-    title: '用 React 与 Vite 搭建现代前端',
-    date: '2026-07-12',
-    excerpt: 'Vite 冷启动与 React 工程化的取舍，以及项目结构的演进。',
-    to: '/blog',
-  },
-  {
-    id: 'p4',
-    title: '关于 LLM 上下文工程的一些思考',
-    date: '2026-07-12',
-    excerpt: '上下文窗口的分配、压缩与检索，如何让模型用得更省。',
-    to: '/blog',
-  },
-  {
-    id: 'p5',
-    title: '2026 年中技术盘点',
-    date: '2026-06-30',
-    excerpt: '半年技术观察：Agent、推理模型与工程工具的进展。',
-    to: '/blog',
-  },
-  {
-    id: 'p6',
-    title: '个人网站搭建的早期探索',
-    date: '2025-08-27',
-    excerpt: '从零搭建个人站：技术选型、设计取舍与踩坑记录。',
-    to: '/blog',
-  },
-];
-
-export const projects = [
-  // preview 可选：悬停预览的场景动画，{ scene: 模板名, ...场景配置 }
-  // 模板：terminal（执行流程）/ chat（对话）/ form（表单生成）/ list（模块加载）/ canvas（画布协作）
-  // 不提供 preview 则悬停不展开预览；新项目按需新增场景模板。
-  {
-    id: 'j6',
-    title: '无限画布 — AI 创作工作台',
-    date: '2026-08-10',
-    description: '左画布右对话，用自然语言驱动图片与视频的连续创作。',
-    cover: 'dots',
-    preview: { scene: 'canvas' },
-    to: '/projects',
-  },
-  {
-    id: 'j1',
-    title: 'Agent Console — 对话式运维助手',
-    date: '2026-06-15',
-    description: '对话式 AI 运维终端，聚合日志、指标与操作指令。',
-    cover: 'ring',
-    preview: {
-      scene: 'terminal',
-      lines: ['正在连接集群…', '正在拉取指标…', '正在执行指令…', '任务完成 ✓'],
-    },
-    to: '/projects',
-  },
-  {
-    id: 'j2',
-    title: 'Portfolio 生成器',
-    date: '2026-05-02',
-    description: '用 JSON 配置快速生成个人作品集站点。',
-    cover: 'square',
-    preview: {
-      scene: 'form',
-      input: 'portfolio.json',
-      result: '已生成 12 个页面 ✓',
-    },
-    to: '/projects',
-  },
-];
-
-export const notes = [
-  {
-    id: 'n1',
-    title: '关于 prompt 工程的一点心得',
-    date: '2026-08-01',
-    excerpt: '结构化指令的边界与技巧，从一次失败的对话说起。',
-    to: '/notes',
-  },
-  {
-    id: 'n2',
-    title: 'Tailwind 排版与间距的取舍',
-    date: '2026-07-25',
-    excerpt: '从字号到空间节奏，聊聊排版系统的一次重构。',
-    to: '/notes',
-  },
-  {
-    id: 'n3',
-    title: '读《设计中的设计》',
-    date: '2026-07-10',
-    excerpt: '原研哉的减法美学，和网站设计有不少共通之处。',
-    to: '/notes',
-  },
-  {
-    id: 'n4',
-    title: 'MCP 协议初探',
-    date: '2026-07-10',
-    excerpt: 'MCP 是什么、能做什么，一篇入门向的梳理。',
-    to: '/notes',
-  },
-  {
-    id: 'n5',
-    title: '每周速览 #12',
-    date: '2026-06-28',
-    excerpt: '本周关注的文章、工具与一些碎片想法。',
-    to: '/notes',
-  },
-  {
-    id: 'n6',
-    title: '终端美学：从 Vim 到 Warp',
-    date: '2025-12-15',
-    excerpt: '工具的外形与效率，聊聊终端的一次进化。',
-    to: '/notes',
-  },
-  {
-    id: 'n7',
-    title: '读《禅与摩托车维修艺术》',
-    date: '2025-10-08',
-    excerpt: '关于「良质」的一些摘录与胡思乱想。',
-    to: '/notes',
-  },
-  {
-    id: 'n8',
-    title: '静态博客的十年',
-    date: '2025-05-20',
-    excerpt: '从 Jekyll 到 Astro，写作工具的变迁史。',
-    to: '/notes',
-  },
-];
-
-// ---- 日期分组 ----
-
-// 短日期：详情页右上角、博客/笔记/项目列表用
+// 短日期：详情页右上角、列表用（当年省略年份）
 export function formatDate(iso) {
-  const [y, m, d] = iso.split('-');
+  const [y, m, d] = String(iso || '').split('-');
+  if (!y || !m || !d) return '';
   const currentYear = String(new Date().getFullYear());
   if (y === currentYear) return `${m}/${d}`;
   return `${y}/${m}/${d}`;
 }
 
-export function formatDateShort(iso) {
-  const [, m, d] = iso.split('-');
-  return `${Number(m)}月${Number(d)}日`;
-}
-
 // 按年份分组（降序），供博客/笔记页的年份分区列表使用
 export function groupByYear(items) {
-  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...items].sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const groups = [];
   for (const item of sorted) {
-    const year = item.date.slice(0, 4);
+    const year = String(item.date || '').slice(0, 4);
     const last = groups[groups.length - 1];
     if (last && last.year === year) last.items.push(item);
     else groups.push({ year, items: [item] });
   }
   return groups;
 }
-
-// 取最新 n 条；同一天的内容合并为一组，日期只显示一次，不拆开。
-export function latestGroups(items, n = 3) {
-  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
-  const groups = [];
-  for (const item of sorted) {
-    const last = groups[groups.length - 1];
-    if (last && last.date === item.date) last.items.push(item);
-    else groups.push({ date: item.date, items: [item] });
-  }
-  const picked = [];
-  let count = 0;
-  for (const g of groups) {
-    picked.push(g);
-    count += g.items.length;
-    if (count >= n) break;
-  }
-  return picked;
-}
-
-// ---- Agent 演示回复（一条回复同时演示多种内容类型）----
-
-export const DEMO_TOOLS = [
-  { name: '搜索', duration: 1100, result: '检索到 3 篇相关文章' },
-  { name: '知识库', duration: 900, result: '命中 12 条相关片段' },
-  { name: 'MCP 插件', duration: 700, result: '已连接 2 个可用工具' },
-];
-
-export const DEMO_TEXT =
-  '你好，我是这个网站内置的演示 Agent。\n\n基于对站内内容的检索，我为你整理了如下结论：\n\n这是一个以「对话」为入口的个人网站 —— 顶部导航承载博客、项目、笔记与联系方式，悬停即可预览最新内容；首页则用一次对话来演示 Agent 的完整能力。\n\n下面是本次回复使用的示例代码、示意图与媒体占位，方便你快速评估整体效果。';
-
-export const DEMO_CODE = `// 演示：模拟 Agent 流式回复的调度器
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function streamReply({ blocks, onBlock }) {
-  for (const block of blocks) {
-    onBlock({ type: 'loading', ...block });
-    await sleep(block.duration);
-    onBlock({ type: 'done', ...block });
-  }
-}
-
-streamReply({
-  blocks: [
-    { type: 'thinking', duration: 600 },
-    { type: 'tool', name: '知识库', duration: 900 },
-  ],
-  onBlock: (b) => render(b),
-});`;
-
-export const DEMO_IMAGE = {
-  src: demoImg,
-  caption: '示意图 · 对话式首页的布局结构',
-};
-
-export const DEMO_AUDIO = {
-  title: '演示音频 · 设计思路漫谈',
-  duration: '03:24',
-};
-
-export const DEMO_VIDEO = {
-  title: '演示视频 · 对话式入口 Demo',
-  duration: '01:12',
-};
