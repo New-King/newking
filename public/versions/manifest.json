@@ -102,9 +102,9 @@
       ]
     },
     {
-      "id": "2025-08-chat-entry",
-      "label": "2025.08",
-      "date": "2025-08-27",
+      "id": "2026-08-chat-entry",
+      "label": "2026.08",
+      "date": "2026-08-27",
       "title": "对话式首页",
       "summary": "以全屏 AI 对话为入口的旧版：顶部导航 + 首页对话。",
       "commit": "1eb8a68",
@@ -114,8 +114,8 @@
           "label": "首页",
           "path": "/",
           "screenshots": {
-            "desktop": "/versions/2025-08-chat-entry/home-desktop.png",
-            "mobile": "/versions/2025-08-chat-entry/home-mobile.jpg"
+            "desktop": "/versions/2026-08-chat-entry/home-desktop.png",
+            "mobile": "/versions/2026-08-chat-entry/home-mobile.jpg"
           }
         },
         {
@@ -124,16 +124,17 @@
           "path": "/",
           "note": "首页 · 全屏对话",
           "screenshots": {
-            "desktop": "/versions/2025-08-chat-entry/conversation-desktop.png",
-            "mobile": "/versions/2025-08-chat-entry/conversation-mobile.jpg"
+            "desktop": "/versions/2026-08-chat-entry/conversation-desktop.png",
+            "mobile": "/versions/2026-08-chat-entry/conversation-mobile.jpg"
           }
         },
         {
-          "id": "blog",
-          "label": "博客",
+          "id": "articles",
+          "label": "文章",
           "path": "/blog",
           "screenshots": {
-            "mobile": "/versions/2025-08-chat-entry/blog-mobile.jpg"
+            "desktop": "/versions/2026-08-chat-entry/articles-desktop.png",
+            "mobile": "/versions/2026-08-chat-entry/articles-mobile.jpg"
           }
         },
         {
@@ -141,16 +142,8 @@
           "label": "文章详情",
           "path": "/blog/p2-splitting-choice",
           "screenshots": {
-            "desktop": "/versions/2025-08-chat-entry/article-desktop.png",
-            "mobile": "/versions/2025-08-chat-entry/article-mobile.jpg"
-          }
-        },
-        {
-          "id": "notes",
-          "label": "笔记",
-          "path": "/notes",
-          "screenshots": {
-            "desktop": "/versions/2025-08-chat-entry/notes-desktop.png"
+            "desktop": "/versions/2026-08-chat-entry/article-desktop.png",
+            "mobile": "/versions/2026-08-chat-entry/article-mobile.jpg"
           }
         },
         {
@@ -158,8 +151,8 @@
           "label": "项目",
           "path": "/projects",
           "screenshots": {
-            "desktop": "/versions/2025-08-chat-entry/projects-desktop.png",
-            "mobile": "/versions/2025-08-chat-entry/projects-mobile.jpg"
+            "desktop": "/versions/2026-08-chat-entry/projects-desktop.png",
+            "mobile": "/versions/2026-08-chat-entry/projects-mobile.jpg"
           }
         }
       ]
