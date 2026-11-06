@@ -132,3 +132,12 @@ export const IconChevron = ({ className }) => (
     <polyline points="9 6 15 12 9 18" />
   </svg>
 );
+
+// 历史版本：时钟 + 回退箭头
+export const IconHistory = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M3 12a9 9 0 1 0 2.6-6.4" />
+    <polyline points="3 4 3 9 8 9" />
+    <polyline points="12 7 12 12 15 14" />
+  </svg>
+);

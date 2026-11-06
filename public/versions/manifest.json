@@ -1,0 +1,168 @@
+{
+  "versions": [
+    {
+      "id": "2026-11-sidebar",
+      "label": "2026.11",
+      "date": "2026-11-06",
+      "title": "左侧目录 + AI 浮层",
+      "summary": "内容优先改版：左侧目录、概览首页、右下角 AI 浮层。",
+      "commit": "fb7c5a1",
+      "pages": [
+        {
+          "id": "home",
+          "label": "首页",
+          "path": "/",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/home-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/home-mobile.png"
+          }
+        },
+        {
+          "id": "ai",
+          "label": "AI 浮层",
+          "path": "/",
+          "note": "首页 · 浮层打开",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/ai-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/ai-mobile.png"
+          }
+        },
+        {
+          "id": "blog",
+          "label": "博客",
+          "path": "/blog",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/blog-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/blog-mobile.png"
+          }
+        },
+        {
+          "id": "article",
+          "label": "文章详情",
+          "path": "/blog/p2-splitting-choice",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/article-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/article-mobile.png"
+          }
+        },
+        {
+          "id": "notes",
+          "label": "笔记",
+          "path": "/notes",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/notes-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/notes-mobile.png"
+          }
+        },
+        {
+          "id": "projects",
+          "label": "项目",
+          "path": "/projects",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/projects-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/projects-mobile.png"
+          }
+        },
+        {
+          "id": "project-detail",
+          "label": "项目详情",
+          "path": "/projects/j7-box-newking",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/project-detail-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/project-detail-mobile.png"
+          }
+        },
+        {
+          "id": "about",
+          "label": "关于",
+          "path": "/about",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/about-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/about-mobile.png"
+          }
+        },
+        {
+          "id": "resume",
+          "label": "简历",
+          "path": "/resume",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/resume-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/resume-mobile.png"
+          }
+        },
+        {
+          "id": "contact",
+          "label": "联系",
+          "path": "/contact",
+          "screenshots": {
+            "desktop": "/versions/2026-11-sidebar/contact-desktop.png",
+            "mobile": "/versions/2026-11-sidebar/contact-mobile.png"
+          }
+        }
+      ]
+    },
+    {
+      "id": "2025-08-chat-entry",
+      "label": "2025.08",
+      "date": "2025-08-27",
+      "title": "对话式首页",
+      "summary": "以全屏 AI 对话为入口的旧版：顶部导航 + 首页对话。",
+      "commit": "1eb8a68",
+      "pages": [
+        {
+          "id": "home",
+          "label": "首页",
+          "path": "/",
+          "screenshots": {
+            "desktop": "/versions/2025-08-chat-entry/home-desktop.png",
+            "mobile": "/versions/2025-08-chat-entry/home-mobile.jpg"
+          }
+        },
+        {
+          "id": "conversation",
+          "label": "首页 · 对话中",
+          "path": "/",
+          "note": "首页 · 全屏对话",
+          "screenshots": {
+            "desktop": "/versions/2025-08-chat-entry/conversation-desktop.png",
+            "mobile": "/versions/2025-08-chat-entry/conversation-mobile.jpg"
+          }
+        },
+        {
+          "id": "blog",
+          "label": "博客",
+          "path": "/blog",
+          "screenshots": {
+            "mobile": "/versions/2025-08-chat-entry/blog-mobile.jpg"
+          }
+        },
+        {
+          "id": "article",
+          "label": "文章详情",
+          "path": "/blog/p2-splitting-choice",
+          "screenshots": {
+            "desktop": "/versions/2025-08-chat-entry/article-desktop.png",
+            "mobile": "/versions/2025-08-chat-entry/article-mobile.jpg"
+          }
+        },
+        {
+          "id": "notes",
+          "label": "笔记",
+          "path": "/notes",
+          "screenshots": {
+            "desktop": "/versions/2025-08-chat-entry/notes-desktop.png"
+          }
+        },
+        {
+          "id": "projects",
+          "label": "项目",
+          "path": "/projects",
+          "screenshots": {
+            "desktop": "/versions/2025-08-chat-entry/projects-desktop.png",
+            "mobile": "/versions/2025-08-chat-entry/projects-mobile.jpg"
+          }
+        }
+      ]
+    }
+  ]
+}

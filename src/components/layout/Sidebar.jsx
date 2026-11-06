@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContent } from '../../hooks/useContent';
-import { IconChevron, IconMail, IconX } from '../icons';
+import { IconChevron, IconHistory, IconMail, IconX } from '../icons';
+import VersionNav from './VersionNav';
 
 // 左侧目录：内容类型 → 条目（像编辑器的文件树），点击直接进内容
 export default function Sidebar({ mobileOpen = false, onClose }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { data, loading, error } = useContent();
   const [query, setQuery] = useState('');
   const [closed, setClosed] = useState({});
+  const historyMode = pathname === '/history' || pathname.startsWith('/history/');
   const searchRef = useRef(null);
 
   // 主题：沿用原按钮的文案与 localStorage key
@@ -83,6 +86,11 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     ];
   }, [posts, notes, projects, q]); // matches 依赖 q，函数本身无需进依赖
 
+  const goBack = () => {
+    onClose?.();
+    navigate('/');
+  };
+
   const isOpen = (key) => (q ? true : !closed[key]);
   const toggle = (key) => setClosed((prev) => ({ ...prev, [key]: !prev[key] }));
   const isSectionActive = (to) => pathname === to || pathname.startsWith(`${to}/`);
@@ -97,51 +105,86 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         mobileOpen ? 'translate-x-0 shadow-apple-lg' : '-translate-x-full'
       }`}
     >
-      <div className="flex h-12 shrink-0 items-center justify-between px-4">
-        <Link
-          to="/"
-          onClick={onClose}
-          className="flex min-w-0 items-baseline gap-2 transition-opacity hover:opacity-70"
-        >
-          <span className="truncate text-[16px] font-semibold tracking-tight text-ink">New-King</span>
-          <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.18em] text-ink-faint">
-            Site
-          </span>
-        </Link>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="关闭目录"
-          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10 lg:hidden"
-        >
-          <IconX className="h-4 w-4" />
-        </button>
-      </div>
+      <div className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
+        {historyMode ? (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="返回当前站点"
+              title="返回当前站点"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconChevron className="h-4 w-4 rotate-180" />
+            </button>
+            <span className="truncate text-[14px] font-medium text-ink">历史版本</span>
+          </div>
+        ) : (
+          <Link
+            to="/"
+            onClick={onClose}
+            className="flex min-w-0 items-baseline gap-2 transition-opacity hover:opacity-70"
+          >
+            <span className="truncate text-[16px] font-semibold tracking-tight text-ink">New-King</span>
+            <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.18em] text-ink-faint">
+              Site
+            </span>
+          </Link>
+        )}
 
-      <div className="shrink-0 px-3">
-        <div className="relative">
-          <input
-            ref={searchRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setQuery('');
-            }}
-            placeholder="搜索标题…"
-            aria-label="搜索标题"
-            className="w-full rounded-lg border border-black/[0.06] bg-card/70 py-1.5 pl-3 pr-10 text-[12px] text-ink outline-none transition-shadow duration-200 placeholder:text-ink-faint focus:shadow-apple-input dark:border-white/[0.08] dark:bg-white/[0.04]"
-          />
-          {!query && (
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-black/[0.08] px-1 py-0.5 text-[9px] text-ink-faint dark:border-white/[0.12] lg:block">
-              ⌘K
-            </kbd>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {!historyMode && (
+            <Link
+              to="/history"
+              aria-label="历史版本"
+              title="历史版本"
+              className="flex h-8 items-center gap-1.5 rounded-full px-2 text-[11px] text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconHistory className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">历史</span>
+            </Link>
           )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="关闭目录"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10 lg:hidden"
+          >
+            <IconX className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      <div className="relative mt-3 min-h-0 flex-1">
-        <nav aria-label="站点目录" className="h-full overflow-y-auto overscroll-contain px-3 pb-4">
+      {!historyMode && (
+        <div className="shrink-0 px-3">
+          <div className="relative">
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setQuery('');
+              }}
+              placeholder="搜索标题…"
+              aria-label="搜索标题"
+              className="w-full rounded-lg border border-black/[0.06] bg-card/70 py-1.5 pl-3 pr-10 text-[12px] text-ink outline-none transition-shadow duration-200 placeholder:text-ink-faint focus:shadow-apple-input dark:border-white/[0.08] dark:bg-white/[0.04]"
+            />
+            {!query && (
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-black/[0.08] px-1 py-0.5 text-[9px] text-ink-faint dark:border-white/[0.12] lg:block">
+                ⌘K
+              </kbd>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className={`relative min-h-0 flex-1 ${historyMode ? 'mt-1' : 'mt-3'}`}>
+        <nav aria-label={historyMode ? '历史版本' : '站点目录'} className="h-full overflow-y-auto overscroll-contain px-3 pb-4">
+          {historyMode ? (
+            <VersionNav onClose={onClose} />
+          ) : (
+            <>
         <Link
           to="/"
           onClick={onClose}
@@ -282,6 +325,8 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         {q && !loading && groups.length === 0 && (
           <p className="mt-4 px-2 text-[11px] text-ink-faint">没有匹配的内容</p>
         )}
+            </>
+          )}
         </nav>
         <div
           aria-hidden="true"

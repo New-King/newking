@@ -8,8 +8,12 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // 路由切换后关闭移动端抽屉
+  // 路由切换后的抽屉行为：
+  // 进入历史列表 / 某个版本（还没选具体页面）时保持打开；
+  // 选中具体截图页或离开历史模式时收起。
   useEffect(() => {
+    const keepOpen = pathname === '/history' || /^\/history\/[^/]+$/.test(pathname);
+    if (keepOpen) return;
     setMobileOpen(false);
   }, [pathname]);
 
@@ -69,9 +73,11 @@ export default function AppLayout() {
         <Outlet />
       </main>
 
-      <div className={mobileOpen ? 'hidden lg:block' : ''}>
-        <ChatDock />
-      </div>
+      {!pathname.startsWith('/history') && (
+        <div className={mobileOpen ? 'hidden lg:block' : ''}>
+          <ChatDock />
+        </div>
+      )}
     </div>
   );
 }
