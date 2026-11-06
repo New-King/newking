@@ -9,7 +9,7 @@ const DEVICES = [
 /**
  * 版本截图大图预览：
  * - 背景 / X / Esc 关闭
- * - 左右箭头 / ← → 切换页面（通过父级路由切换，大图层保持打开）
+ * - 上一页/下一页按钮或 ← → 键切换页面（通过父级路由切换，大图层保持打开）
  * - 桌面 / 手机切换
  * - 默认 fit 尺寸，不按原图尺寸撑满屏幕
  */
@@ -116,8 +116,8 @@ export default function HistoryLightbox({
           </div>
         </div>
 
-        <div className="relative flex min-h-0 flex-1 items-center justify-center">
-          <div className="relative inline-flex max-h-[72vh] max-w-full items-center justify-center">
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <div className="inline-flex max-h-[72vh] max-w-full items-center justify-center">
             {src ? (
               <img
                 src={src}
@@ -125,40 +125,43 @@ export default function HistoryLightbox({
                 className="h-auto max-h-[72vh] w-auto max-w-full rounded-xl bg-page object-contain shadow-2xl"
               />
             ) : (
-              <div className="flex h-[320px] w-full items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
+              <div className="flex h-[320px] w-full min-w-[280px] items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
                 该页面没有当前设备的截图
               </div>
-            )}
-
-            {onPrev && (
-              <button
-                type="button"
-                onClick={onPrev}
-                aria-label="上一页"
-                className="absolute left-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur transition-colors hover:bg-black/50 sm:h-10 sm:w-10"
-              >
-                <IconChevron className="h-4 w-4 rotate-180" />
-              </button>
-            )}
-            {onNext && (
-              <button
-                type="button"
-                onClick={onNext}
-                aria-label="下一页"
-                className="absolute right-2 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur transition-colors hover:bg-black/50 sm:h-10 sm:w-10"
-              >
-                <IconChevron className="h-4 w-4" />
-              </button>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-3 text-[10px] text-white/40">
-          <span className="hidden sm:inline">← → 切换页面 · Esc 关闭</span>
-          <span className="sm:hidden">点左右箭头切换 · 点空白关闭</span>
-          <span>
-            {version.date} · {device === 'desktop' ? '桌面' : '手机'}
-          </span>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onPrev || undefined}
+            disabled={!onPrev}
+            aria-label="上一页"
+            className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 text-[11px] text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-25"
+          >
+            <IconChevron className="h-3.5 w-3.5 rotate-180" />
+            上一页
+          </button>
+
+          <div className="min-w-0 text-center text-[10px] leading-4 text-white/40">
+            <div className="hidden sm:block">← → 切换页面 · Esc 关闭</div>
+            <div className="sm:hidden">点空白关闭</div>
+            <div className="mt-0.5 text-white/30">
+              {version.date} · {device === 'desktop' ? '桌面' : '手机'}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onNext || undefined}
+            disabled={!onNext}
+            aria-label="下一页"
+            className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 text-[11px] text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-25"
+          >
+            下一页
+            <IconChevron className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </div>

@@ -215,26 +215,39 @@ export default function HistoryPage() {
           )}
         </div>
       ) : (
-        <div className="mx-auto mt-5 flex w-full max-w-2xl justify-center rounded-2xl border border-black/[0.08] bg-page px-5 py-8 shadow-apple dark:border-white/[0.08]">
-          {src ? (
-            <button
-              type="button"
-              onClick={() => setLightboxOpen(true)}
-              title="放大查看"
-              aria-label={`放大查看：${version.title} · ${page.label} · 手机端`}
-              className="block w-[300px] max-w-full cursor-zoom-in"
-            >
-              <img
-                src={src}
-                alt={`${version.title} · ${page.label} · 手机端截图`}
-                className="w-full rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
-              />
-            </button>
-          ) : (
-            <div className="flex h-[420px] w-[300px] items-center justify-center text-center text-sm text-ink-faint">
-              该版本没有手机截图
-            </div>
-          )}
+        <div className="mx-auto mt-5 w-full max-w-2xl overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
+          <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
+            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+            <span className="ml-3 min-w-0 flex-1 truncate font-mono text-[11px] text-ink-faint">
+              new-king.com{page.path}
+            </span>
+            <span className="hidden text-[10px] uppercase tracking-[0.12em] text-ink-faint sm:block">
+              Mobile
+            </span>
+          </div>
+          <div className="flex justify-center bg-page px-5 py-8">
+            {src ? (
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                title="放大查看"
+                aria-label={`放大查看：${version.title} · ${page.label} · 手机端`}
+                className="block w-[300px] max-w-full cursor-zoom-in"
+              >
+                <img
+                  src={src}
+                  alt={`${version.title} · ${page.label} · 手机端截图`}
+                  className="w-full rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
+                />
+              </button>
+            ) : (
+              <div className="flex h-[420px] w-[300px] items-center justify-center text-center text-sm text-ink-faint">
+                该版本没有手机截图
+              </div>
+            )}
+          </div>
         </div>
       )}
 
