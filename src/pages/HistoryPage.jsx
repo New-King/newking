@@ -16,7 +16,7 @@ const defaultDevice = () =>
 
 function HistoryState({ children }) {
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 pb-28 pt-8 sm:px-8 lg:px-12 lg:pt-12">
+    <div className="mx-auto w-full max-w-5xl px-6 pb-10 pt-8 sm:px-8 lg:px-12 lg:pt-12">
       <p className="text-sm leading-6 text-ink-faint">{children}</p>
     </div>
   );
@@ -71,7 +71,7 @@ export default function HistoryPage() {
   const pageTo = (item) => `/history/${version.id}/${item.id}`;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 pb-28 pt-8 sm:px-8 lg:px-12 lg:pt-12">
+    <div className="mx-auto w-full max-w-5xl px-6 pb-10 pt-8 sm:px-8 lg:px-12 lg:pt-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
           Version History
@@ -181,7 +181,7 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      <div className="mt-5 w-full overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
+      <div className="mx-auto mt-5 w-full max-w-[760px] overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
         <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
@@ -206,7 +206,7 @@ export default function HistoryPage() {
               <img
                 src={src}
                 alt={`${version.title} · ${page.label} · 桌面端截图`}
-                className="block w-full"
+                className="mx-auto block h-auto max-h-[calc(100dvh-420px)] w-auto max-w-full"
               />
             </button>
           ) : (
@@ -215,19 +215,19 @@ export default function HistoryPage() {
             </div>
           )
         ) : (
-          <div className="flex justify-center bg-page px-5 py-8">
+          <div className="flex justify-center bg-page px-5 py-6">
             {src ? (
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
                 title="放大查看"
                 aria-label={`放大查看：${version.title} · ${page.label} · 手机端`}
-                className="block w-[300px] max-w-full cursor-zoom-in"
+                className="block w-auto max-w-full cursor-zoom-in"
               >
                 <img
                   src={src}
                   alt={`${version.title} · ${page.label} · 手机端截图`}
-                  className="w-full rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
+                  className="mx-auto h-auto max-h-[calc(100dvh-520px)] w-auto max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
                 />
               </button>
             ) : (

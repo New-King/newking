@@ -67,7 +67,7 @@ export default function HistoryLightbox({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[94vh] w-full max-w-[820px] flex-col"
+        className="flex max-h-[94vh] w-full max-w-[1200px] flex-col"
       >
         <div className="flex items-start justify-between gap-3 pb-3">
           <div className="min-w-0">
@@ -132,10 +132,10 @@ export default function HistoryLightbox({
               <img
                 src={src}
                 alt={`${version.title} · ${page.label} · ${device === 'desktop' ? '桌面' : '手机'}截图`}
-                className="h-auto max-h-[72vh] w-auto max-w-[min(700px,calc(100vw-120px))] rounded-xl bg-page object-contain shadow-2xl"
+                className="h-auto max-h-[82vh] w-auto max-w-[calc(100vw-120px)] rounded-xl bg-page object-contain shadow-2xl sm:max-w-[min(1050px,calc(100vw-176px))]"
               />
             ) : (
-              <div className="flex h-[320px] w-[min(600px,calc(100vw-240px))] items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
+              <div className="flex h-[320px] w-[min(900px,calc(100vw-240px))] items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
                 该页面没有当前设备的截图
               </div>
             )}
