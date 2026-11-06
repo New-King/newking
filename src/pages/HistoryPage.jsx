@@ -181,20 +181,21 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {effectiveDevice === 'desktop' ? (
-        <div className="mt-5 overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
-          <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="ml-3 min-w-0 flex-1 truncate font-mono text-[11px] text-ink-faint">
-              new-king.com{page.path}
-            </span>
-            <span className="hidden text-[10px] uppercase tracking-[0.12em] text-ink-faint sm:block">
-              Desktop
-            </span>
-          </div>
-          {src ? (
+      <div className="mt-5 w-full overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
+        <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
+          <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+          <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+          <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
+          <span className="ml-3 min-w-0 flex-1 truncate font-mono text-[11px] text-ink-faint">
+            new-king.com{page.path}
+          </span>
+          <span className="hidden text-[10px] uppercase tracking-[0.12em] text-ink-faint sm:block">
+            {effectiveDevice === 'desktop' ? 'Desktop' : 'Mobile'}
+          </span>
+        </div>
+
+        {effectiveDevice === 'desktop' ? (
+          src ? (
             <button
               type="button"
               onClick={() => setLightboxOpen(true)}
@@ -212,21 +213,8 @@ export default function HistoryPage() {
             <div className="flex h-[320px] items-center justify-center bg-page px-6 text-center text-sm text-ink-faint">
               该版本没有桌面截图
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="mx-auto mt-5 w-full max-w-2xl overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
-          <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
-            <span className="ml-3 min-w-0 flex-1 truncate font-mono text-[11px] text-ink-faint">
-              new-king.com{page.path}
-            </span>
-            <span className="hidden text-[10px] uppercase tracking-[0.12em] text-ink-faint sm:block">
-              Mobile
-            </span>
-          </div>
+          )
+        ) : (
           <div className="flex justify-center bg-page px-5 py-8">
             {src ? (
               <button
@@ -248,8 +236,8 @@ export default function HistoryPage() {
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {!hasDesktop && !hasMobile ? (
         <p className="mt-2 text-[11px] text-ink-faint">该版本没有截图。</p>

@@ -114,7 +114,7 @@
           "label": "首页",
           "path": "/",
           "screenshots": {
-            "desktop": "/versions/2026-08-chat-entry/home-desktop.png",
+            "desktop": "/versions/2026-08-chat-entry/home-desktop-light.png",
             "mobile": "/versions/2026-08-chat-entry/home-mobile.jpg"
           }
         },
@@ -124,7 +124,7 @@
           "path": "/",
           "note": "首页 · 全屏对话",
           "screenshots": {
-            "desktop": "/versions/2026-08-chat-entry/conversation-desktop.png",
+            "desktop": "/versions/2026-08-chat-entry/conversation-desktop-light.png",
             "mobile": "/versions/2026-08-chat-entry/conversation-mobile.jpg"
           }
         },
@@ -133,7 +133,7 @@
           "label": "文章",
           "path": "/blog",
           "screenshots": {
-            "desktop": "/versions/2026-08-chat-entry/articles-desktop.png",
+            "desktop": "/versions/2026-08-chat-entry/articles-desktop-light.png",
             "mobile": "/versions/2026-08-chat-entry/articles-mobile.jpg"
           }
         },
@@ -142,7 +142,7 @@
           "label": "文章详情",
           "path": "/blog/p2-splitting-choice",
           "screenshots": {
-            "desktop": "/versions/2026-08-chat-entry/article-desktop.png",
+            "desktop": "/versions/2026-08-chat-entry/article-desktop-light.png",
             "mobile": "/versions/2026-08-chat-entry/article-mobile.jpg"
           }
         },
@@ -151,7 +151,7 @@
           "label": "项目",
           "path": "/projects",
           "screenshots": {
-            "desktop": "/versions/2026-08-chat-entry/projects-desktop.png",
+            "desktop": "/versions/2026-08-chat-entry/projects-desktop-light.png",
             "mobile": "/versions/2026-08-chat-entry/projects-mobile.jpg"
           }
         }

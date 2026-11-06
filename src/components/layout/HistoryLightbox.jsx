@@ -117,51 +117,47 @@ export default function HistoryLightbox({
         </div>
 
         <div className="flex min-h-0 flex-1 items-center justify-center">
-          <div className="inline-flex max-h-[72vh] max-w-full items-center justify-center">
+          <div className="flex w-fit max-w-full items-center justify-center gap-2 sm:gap-4">
+            <button
+              type="button"
+              onClick={onPrev || undefined}
+              disabled={!onPrev}
+              aria-label="上一页"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-20"
+            >
+              <IconChevron className="h-4 w-4 rotate-180" />
+            </button>
+
             {src ? (
               <img
                 src={src}
                 alt={`${version.title} · ${page.label} · ${device === 'desktop' ? '桌面' : '手机'}截图`}
-                className="h-auto max-h-[72vh] w-auto max-w-full rounded-xl bg-page object-contain shadow-2xl"
+                className="h-auto max-h-[72vh] w-auto max-w-[min(700px,calc(100vw-120px))] rounded-xl bg-page object-contain shadow-2xl"
               />
             ) : (
-              <div className="flex h-[320px] w-full min-w-[280px] items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
+              <div className="flex h-[320px] w-[min(600px,calc(100vw-240px))] items-center justify-center rounded-xl bg-white/5 text-sm text-white/50">
                 该页面没有当前设备的截图
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={onNext || undefined}
+              disabled={!onNext}
+              aria-label="下一页"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-20"
+            >
+              <IconChevron className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onPrev || undefined}
-            disabled={!onPrev}
-            aria-label="上一页"
-            className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 text-[11px] text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-25"
-          >
-            <IconChevron className="h-3.5 w-3.5 rotate-180" />
-            上一页
-          </button>
-
-          <div className="min-w-0 text-center text-[10px] leading-4 text-white/40">
-            <div className="hidden sm:block">← → 切换页面 · Esc 关闭</div>
-            <div className="sm:hidden">点空白关闭</div>
-            <div className="mt-0.5 text-white/30">
-              {version.date} · {device === 'desktop' ? '桌面' : '手机'}
-            </div>
+        <div className="mt-3 text-center text-[10px] leading-4 text-white/40">
+          <div className="hidden sm:block">← → 切换页面 · Esc 关闭</div>
+          <div className="sm:hidden">点空白关闭</div>
+          <div className="mt-0.5 text-white/30">
+            {version.date} · {device === 'desktop' ? '桌面' : '手机'}
           </div>
-
-          <button
-            type="button"
-            onClick={onNext || undefined}
-            disabled={!onNext}
-            aria-label="下一页"
-            className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 text-[11px] text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-25"
-          >
-            下一页
-            <IconChevron className="h-3.5 w-3.5" />
-          </button>
         </div>
       </div>
     </div>
