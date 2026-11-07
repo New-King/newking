@@ -202,7 +202,8 @@ export default function HistoryPage() {
   const { versions, loading, error } = useVersions();
   const { setActiveId } = useHistoryScroll();
   const scrollRef = useRef(null);
-  const wheelState = useRef({ acc: 0, last: 0, lockedUntil: 0 });
+  const targetIndexRef = useRef(0);
+  const wheelActiveUntil = useRef(0);
   const [device, setDevice] = useState(defaultDevice);
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
@@ -239,47 +240,51 @@ export default function HistoryPage() {
       const el = scrollRef.current;
       if (!el) return;
       el.scrollTop = target * el.clientHeight;
+      targetIndexRef.current = target;
       setActiveId(sections[target].id);
     }, 180);
     return () => window.clearTimeout(timer);
   }, [sections, versionId, pageId, setActiveId]);
 
-  // 滚轮：一次手势平滑滚到下一页容器，松手后由 scroll-snap 对齐
+  // 鼠标滚轮：每格连续滚一屏；触控板小增量聚合成一次
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || sections.length === 0) return undefined;
-    const state = wheelState.current;
-
-    const onWheel = (e) => {
-      if (e.ctrlKey) return;
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-
-      const now = performance.now();
-      if (now < state.lockedUntil) {
-        state.lockedUntil = Math.max(state.lockedUntil, now + 280);
-        return;
-      }
-
-      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      if (now - state.last > 180) state.acc = 0;
-      state.acc += delta;
-      state.last = now;
-      if (Math.abs(state.acc) < 32) return;
-
-      const dir = state.acc > 0 ? 1 : -1;
-      state.acc = 0;
-      const current = Math.round(el.scrollTop / el.clientHeight);
-      const target = current + dir;
-      if (target < 0 || target >= sections.length) return;
-
-      state.lockedUntil = now + 700;
+    const step = (dir) => {
+      const base = targetIndexRef.current;
+      const target = Math.min(sections.length - 1, Math.max(0, base + dir));
+      if (target === base) return;
+      targetIndexRef.current = target;
       el.scrollTo({ top: target * el.clientHeight, behavior: 'smooth' });
       setActiveId(sections[target].id);
     };
 
+    const onWheel = (e) => {
+      if (e.ctrlKey) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      // 小增量（触控板）交给原生滚动 + scroll-snap，允许连续滑
+      if (Math.abs(delta) < 40) return;
+
+      // 鼠标滚轮格：每格滚一屏，连续滚动可以连翻
+      e.preventDefault();
+      wheelActiveUntil.current = performance.now() + 320;
+      step(delta > 0 ? 1 : -1);
+    };
+
+    const onScrollEnd = () => {
+      // 连续滚轮期间不要用中间位置覆盖目标页
+      if (performance.now() < wheelActiveUntil.current) return;
+      targetIndexRef.current = Math.round(el.scrollTop / el.clientHeight);
+    };
+
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+    el.addEventListener('scrollend', onScrollEnd);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('scrollend', onScrollEnd);
+    };
   }, [sections, setActiveId]);
 
   const onScroll = () => {
@@ -326,7 +331,7 @@ export default function HistoryPage() {
           <section
             key={id}
             id={id}
-            className="h-full snap-start [scroll-snap-stop:always]"
+            className="h-full snap-start"
           >
             <PageSlide
               version={version}
