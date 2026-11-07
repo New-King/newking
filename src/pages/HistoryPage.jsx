@@ -204,6 +204,7 @@ export default function HistoryPage() {
   const scrollRef = useRef(null);
   const targetIndexRef = useRef(0);
   const wheelActiveUntil = useRef(0);
+  const activeTimer = useRef(null);
   const [device, setDevice] = useState(defaultDevice);
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
@@ -218,6 +219,13 @@ export default function HistoryPage() {
         }))
       ),
     [versions]
+  );
+
+  useEffect(
+    () => () => {
+      if (activeTimer.current) window.clearTimeout(activeTimer.current);
+    },
+    []
   );
 
   useEffect(() => {
@@ -256,7 +264,6 @@ export default function HistoryPage() {
       if (target === base) return;
       targetIndexRef.current = target;
       el.scrollTo({ top: target * el.clientHeight, behavior: 'smooth' });
-      setActiveId(sections[target].id);
     };
 
     const onWheel = (e) => {
@@ -274,9 +281,16 @@ export default function HistoryPage() {
     };
 
     const onScrollEnd = () => {
+      const index = Math.min(
+        sections.length - 1,
+        Math.max(0, Math.round(el.scrollTop / el.clientHeight))
+      );
+      const section = sections[index];
+      if (section) setActiveId(section.id);
+
       // 连续滚轮期间不要用中间位置覆盖目标页
       if (performance.now() < wheelActiveUntil.current) return;
-      targetIndexRef.current = Math.round(el.scrollTop / el.clientHeight);
+      targetIndexRef.current = index;
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -288,14 +302,19 @@ export default function HistoryPage() {
   }, [sections, setActiveId]);
 
   const onScroll = () => {
+    // Chrome / 新版 Safari 用 scrollend；没有 scrollend 的浏览器用长 debounce 兜底
+    if (typeof window !== 'undefined' && 'onscrollend' in window) return;
     const el = scrollRef.current;
     if (!el || sections.length === 0) return;
-    const index = Math.min(
-      sections.length - 1,
-      Math.max(0, Math.round(el.scrollTop / el.clientHeight))
-    );
-    const section = sections[index];
-    if (section) setActiveId(section.id);
+    if (activeTimer.current) window.clearTimeout(activeTimer.current);
+    activeTimer.current = window.setTimeout(() => {
+      const index = Math.min(
+        sections.length - 1,
+        Math.max(0, Math.round(el.scrollTop / el.clientHeight))
+      );
+      const section = sections[index];
+      if (section) setActiveId(section.id);
+    }, 450);
   };
 
   if (loading) return <HistoryState>加载历史版本…</HistoryState>;
