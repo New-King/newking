@@ -13,6 +13,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
   const [closed, setClosed] = useState({});
   const historyMode = pathname === '/history' || pathname.startsWith('/history/');
   const searchRef = useRef(null);
+  const historyNavRef = useRef(null);
 
   // 主题：沿用原按钮的文案与 localStorage key
   const [dark, setDark] = useState(() => {
@@ -180,9 +181,9 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
       )}
 
       <div className={`relative min-h-0 flex-1 ${historyMode ? 'mt-1' : 'mt-3'}`}>
-        <nav aria-label={historyMode ? '历史版本' : '站点目录'} className="h-full overflow-y-auto overscroll-contain px-3 pb-4">
+        <nav ref={historyNavRef} aria-label={historyMode ? '历史版本' : '站点目录'} className="h-full overflow-y-auto overscroll-contain px-3 pb-4">
           {historyMode ? (
-            <VersionNav onClose={onClose} />
+            <VersionNav onClose={onClose} scrollRef={historyNavRef} />
           ) : (
             <>
         <Link

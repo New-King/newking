@@ -36,9 +36,7 @@ export default function App() {
             <Route path="/about" element={<DocPage type="about" eyebrow="About" />} />
             <Route path="/resume" element={<DocPage type="resume" eyebrow="Resume" />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/history/:versionId" element={<HistoryPage />} />
-            <Route path="/history/:versionId/:pageId" element={<HistoryPage />} />
+            <Route path="/history/*" element={<HistoryPage />} />
             <Route path="*" element={<HomePage />} />
           </Route>
         </Routes>

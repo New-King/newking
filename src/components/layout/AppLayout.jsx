@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatDock from '../chat/ChatDock';
+import { HistoryScrollProvider } from '../history/HistoryScrollContext';
 import { IconMenu } from '../icons';
 
 export default function AppLayout() {
@@ -38,7 +39,8 @@ export default function AppLayout() {
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-dvh bg-page">
+    <HistoryScrollProvider>
+      <div className="min-h-dvh bg-page">
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       {/* 移动端：抽屉遮罩（放在 Sidebar 之后、topbar 之前，保证层级正确） */}
@@ -78,6 +80,7 @@ export default function AppLayout() {
           <ChatDock />
         </div>
       )}
-    </div>
+      </div>
+    </HistoryScrollProvider>
   );
 }

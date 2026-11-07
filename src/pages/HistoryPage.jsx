@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useVersions } from '../hooks/useVersions';
-import { IconChevron } from '../components/icons';
+import { useHistoryScroll } from '../components/history/HistoryScrollContext';
 import HistoryLightbox from '../components/layout/HistoryLightbox';
 
 const DEVICES = [
@@ -14,6 +14,8 @@ const defaultDevice = () =>
     ? 'mobile'
     : 'desktop';
 
+const sectionId = (versionId, pageId) => `${versionId}--${pageId}`;
+
 function HistoryState({ children }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-6 pb-10 pt-8 sm:px-8 lg:px-12 lg:pt-12">
@@ -22,58 +24,27 @@ function HistoryState({ children }) {
   );
 }
 
-export default function HistoryPage() {
-  const { versionId, pageId } = useParams();
-  const navigate = useNavigate();
-  const { versions, loading, error } = useVersions();
-  const [device, setDevice] = useState(defaultDevice);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-
-  const version = versionId
-    ? versions.find((item) => item.id === versionId)
-    : versions[0];
-
-  const pages = version?.pages ?? [];
-  const page = pages.find((item) => item.id === pageId) || pages[0];
-
-  // 标题跟着版本走，离开时恢复
-  useEffect(() => {
-    if (!version) return undefined;
-    const previous = document.title;
-    document.title = `${version.title} · 版本历史 · New-King`;
-    return () => {
-      document.title = previous;
-    };
-  }, [version]);
-
-  if (loading) return <HistoryState>加载历史版本…</HistoryState>;
-  if (error) return <HistoryState>历史版本加载失败，请确认版本清单是否存在。</HistoryState>;
-  if (versions.length === 0) return <HistoryState>还没有历史版本。</HistoryState>;
-  if (!version) return <HistoryState>未找到该版本。</HistoryState>;
-  if (!page) return <HistoryState>该版本还没有页面截图。</HistoryState>;
-
-  const index = pages.indexOf(page);
-  const prevPage = pages[index - 1];
-  const nextPage = pages[index + 1];
-  const isCurrent = version.id === versions[0]?.id;
+function PageSlide({
+  version,
+  page,
+  pages,
+  pageIndex,
+  isCurrent,
+  device,
+  setDevice,
+  onOpen,
+}) {
   const shots = page.screenshots || {};
   const hasDesktop = Boolean(shots.desktop);
   const hasMobile = Boolean(shots.mobile);
-  const effectiveDevice = shots[device]
-    ? device
-    : hasDesktop
-      ? 'desktop'
-      : 'mobile';
+  const effectiveDevice = shots[device] ? device : hasDesktop ? 'desktop' : 'mobile';
   const src = shots[effectiveDevice];
   const commitUrl = version.commit
     ? `https://github.com/New-King/newking/commit/${version.commit}`
     : null;
-  const pageTo = (item) => `/history/${version.id}/${item.id}`;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl px-6 pb-8 pt-8 sm:px-8 lg:px-12 lg:pt-12">
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-0 pt-8 sm:px-8 lg:px-12 lg:pb-8 lg:pt-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
           Version History
@@ -149,37 +120,8 @@ export default function HistoryPage() {
           <span className="truncate text-[13px] font-medium text-ink">{page.label}</span>
           {page.note && <span className="truncate text-[11px] text-ink-faint">· {page.note}</span>}
           <span className="shrink-0 text-[11px] tabular-nums text-ink-faint">
-            {index + 1} / {pages.length}
+            {pageIndex + 1} / {pages.length}
           </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {prevPage ? (
-            <Link
-              to={pageTo(prevPage)}
-              aria-label="上一页"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink dark:border-white/[0.1] dark:hover:border-white/[0.2]"
-            >
-              <IconChevron className="h-3.5 w-3.5 rotate-180" />
-            </Link>
-          ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.05] text-ink-faint/40 dark:border-white/[0.06]">
-              <IconChevron className="h-3.5 w-3.5 rotate-180" />
-            </span>
-          )}
-          {nextPage ? (
-            <Link
-              to={pageTo(nextPage)}
-              aria-label="下一页"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink dark:border-white/[0.1] dark:hover:border-white/[0.2]"
-            >
-              <IconChevron className="h-3.5 w-3.5" />
-            </Link>
-          ) : (
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.05] text-ink-faint/40 dark:border-white/[0.06]">
-              <IconChevron className="h-3.5 w-3.5" />
-            </span>
-          )}
         </div>
       </div>
 
@@ -200,7 +142,7 @@ export default function HistoryPage() {
           src ? (
             <button
               type="button"
-              onClick={() => setLightboxOpen(true)}
+              onClick={onOpen}
               title="放大查看"
               aria-label={`放大查看：${version.title} · ${page.label} · 桌面端`}
               className="block w-full cursor-zoom-in bg-page"
@@ -221,7 +163,7 @@ export default function HistoryPage() {
             {src ? (
               <button
                 type="button"
-                onClick={() => setLightboxOpen(true)}
+                onClick={onOpen}
                 title="放大查看"
                 aria-label={`放大查看：${version.title} · ${page.label} · 手机端`}
                 className="block w-auto max-w-full cursor-zoom-in"
@@ -229,7 +171,7 @@ export default function HistoryPage() {
                 <img
                   src={src}
                   alt={`${version.title} · ${page.label} · 手机端截图`}
-                  className="mx-auto h-auto max-h-[calc(100dvh-520px)] w-auto max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
+                  className="mx-auto h-auto max-h-[calc(100dvh-526px)] w-auto max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
                 />
               </button>
             ) : (
@@ -248,22 +190,170 @@ export default function HistoryPage() {
           该版本只提供了{hasDesktop ? '桌面' : '手机'}截图。
         </p>
       ) : null}
+    </div>
+  );
+}
 
-        </div>
+export default function HistoryPage() {
+  const { pathname } = useLocation();
+  const match = pathname.match(/^\/history(?:\/([^/]+))?(?:\/([^/]+))?/);
+  const versionId = match?.[1];
+  const pageId = match?.[2];
+  const { versions, loading, error } = useVersions();
+  const { setActiveId } = useHistoryScroll();
+  const scrollRef = useRef(null);
+  const wheelState = useRef({ acc: 0, last: 0, lockedUntil: 0 });
+  const [device, setDevice] = useState(defaultDevice);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  const sections = useMemo(
+    () =>
+      versions.flatMap((version) =>
+        (version.pages ?? []).map((page, pageIndex) => ({
+          id: sectionId(version.id, page.id),
+          version,
+          page,
+          pageIndex,
+        }))
+      ),
+    [versions]
+  );
+
+  useEffect(() => {
+    const previous = document.title;
+    document.title = '历史版本 · New-King';
+    return () => {
+      document.title = previous;
+    };
+  }, []);
+
+  // 初始定位：/history/xxx/yyy 直接滚到对应容器
+  useEffect(() => {
+    if (!sections.length) return undefined;
+    const index = sections.findIndex(
+      (item) =>
+        item.version.id === versionId && (!pageId || item.page.id === pageId)
+    );
+    const target = index >= 0 ? index : 0;
+    const timer = window.setTimeout(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollTop = target * el.clientHeight;
+      setActiveId(sections[target].id);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [sections, versionId, pageId, setActiveId]);
+
+  // 滚轮：一次手势平滑滚到下一页容器，松手后由 scroll-snap 对齐
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || sections.length === 0) return undefined;
+    const state = wheelState.current;
+
+    const onWheel = (e) => {
+      if (e.ctrlKey) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+
+      const now = performance.now();
+      if (now < state.lockedUntil) {
+        state.lockedUntil = Math.max(state.lockedUntil, now + 280);
+        return;
+      }
+
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      if (now - state.last > 180) state.acc = 0;
+      state.acc += delta;
+      state.last = now;
+      if (Math.abs(state.acc) < 32) return;
+
+      const dir = state.acc > 0 ? 1 : -1;
+      state.acc = 0;
+      const current = Math.round(el.scrollTop / el.clientHeight);
+      const target = current + dir;
+      if (target < 0 || target >= sections.length) return;
+
+      state.lockedUntil = now + 700;
+      el.scrollTo({ top: target * el.clientHeight, behavior: 'smooth' });
+      setActiveId(sections[target].id);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [sections, setActiveId]);
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el || sections.length === 0) return;
+    const index = Math.min(
+      sections.length - 1,
+      Math.max(0, Math.round(el.scrollTop / el.clientHeight))
+    );
+    const section = sections[index];
+    if (section) setActiveId(section.id);
+  };
+
+  if (loading) return <HistoryState>加载历史版本…</HistoryState>;
+  if (error) return <HistoryState>历史版本加载失败，请确认版本清单是否存在。</HistoryState>;
+  if (versions.length === 0) return <HistoryState>还没有历史版本。</HistoryState>;
+  if (versionId && !versions.some((version) => version.id === versionId)) {
+    return <HistoryState>未找到该版本。</HistoryState>;
+  }
+  if (sections.length === 0) return <HistoryState>还没有页面截图。</HistoryState>;
+
+  const latest = versions[0];
+  const latestCommitUrl = latest.commit
+    ? `https://github.com/New-King/newking/commit/${latest.commit}`
+    : null;
+
+  const selected = lightboxIndex !== null ? sections[lightboxIndex] : null;
+  const selectedShots = selected?.page.screenshots || {};
+  const selectedDevice = selectedShots[device]
+    ? device
+    : selectedShots.desktop
+      ? 'desktop'
+      : 'mobile';
+  const selectedSrc = selected ? selectedShots[selectedDevice] : undefined;
+
+  return (
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain"
+      >
+        {sections.map(({ id, version, page, pageIndex }, index) => (
+          <section
+            key={id}
+            id={id}
+            className="h-full snap-start [scroll-snap-stop:always]"
+          >
+            <PageSlide
+              version={version}
+              page={page}
+              pages={version.pages}
+              pageIndex={pageIndex}
+              isCurrent={version.id === latest.id}
+              device={device}
+              setDevice={setDevice}
+              onOpen={() => setLightboxIndex(index)}
+            />
+          </section>
+        ))}
       </div>
 
       <div className="shrink-0 px-6 sm:px-8 lg:px-12">
         <div className="mx-auto flex w-full max-w-[760px] flex-wrap items-center justify-between gap-3 border-t border-black/[0.08] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-[11px] leading-5 text-ink-faint dark:border-white/[0.08] lg:h-12 lg:flex-nowrap lg:py-0">
           <p className="min-w-0">新故相推，日生不滞。</p>
           <div className="flex shrink-0 items-center gap-4">
-            {commitUrl && (
+            {latestCommitUrl && (
               <a
-                href={commitUrl}
+                href={latestCommitUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="transition-colors hover:text-ink"
               >
-                查看该版本 commit ↗
+                查看最新版本 commit ↗
               </a>
             )}
             <Link to="/" className="transition-colors hover:text-ink">
@@ -273,18 +363,24 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {lightboxOpen && (
+      {selected && (
         <HistoryLightbox
-          version={version}
-          page={page}
-          pages={pages}
-          device={effectiveDevice}
+          version={selected.version}
+          page={selected.page}
+          pages={selected.version.pages}
+          device={selectedDevice}
           setDevice={setDevice}
-          shots={shots}
-          src={src}
-          onClose={() => setLightboxOpen(false)}
-          onPrev={prevPage ? () => navigate(pageTo(prevPage)) : null}
-          onNext={nextPage ? () => navigate(pageTo(nextPage)) : null}
+          shots={selectedShots}
+          src={selectedSrc}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={
+            lightboxIndex > 0 ? () => setLightboxIndex(lightboxIndex - 1) : null
+          }
+          onNext={
+            lightboxIndex < sections.length - 1
+              ? () => setLightboxIndex(lightboxIndex + 1)
+              : null
+          }
         />
       )}
     </div>

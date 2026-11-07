@@ -1,20 +1,70 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useVersions } from '../../hooks/useVersions';
-import { IconChevron } from '../icons';
+import { useHistoryScroll } from '../history/HistoryScrollContext';
+
+const pageSectionId = (versionId, pageId) => `${versionId}--${pageId}`;
 
 /**
- * 历史模式下的侧栏内容：版本列表 + 当前版本下的页面列表。
- * - 点版本：切到该版本（停留在版本列表，方便继续选页面）
- * - 点页面：进入具体截图；移动端通过 onClose 收起抽屉
+ * 历史模式侧栏：所有版本 + 所有页面。
+ * 主区长页按「整屏容器」滚动，active 跟随；点击平滑滚到对应容器。
  */
-export default function VersionNav({ onClose }) {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+export default function VersionNav({ onClose, scrollRef }) {
   const { versions, loading, error } = useVersions();
+  const { activeId, setActiveId, scrollToSection } = useHistoryScroll();
+  const itemRefs = useRef(new Map());
+  const rootRef = useRef(null);
+  const [indicator, setIndicator] = useState({ top: 0, left: 0, width: 0, height: 0, opacity: 0 });
 
-  const match = pathname.match(/^\/history(?:\/([^/]+))?(?:\/([^/]+))?/);
-  const activeVersionId = match?.[1] || versions[0]?.id;
-  const activePageId = match?.[2];
+  const activeVersionId = activeId?.split('--')[0] || versions[0]?.id;
+
+  const measureIndicator = () => {
+    const root = rootRef.current;
+    const el = activeId ? itemRefs.current.get(activeId) : null;
+    if (!root || !el) {
+      setIndicator((prev) => ({ ...prev, opacity: 0 }));
+      return;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const itemRect = el.getBoundingClientRect();
+    setIndicator({
+      top: itemRect.top - rootRect.top,
+      left: itemRect.left - rootRect.left,
+      width: itemRect.width,
+      height: itemRect.height,
+      opacity: 1,
+    });
+  };
+
+  useLayoutEffect(measureIndicator, [activeId]);
+
+  useEffect(() => {
+    window.addEventListener('resize', measureIndicator);
+    return () => window.removeEventListener('resize', measureIndicator);
+  }, [activeId]);
+
+  useEffect(() => {
+    const nav = scrollRef?.current;
+    const el = activeId ? itemRefs.current.get(activeId) : null;
+    if (!nav || !el) return;
+    const navRect = nav.getBoundingClientRect();
+    const itemRect = el.getBoundingClientRect();
+    const pad = 12;
+    if (itemRect.top >= navRect.top + pad && itemRect.bottom <= navRect.bottom - pad) return;
+    const top =
+      nav.scrollTop + itemRect.top - navRect.top - nav.clientHeight / 2 + itemRect.height / 2;
+    nav.scrollTo({ top, behavior: 'smooth' });
+  }, [activeId, scrollRef]);
+
+  const setItemRef = (id) => (el) => {
+    if (el) itemRefs.current.set(id, el);
+    else itemRefs.current.delete(id);
+  };
+
+  const select = (id) => {
+    setActiveId(id);
+    onClose?.();
+    window.setTimeout(() => scrollToSection(id), 0);
+  };
 
   if (loading) {
     return (
@@ -39,19 +89,27 @@ export default function VersionNav({ onClose }) {
   }
 
   return (
-    <div className="space-y-1">
+    <div ref={rootRef} className="relative space-y-1">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute z-0 rounded-lg bg-black/[0.06] transition-[top,left,width,height,opacity] duration-300 ease-smooth dark:bg-white/10"
+        style={indicator}
+      />
       {versions.map((version, index) => {
-        const active = version.id === activeVersionId;
         const current = index === 0;
+        const activeVersion = version.id === activeVersionId;
+        const firstPage = version.pages[0];
+        const versionTarget = firstPage ? pageSectionId(version.id, firstPage.id) : null;
         return (
           <div key={version.id}>
             <button
               type="button"
-              onClick={() => navigate(`/history/${version.id}`)}
-              aria-current={active ? 'page' : undefined}
-              className={`w-full rounded-lg px-2 py-2 text-left transition-colors duration-200 ${
-                active
-                  ? 'bg-black/[0.06] dark:bg-white/10'
+              ref={versionTarget ? setItemRef(versionTarget) : undefined}
+              onClick={() => versionTarget && select(versionTarget)}
+              aria-current={activeVersion ? 'page' : undefined}
+              className={`relative z-10 w-full rounded-lg px-2 py-2 text-left transition-colors duration-200 ${
+                activeVersion
+                  ? 'text-ink'
                   : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
               }`}
             >
@@ -67,7 +125,7 @@ export default function VersionNav({ onClose }) {
               </div>
               <p
                 className={`mt-0.5 truncate text-[12.5px] ${
-                  active ? 'font-medium text-ink' : 'text-ink-soft'
+                  activeVersion ? 'font-medium text-ink' : 'text-ink-soft'
                 }`}
                 title={version.title}
               >
@@ -75,30 +133,29 @@ export default function VersionNav({ onClose }) {
               </p>
             </button>
 
-            {active && (
-              <ul className="ml-[9px] mt-1 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
-                {version.pages.map((page) => {
-                  const pageActive = page.id === (activePageId || version.pages[0]?.id);
-                  return (
-                    <li key={page.id}>
-                      <Link
-                        to={`/history/${version.id}/${page.id}`}
-                        onClick={onClose}
-                        aria-current={pageActive ? 'page' : undefined}
-                        className={`flex items-center justify-between gap-2 rounded-md px-2 py-1 text-[12px] transition-colors duration-200 ${
-                          pageActive
-                            ? 'bg-black/[0.06] text-ink dark:bg-white/10'
-                            : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
-                        }`}
-                      >
-                        <span className="truncate">{page.label}</span>
-                        <IconChevron className="h-2.5 w-2.5 shrink-0 text-ink-faint" />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <ul className="ml-[9px] mt-1 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
+              {version.pages.map((page) => {
+                const id = pageSectionId(version.id, page.id);
+                const pageActive = activeId === id;
+                return (
+                  <li key={page.id}>
+                    <button
+                      type="button"
+                      ref={setItemRef(id)}
+                      onClick={() => select(id)}
+                      aria-current={pageActive ? 'page' : undefined}
+                      className={`relative z-10 block w-full rounded-md px-2 py-1 text-left text-[12px] transition-colors duration-200 ${
+                        pageActive
+                          ? 'text-ink'
+                          : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <span className="block truncate">{page.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         );
       })}
