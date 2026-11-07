@@ -71,7 +71,9 @@ export default function HistoryPage() {
   const pageTo = (item) => `/history/${version.id}/${item.id}`;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 pb-10 pt-8 sm:px-8 lg:px-12 lg:pt-12">
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-6 pb-8 pt-8 sm:px-8 lg:px-12 lg:pt-12">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
           Version History
@@ -247,31 +249,29 @@ export default function HistoryPage() {
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] text-ink-faint">
-        <span>
-          {version.title} · {page.label} · {page.path} ·{' '}
-          {effectiveDevice === 'desktop' ? '桌面' : '手机'}
-        </span>
-        <div className="flex items-center gap-4">
-          {commitUrl && (
-            <a
-              href={commitUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="transition-colors hover:text-ink"
-            >
-              查看该版本 commit ↗
-            </a>
-          )}
-          <Link to="/" className="transition-colors hover:text-ink">
-            返回当前站点
-          </Link>
         </div>
       </div>
 
-      <p className="mt-10 border-t border-black/[0.08] pt-5 text-[11px] leading-5 text-ink-faint dark:border-white/[0.08]">
-        历史版本是静态截图，点击可放大查看；交互与动效以当前站点为准。
-      </p>
+      <div className="shrink-0 px-6 sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-[760px] flex-wrap items-center justify-between gap-3 border-t border-black/[0.08] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-[11px] leading-5 text-ink-faint dark:border-white/[0.08] lg:h-12 lg:flex-nowrap lg:py-0">
+          <p className="min-w-0">新故相推，日生不滞。</p>
+          <div className="flex shrink-0 items-center gap-4">
+            {commitUrl && (
+              <a
+                href={commitUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="transition-colors hover:text-ink"
+              >
+                查看该版本 commit ↗
+              </a>
+            )}
+            <Link to="/" className="transition-colors hover:text-ink">
+              返回当前站点
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {lightboxOpen && (
         <HistoryLightbox

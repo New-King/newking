@@ -334,8 +334,8 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         />
       </div>
 
-      <div className="shrink-0 border-t border-black/[0.06] px-4 pb-[max(0.625rem,env(safe-area-inset-bottom))] pt-2.5 dark:border-white/[0.08]">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex h-[calc(3rem+env(safe-area-inset-bottom))] shrink-0 items-center border-t border-black/[0.06] px-4 pb-[env(safe-area-inset-bottom)] dark:border-white/[0.08]">
+        <div className="flex w-full items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setDark((d) => !d)}

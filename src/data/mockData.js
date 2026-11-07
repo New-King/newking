@@ -2,7 +2,7 @@
 // 博客/笔记/项目的正文与列表数据统一来自后端 /api/content，不再在前端写死。
 
 export const SITE_QUOTE =
-  '在AI极速发展的时代，任何你觉得了不起的新奇想法，都会在第二天怦然坠地。';
+  '道阻且长，行则将至。';
 
 // 短日期：详情页右上角、列表用（当年省略年份）
 export function formatDate(iso) {
