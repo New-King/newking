@@ -14,18 +14,28 @@ export default function VersionNav({ onClose, scrollRef }) {
   const itemRefs = useRef(new Map());
   const rootRef = useRef(null);
   const [indicator, setIndicator] = useState({ top: 0, left: 0, width: 0, height: 0, opacity: 0 });
+  // 首次定位（进入页面 / 刷新）直接落位，不播放「从顶部滑下来」的动画
+  const [animateIndicator, setAnimateIndicator] = useState(false);
+  const placedRef = useRef(false);
 
   const activeVersionId = activeId?.split('--')[0] || versions[0]?.id;
+  // activeId 尚未下发时，先按第一页测量，保证首帧就停在该项上
+  const measureId =
+    activeId ||
+    (versions[0]?.pages[0]
+      ? pageSectionId(versions[0].id, versions[0].pages[0].id)
+      : null);
 
   const measureIndicator = () => {
     const root = rootRef.current;
-    const el = activeId ? itemRefs.current.get(activeId) : null;
+    const el = measureId ? itemRefs.current.get(measureId) : null;
     if (!root || !el) {
       setIndicator((prev) => ({ ...prev, opacity: 0 }));
       return;
     }
     const rootRect = root.getBoundingClientRect();
     const itemRect = el.getBoundingClientRect();
+    placedRef.current = true;
     setIndicator({
       top: itemRect.top - rootRect.top,
       left: itemRect.left - rootRect.left,
@@ -35,12 +45,25 @@ export default function VersionNav({ onClose, scrollRef }) {
     });
   };
 
-  useLayoutEffect(measureIndicator, [activeId]);
+  useLayoutEffect(measureIndicator, [measureId]);
+
+  // 首帧落位完成后再开启过渡，之后切换选中项才播放滑动动画
+  useEffect(() => {
+    if (!placedRef.current || animateIndicator) return undefined;
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => setAnimateIndicator(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+    };
+  }, [measureId, animateIndicator]);
 
   useEffect(() => {
     window.addEventListener('resize', measureIndicator);
     return () => window.removeEventListener('resize', measureIndicator);
-  }, [activeId]);
+  }, [measureId]);
 
   useEffect(() => {
     const nav = scrollRef?.current;
@@ -92,7 +115,11 @@ export default function VersionNav({ onClose, scrollRef }) {
     <div ref={rootRef} className="relative space-y-1">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute z-0 rounded-lg bg-black/[0.06] transition-[top,left,width,height,opacity] duration-300 ease-smooth dark:bg-white/10"
+        className={`pointer-events-none absolute z-0 rounded-lg bg-black/[0.06] dark:bg-white/10 ${
+          animateIndicator
+            ? 'transition-[top,left,width,height,opacity] duration-300 ease-smooth'
+            : ''
+        }`}
         style={indicator}
       />
       {versions.map((version, index) => {

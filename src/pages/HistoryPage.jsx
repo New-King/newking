@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useVersions } from '../hooks/useVersions';
 import { useHistoryScroll } from '../components/history/HistoryScrollContext';
@@ -203,7 +203,6 @@ export default function HistoryPage() {
   const { setActiveId } = useHistoryScroll();
   const scrollRef = useRef(null);
   const targetIndexRef = useRef(0);
-  const wheelActiveUntil = useRef(0);
   const activeTimer = useRef(null);
   const [device, setDevice] = useState(defaultDevice);
   const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -236,34 +235,73 @@ export default function HistoryPage() {
     };
   }, []);
 
-  // 初始定位：/history/xxx/yyy 直接滚到对应容器
-  useEffect(() => {
-    if (!sections.length) return undefined;
+  // 初始定位：/history/xxx/yyy 直接滚到对应容器（布局阶段完成，首帧即到位）
+  useLayoutEffect(() => {
+    if (!sections.length) return;
     const index = sections.findIndex(
       (item) =>
         item.version.id === versionId && (!pageId || item.page.id === pageId)
     );
     const target = index >= 0 ? index : 0;
-    const timer = window.setTimeout(() => {
-      const el = scrollRef.current;
-      if (!el) return;
-      el.scrollTop = target * el.clientHeight;
-      targetIndexRef.current = target;
-      setActiveId(sections[target].id);
-    }, 180);
-    return () => window.clearTimeout(timer);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = target * el.clientHeight;
+    targetIndexRef.current = target;
+    setActiveId(sections[target].id);
   }, [sections, versionId, pageId, setActiveId]);
 
-  // 鼠标滚轮：每格连续滚一屏；触控板小增量聚合成一次
+  // 鼠标滚轮：每格滚一屏。
+  // 用 rAF 补间代替连续 scrollTo({ behavior: 'smooth' })：连续滚动事件只更新目标，
+  // 动画从当前位置继续，避免每次滚轮都打断系统平滑滚动造成起步卡顿。
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || sections.length === 0) return undefined;
-    const step = (dir) => {
-      const base = targetIndexRef.current;
-      const target = Math.min(sections.length - 1, Math.max(0, base + dir));
-      if (target === base) return;
-      targetIndexRef.current = target;
-      el.scrollTo({ top: target * el.clientHeight, behavior: 'smooth' });
+
+    const reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // 每 16.7ms 消化剩余距离的 18%；高刷屏按实际帧间隔换算，速度一致
+    const LERP = 0.18;
+
+    let raf = null;
+    let lastTime = 0;
+    let snapOff = false;
+
+    const toggleSnap = (off) => {
+      if (off === snapOff) return;
+      // 补间期间关闭强制吸附，避免浏览器对每一帧都重新吸附造成抖动
+      el.style.scrollSnapType = off ? 'none' : '';
+      snapOff = off;
+    };
+
+    const stopAnimation = () => {
+      if (raf !== null) window.cancelAnimationFrame(raf);
+      raf = null;
+      lastTime = 0;
+      toggleSnap(false);
+    };
+
+    const tick = (now) => {
+      const dest = targetIndexRef.current * el.clientHeight;
+      const diff = dest - el.scrollTop;
+      if (Math.abs(diff) < 0.5) {
+        el.scrollTop = dest;
+        raf = null;
+        lastTime = 0;
+        toggleSnap(false);
+        return;
+      }
+      const dt = lastTime ? Math.min(now - lastTime, 64) : 16.7;
+      lastTime = now;
+      el.scrollTop += diff * (1 - Math.pow(1 - LERP, dt / 16.7));
+      raf = window.requestAnimationFrame(tick);
+    };
+
+    const startAnimation = () => {
+      if (raf !== null) return;
+      lastTime = 0;
+      toggleSnap(true);
+      raf = window.requestAnimationFrame(tick);
     };
 
     const onWheel = (e) => {
@@ -272,32 +310,52 @@ export default function HistoryPage() {
 
       const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       // 小增量（触控板）交给原生滚动 + scroll-snap，允许连续滑
-      if (Math.abs(delta) < 40) return;
+      if (Math.abs(delta) < 40) {
+        stopAnimation();
+        return;
+      }
 
-      // 鼠标滚轮格：每格滚一屏，连续滚动可以连翻
+      // 鼠标滚轮格：每格滚一屏，连续滚动只更新目标，不重启动画
       e.preventDefault();
-      wheelActiveUntil.current = performance.now() + 320;
-      step(delta > 0 ? 1 : -1);
+      const base = targetIndexRef.current;
+      const target = Math.min(
+        sections.length - 1,
+        Math.max(0, base + (delta > 0 ? 1 : -1))
+      );
+      if (target === base) return;
+      targetIndexRef.current = target;
+
+      if (reduceMotion) {
+        toggleSnap(false);
+        el.scrollTop = target * el.clientHeight;
+        return;
+      }
+      startAnimation();
     };
 
     const onScrollEnd = () => {
+      // 补间进行中不按中间位置覆盖目标页
+      if (raf !== null) return;
       const index = Math.min(
         sections.length - 1,
         Math.max(0, Math.round(el.scrollTop / el.clientHeight))
       );
       const section = sections[index];
       if (section) setActiveId(section.id);
-
-      // 连续滚轮期间不要用中间位置覆盖目标页
-      if (performance.now() < wheelActiveUntil.current) return;
       targetIndexRef.current = index;
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('scrollend', onScrollEnd);
+    el.addEventListener('pointerdown', stopAnimation);
+    el.addEventListener('touchstart', stopAnimation, { passive: true });
     return () => {
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('scrollend', onScrollEnd);
+      el.removeEventListener('pointerdown', stopAnimation);
+      el.removeEventListener('touchstart', stopAnimation);
+      if (raf !== null) window.cancelAnimationFrame(raf);
+      el.style.scrollSnapType = '';
     };
   }, [sections, setActiveId]);
 
@@ -314,6 +372,7 @@ export default function HistoryPage() {
       );
       const section = sections[index];
       if (section) setActiveId(section.id);
+      targetIndexRef.current = index;
     }, 450);
   };
 
