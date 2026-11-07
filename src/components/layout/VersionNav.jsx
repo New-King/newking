@@ -16,7 +16,7 @@ export default function VersionNav({ onClose, scrollRef }) {
   const [indicator, setIndicator] = useState({ top: 0, left: 0, width: 0, height: 0, opacity: 0 });
   // 首次定位（进入页面 / 刷新）直接落位，不播放「从顶部滑下来」的动画
   const [animateIndicator, setAnimateIndicator] = useState(false);
-  const placedRef = useRef(false);
+  const [placed, setPlaced] = useState(false);
 
   const activeVersionId = activeId?.split('--')[0] || versions[0]?.id;
   // activeId 尚未下发时，先按第一页测量，保证首帧就停在该项上
@@ -35,7 +35,7 @@ export default function VersionNav({ onClose, scrollRef }) {
     }
     const rootRect = root.getBoundingClientRect();
     const itemRect = el.getBoundingClientRect();
-    placedRef.current = true;
+    setPlaced(true);
     setIndicator({
       top: itemRect.top - rootRect.top,
       left: itemRect.left - rootRect.left,
@@ -49,16 +49,10 @@ export default function VersionNav({ onClose, scrollRef }) {
 
   // 首帧落位完成后再开启过渡，之后切换选中项才播放滑动动画
   useEffect(() => {
-    if (!placedRef.current || animateIndicator) return undefined;
-    let raf2 = 0;
-    const raf1 = window.requestAnimationFrame(() => {
-      raf2 = window.requestAnimationFrame(() => setAnimateIndicator(true));
-    });
-    return () => {
-      window.cancelAnimationFrame(raf1);
-      window.cancelAnimationFrame(raf2);
-    };
-  }, [measureId, animateIndicator]);
+    if (!placed || animateIndicator) return undefined;
+    const timer = window.setTimeout(() => setAnimateIndicator(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [placed, animateIndicator]);
 
   useEffect(() => {
     window.addEventListener('resize', measureIndicator);
