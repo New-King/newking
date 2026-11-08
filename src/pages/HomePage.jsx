@@ -3,12 +3,13 @@ import BgGrid from '../components/chat/BgGrid';
 import { useChatDock } from '../components/chat/ChatDockContext';
 import { useContent } from '../hooks/useContent';
 import { formatDate, SITE_QUOTE } from '../data/mockData';
+import { SITE_ABOUT, SITE_CONTACT } from '../data/siteInfo';
 import { IconSparkle } from '../components/icons';
 
 const KIND = {
   posts: { label: '博客', to: '/blog' },
   notes: { label: '笔记', to: '/notes' },
-  projects: { label: '项目', to: '/projects' },
+  projects: { label: '作品', to: '/projects' },
 };
 
 export default function HomePage() {
@@ -19,12 +20,7 @@ export default function HomePage() {
   const notes = data?.notes ?? [];
   const projects = data?.projects ?? [];
 
-  const paragraphs = (data?.about?.content || '')
-    .split(/\n{2,}/)
-    .map((p) => p.replace(/<!--[\s\S]*?-->/g, '').trim())
-    .filter(Boolean);
-  const intro =
-    paragraphs[1] || paragraphs[0] || '在 AI 与工程实践的交汇处，记录想法、项目与阅读。';
+  const intro = '在 AI 与工程实践的交汇处，记录想法、作品与阅读。';
 
   const latest = [
     ...posts.map((item) => ({ ...item, kind: 'posts' })),
@@ -42,7 +38,7 @@ export default function HomePage() {
   const cards = [
     { key: 'posts', label: '博客', to: '/blog', count: posts.length, items: posts },
     { key: 'notes', label: '笔记', to: '/notes', count: notes.length, items: notes },
-    { key: 'projects', label: '项目', to: '/projects', count: projects.length, items: projects },
+    { key: 'projects', label: '作品', to: '/projects', count: projects.length, items: projects },
   ];
 
   return (
@@ -73,7 +69,7 @@ export default function HomePage() {
               to="/projects"
               className="rounded-full border border-black/[0.08] bg-card/70 px-5 py-2.5 text-[13px] text-ink-soft transition-all duration-200 hover:border-black/[0.16] hover:text-ink active:scale-95 dark:border-white/[0.1] dark:bg-white/[0.04] dark:hover:border-white/[0.2]"
             >
-              查看项目
+              查看作品
             </Link>
             <button
               type="button"
@@ -90,7 +86,7 @@ export default function HomePage() {
               ? '正在加载内容…'
               : error
                 ? '内容加载失败'
-                : `${posts.length} 篇博客 · ${notes.length} 篇笔记 · ${projects.length} 个项目`}
+                : `${posts.length} 篇博客 · ${notes.length} 篇笔记 · ${projects.length} 个作品`}
           </p>
         </div>
       </section>
@@ -182,6 +178,30 @@ export default function HomePage() {
               })}
         </section>
       )}
+
+      {/* 原「关于我 / 联系方式」页面已并入概览 */}
+      <section className="mt-16 border-t border-black/[0.08] pt-8 dark:border-white/[0.08]">
+        <h2 className="text-[13px] font-medium text-ink">关于我</h2>
+        <div className="mt-3 max-w-[560px] space-y-3 text-[14px] leading-7 text-ink-soft">
+          {SITE_ABOUT.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+        </div>
+
+        <h2 className="mt-8 text-[13px] font-medium text-ink">联系方式</h2>
+        <div className="mt-3 space-y-1.5 text-[14px] leading-7 text-ink-soft">
+          <p>
+            邮箱：
+            <a
+              href={`mailto:${SITE_CONTACT.email}`}
+              className="underline decoration-black/10 underline-offset-4 transition-colors hover:text-ink dark:decoration-white/15"
+            >
+              {SITE_CONTACT.email}
+            </a>
+          </p>
+          <p>电话：{SITE_CONTACT.phone}</p>
+        </div>
+      </section>
 
       <blockquote className="mt-16 border-t border-black/[0.08] pt-8 text-[13px] leading-7 text-ink-faint dark:border-white/[0.08]">
         “{SITE_QUOTE}”

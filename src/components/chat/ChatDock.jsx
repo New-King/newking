@@ -161,7 +161,7 @@ export default function ChatDock() {
                 </span>
                 <p className="mt-4 text-[15px] font-medium text-ink">问我任何关于这个网站的问题</p>
                 <p className="mt-1.5 max-w-[260px] text-xs leading-5 text-ink-muted">
-                  可以问经历、技术栈、项目，或者让 AI 推荐一篇文章。
+                  可以问经历、技术栈、作品，或者让 AI 推荐一篇文章。
                 </p>
                 <div className="mt-6 w-full space-y-2">
                   {SUGGESTIONS.map((q) => (

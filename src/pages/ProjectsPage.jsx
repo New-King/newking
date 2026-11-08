@@ -5,8 +5,8 @@ import BoxCoverIcon from '../components/projects/BoxCoverIcon';
 import { formatDate } from '../data/mockData';
 import { useContent } from '../hooks/useContent';
 
-// 项目预览动画是前端专属效果（示意动画），后端只给数据。
-// 这里按项目 id 映射内置的 preview 场景；后端数据无该字段，动画逻辑不受影响。
+// 作品预览动画是前端专属效果（示意动画），后端只给数据。
+// 这里按作品 id 映射内置的 preview 场景；后端数据无该字段，动画逻辑不受影响。
 const PREVIEW_BY_ID = {
   j6: { scene: 'canvas' },
   j1: { scene: 'terminal', lines: ['正在连接集群…', '正在拉取指标…', '正在执行指令…', '任务完成 ✓'] },
@@ -19,7 +19,7 @@ const PREVIEW_BY_ID = {
   },
 };
 
-// 封面几何图形（中性色，随主题色）—— 每个项目一种
+// 封面几何图形（中性色，随主题色）—— 每个作品一种
 const COVER_SHAPES = {
   ring: (
     <svg width="40" height="40" viewBox="0 0 52 52" fill="none" stroke="currentColor">
@@ -93,7 +93,7 @@ function CoverThumb({ shape, active, small, href }) {
         target="_blank"
         rel="noopener noreferrer"
         className="block shrink-0 rounded-md transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-        aria-label="访问项目官网"
+        aria-label="访问作品官网"
         onFocus={() => setBoxHovered(true)}
         onBlur={() => setBoxHovered(false)}
       >
@@ -170,7 +170,7 @@ export default function ProjectsPage() {
   if (loading) {
     return (
       <PageShell eyebrow="Projects">
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
         <p className="py-8 text-sm text-ink-faint">加载中…</p>
       </PageShell>
     );
@@ -179,7 +179,7 @@ export default function ProjectsPage() {
   if (error) {
     return (
       <PageShell eyebrow="Projects">
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
         <p className="py-8 text-sm text-ink-faint">内容加载失败，请确认后端服务已启动。</p>
       </PageShell>
     );
@@ -188,8 +188,8 @@ export default function ProjectsPage() {
   if (total === 0) {
     return (
       <PageShell eyebrow="Projects">
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
-        <p className="py-8 text-sm text-ink-faint">还没有项目。</p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
+        <p className="py-8 text-sm text-ink-faint">还没有作品。</p>
       </PageShell>
     );
   }
@@ -202,8 +202,8 @@ export default function ProjectsPage() {
 
   return (
     <PageShell eyebrow="Projects">
-      <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">项目</h1>
-      {/* 相册式展示：当前项目 + 自动播放预览；左右箭头 / 滑动 / 缩略图切换 */}
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
+      {/* 相册式展示：当前作品 + 自动播放预览；左右箭头 / 滑动 / 缩略图切换 */}
       <div
         className="relative mt-6"
         onTouchStart={(e) => {
@@ -224,7 +224,7 @@ export default function ProjectsPage() {
               type="button"
               onClick={prev}
               disabled={total <= 1}
-              aria-label="上一个项目"
+              aria-label="上一个作品"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[0.1] dark:hover:border-white/[0.2]"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -235,7 +235,7 @@ export default function ProjectsPage() {
               type="button"
               onClick={next}
               disabled={total <= 1}
-              aria-label="下一个项目"
+              aria-label="下一个作品"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-black/[0.08] text-ink-muted transition-colors hover:border-black/[0.16] hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 dark:border-white/[0.1] dark:hover:border-white/[0.2]"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -268,7 +268,7 @@ export default function ProjectsPage() {
 
       </div>
 
-      {/* 底部缩略图导航：所有项目，当前高亮，点击直达（移动端主切换方式） */}
+      {/* 底部缩略图导航：所有作品，当前高亮，点击直达（移动端主切换方式） */}
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         {projects.map((item, i) => (
           <button
@@ -282,7 +282,7 @@ export default function ProjectsPage() {
             }`}
           >
             <CoverThumb shape={item.cover} active={i === index} small />
-            {/* 悬停显示项目名称 */}
+            {/* 悬停显示作品名称 */}
             <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-black/[0.08] surface-elevated px-2 py-1 text-[11px] text-ink-soft opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:border-white/[0.08]">
               {item.title}
             </span>

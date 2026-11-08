@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContent } from '../../hooks/useContent';
-import { IconChevron, IconHistory, IconMail, IconX } from '../icons';
+import { SITE_CONTACT } from '../../data/siteInfo';
+import { sortNotes } from '../../utils/contentOrder';
+import { IconChevron, IconGithub, IconHistory, IconMail, IconX } from '../icons';
 import VersionNav from './VersionNav';
+
+const EMPTY = [];
+// 每个分类默认最多展示的条目数；更多内容进分类列表页
+const SECTION_LIMIT = 5;
 
 // 左侧目录：内容类型 → 条目（像编辑器的文件树），点击直接进内容
 export default function Sidebar({ mobileOpen = false, onClose }) {
@@ -44,21 +50,15 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const posts = data?.posts ?? [];
-  const notes = data?.notes ?? [];
-  const projects = data?.projects ?? [];
-  const contact = data?.contact;
+  const posts = data?.posts ?? EMPTY;
+  const notes = data?.notes ?? EMPTY;
+  const projects = data?.projects ?? EMPTY;
+  const navNotes = useMemo(() => sortNotes(notes), [notes]);
 
   const q = query.trim().toLowerCase();
   const matches = (text) => !q || String(text || '').toLowerCase().includes(q);
 
-  const groups = useMemo(() => {
-    const aboutChildren = [
-      { key: 'about-me', label: '关于我', to: '/about' },
-      { key: 'resume', label: '简历', to: '/resume' },
-      { key: 'contact', label: '联系', to: '/contact' },
-    ].filter((item) => matches(item.label));
-
+  const sections = useMemo(() => {
     const buildSection = (key, label, to, list) => {
       const sectionMatched = matches(label);
       const items = list
@@ -69,23 +69,35 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           to: item.to || `${to}/${item.id}`,
         }));
       if (q && !sectionMatched && items.length === 0) return null;
-      return { key, label, to, total: list.length, items };
+
+      // 非搜索状态：每类只显示前 SECTION_LIMIT 条
+      const visibleItems = q ? items : items.slice(0, SECTION_LIMIT);
+      // 当前文章落在被截断的部分时，不单独拎出来，改为高亮「更多」
+      const activeBeyond =
+        !q &&
+        items.some(
+          (item) => item.to === pathname && !visibleItems.includes(item)
+        );
+      const hasMore = !q && items.length > SECTION_LIMIT;
+
+      return {
+        key,
+        label,
+        to,
+        total: list.length,
+        items,
+        visibleItems,
+        activeBeyond,
+        hasMore,
+      };
     };
 
-    const writing = [
-      buildSection('posts', '博客', '/blog', posts),
-      buildSection('notes', '笔记', '/notes', notes),
-    ].filter(Boolean);
-
-    const work = [buildSection('projects', '项目', '/projects', projects)].filter(Boolean);
-
-    if (q && writing.length === 0 && work.length === 0 && aboutChildren.length === 0) return [];
     return [
-      ...(aboutChildren.length ? [{ key: 'about', label: '关于', children: aboutChildren }] : []),
-      ...(writing.length ? [{ key: 'writing', label: '写作', children: writing }] : []),
-      ...(work.length ? [{ key: 'work', label: '作品', children: work }] : []),
-    ];
-  }, [posts, notes, projects, q]); // matches 依赖 q，函数本身无需进依赖
+      buildSection('posts', '博客', '/blog', posts),
+      buildSection('notes', '笔记', '/notes', navNotes),
+      buildSection('projects', '作品', '/projects', projects),
+    ].filter(Boolean);
+  }, [posts, navNotes, projects, q, pathname]); // matches 依赖 q，函数本身无需进依赖
 
   const goBack = () => {
     onClose?.();
@@ -95,10 +107,57 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
   const isOpen = (key) => (q ? true : !closed[key]);
   const toggle = (key) => setClosed((prev) => ({ ...prev, [key]: !prev[key] }));
   const isSectionActive = (to) => pathname === to || pathname.startsWith(`${to}/`);
-  const isGroupActive = (group) =>
-    group.children?.some((child) =>
-      child.items ? isSectionActive(child.to) : pathname === child.to
+
+  // 路由变化（含聊天里点链接）时，自动展开当前文章所在分类。
+  // 只动当前分类，不覆盖用户对其他分类的收起；搜索时由 isOpen 强制全开。
+  useEffect(() => {
+    if (historyMode || q) return;
+    const section = sections.find((s) => isSectionActive(s.to));
+    if (!section) return;
+    setClosed((prev) =>
+      prev[section.key] ? { ...prev, [section.key]: false } : prev
     );
+  }, [pathname, sections, historyMode, q]);
+
+  // 把当前项滚到侧栏可视区；已经可见就不动，避免打断用户滚动。
+  // 用容器 scrollTo 而不是 scrollIntoView，避免和页面 ScrollToTop 抢窗口滚动。
+  useEffect(() => {
+    if (historyMode || q) return undefined;
+    const nav = historyNavRef.current;
+    if (!nav) return undefined;
+    const raf = window.requestAnimationFrame(() => {
+      const el = nav.querySelector('[data-nav-item][aria-current="page"]');
+      if (!el) return;
+      const navRect = nav.getBoundingClientRect();
+      const itemRect = el.getBoundingClientRect();
+      const pad = 12;
+      if (itemRect.top >= navRect.top + pad && itemRect.bottom <= navRect.bottom - pad) return;
+      const top =
+        nav.scrollTop + itemRect.top - navRect.top - nav.clientHeight / 2 + itemRect.height / 2;
+      nav.scrollTo({ top, behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [pathname, sections, closed, historyMode, q]);
+
+  const renderNavItem = (item) => {
+    const active = pathname === item.to;
+    return (
+      <Link
+        to={item.to}
+        onClick={onClose}
+        aria-current={active ? 'page' : undefined}
+        data-nav-item=""
+        className={`block truncate rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 transition-colors duration-200 ${
+          active
+            ? 'bg-black/[0.06] text-ink dark:bg-white/10'
+            : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+        }`}
+        title={item.label}
+      >
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <aside
@@ -190,6 +249,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           to="/"
           onClick={onClose}
           aria-current={pathname === '/' ? 'page' : undefined}
+          data-nav-item=""
           className={`block rounded-lg px-2 py-1 text-[13px] transition-colors duration-200 ${
             pathname === '/'
               ? 'bg-black/[0.06] font-medium text-ink dark:bg-white/10'
@@ -220,110 +280,72 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         )}
 
         {!loading &&
-          groups.map((group) => (
-          <div key={group.key} className="mt-4">
-            <button
-              type="button"
-              onClick={() => toggle(group.key)}
-              aria-expanded={isOpen(group.key)}
-              className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-[11px] font-medium tracking-[0.14em] transition-colors ${
-                isGroupActive(group) ? 'text-ink' : 'text-ink-faint hover:text-ink'
-              }`}
-            >
-              {group.label}
-              <IconChevron
-                className={`h-3 w-3 transition-transform duration-200 ${
-                  isOpen(group.key) ? 'rotate-90' : ''
-                }`}
-              />
-            </button>
-
-            {isOpen(group.key) && (
-              <div className="mt-1 space-y-0.5">
-                {group.children.map((child) =>
-                  child.items ? (
-                    <div key={child.key}>
-                      <div className="flex items-center gap-1">
-                        <Link
-                          to={child.to}
-                          onClick={onClose}
-                          aria-current={pathname === child.to ? 'page' : undefined}
-                          className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
-                            isSectionActive(child.to)
-                              ? 'font-medium text-ink'
-                              : 'text-ink-soft hover:text-ink'
-                          }`}
-                        >
-                          <span className="truncate">{child.label}</span>
-                          <span className="text-[10px] tabular-nums text-ink-faint">
-                            {child.total}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => toggle(child.key)}
-                          aria-label={isOpen(child.key) ? `收起${child.label}` : `展开${child.label}`}
-                          aria-expanded={isOpen(child.key)}
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
-                        >
-                          <IconChevron
-                            className={`h-3 w-3 transition-transform duration-200 ${
-                              isOpen(child.key) ? 'rotate-90' : ''
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      {isOpen(child.key) && (
-                        <ul className="ml-[13px] mt-0.5 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
-                          {child.items.map((item) => {
-                            const active = pathname === item.to;
-                            return (
-                              <li key={item.key}>
-                                <Link
-                                  to={item.to}
-                                  onClick={onClose}
-                                  aria-current={active ? 'page' : undefined}
-                                  className={`block truncate rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 transition-colors duration-200 ${
-                                    active
-                                      ? 'bg-black/[0.06] text-ink dark:bg-white/10'
-                                      : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
-                                  }`}
-                                  title={item.label}
-                                >
-                                  {item.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                          {child.items.length === 0 && (
-                            <li className="px-2 py-1 text-[11px] text-ink-faint">暂无内容</li>
-                          )}
-                        </ul>
-                      )}
-                    </div>
-                  ) : (
-                    <Link
-                      key={child.key}
-                      to={child.to}
-                      onClick={onClose}
-                      aria-current={pathname === child.to ? 'page' : undefined}
-                      className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
-                        pathname === child.to
-                          ? 'bg-black/[0.06] font-medium text-ink dark:bg-white/10'
-                          : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
-                      }`}
-                    >
-                      {child.label}
-                    </Link>
-                  )
-                )}
+          sections.map((section) => (
+            <div key={section.key} className="mt-4">
+              <div className="flex items-center gap-1">
+                <Link
+                  to={section.to}
+                  onClick={onClose}
+                  aria-current={pathname === section.to ? 'page' : undefined}
+                  data-nav-item=""
+                  className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
+                    isSectionActive(section.to)
+                      ? 'font-medium text-ink'
+                      : 'text-ink-soft hover:text-ink'
+                  }`}
+                >
+                  <span className="truncate">{section.label}</span>
+                  <span className="text-[10px] tabular-nums text-ink-faint">
+                    {section.total}
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggle(section.key)}
+                  aria-label={isOpen(section.key) ? `收起${section.label}` : `展开${section.label}`}
+                  aria-expanded={isOpen(section.key)}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+                >
+                  <IconChevron
+                    className={`h-3 w-3 transition-transform duration-200 ${
+                      isOpen(section.key) ? 'rotate-90' : ''
+                    }`}
+                  />
+                </button>
               </div>
-            )}
-          </div>
-        ))}
 
-        {q && !loading && groups.length === 0 && (
+              {isOpen(section.key) && (
+                <ul className="ml-[13px] mt-0.5 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
+                  {section.visibleItems.map((item) => (
+                    <li key={item.key}>{renderNavItem(item)}</li>
+                  ))}
+                  {section.items.length === 0 && (
+                    <li className="px-2 py-1 text-[11px] text-ink-faint">暂无内容</li>
+                  )}
+                  {section.hasMore && (
+                    <li>
+                      <Link
+                        to={section.to}
+                        onClick={onClose}
+                        aria-current={section.activeBeyond ? 'page' : undefined}
+                        data-nav-item={section.activeBeyond ? '' : undefined}
+                        className={`flex items-center justify-between rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 transition-colors duration-200 ${
+                          section.activeBeyond
+                            ? 'bg-black/[0.06] text-ink dark:bg-white/10'
+                            : 'text-ink-faint hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+                        }`}
+                      >
+                        <span>更多</span>
+                        <IconChevron className="h-3 w-3" />
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          ))}
+
+        {q && !loading && sections.length === 0 && (
           <p className="mt-4 px-2 text-[11px] text-ink-faint">没有匹配的内容</p>
         )}
             </>
@@ -345,19 +367,26 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           >
             {dark ? 'Light' : 'Dark'}
           </button>
-          {contact?.email ? (
+          <div className="flex shrink-0 items-center gap-0.5">
             <a
-              href={`mailto:${contact.email}`}
-              className="flex min-w-0 items-center gap-1.5 text-[11px] text-ink-faint transition-colors hover:text-ink"
+              href={SITE_CONTACT.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              title="GitHub"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
             >
-              <IconMail className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{contact.email}</span>
+              <IconGithub className="h-4 w-4" />
             </a>
-          ) : (
-            <Link to="/contact" onClick={onClose} className="text-[11px] text-ink-faint hover:text-ink">
-              联系
-            </Link>
-          )}
+            <a
+              href={`mailto:${SITE_CONTACT.email}`}
+              aria-label="邮箱"
+              title="邮箱"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconMail className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </aside>
