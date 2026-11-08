@@ -139,7 +139,7 @@ export default function VersionNav({ onClose, scrollRef }) {
                   {version.label || version.date}
                 </span>
                 {current && (
-                  <span className="rounded-full bg-accent-soft px-1.5 py-0.5 text-[9px] text-ink-muted dark:bg-white/10">
+                  <span className="rounded-full bg-black/[0.05] px-1.5 py-0.5 text-[9px] text-ink-muted dark:bg-white/10">
                     当前
                   </span>
                 )}

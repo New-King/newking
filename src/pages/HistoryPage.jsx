@@ -25,7 +25,7 @@ function HistoryState({ children }) {
 }
 
 // 整页固定的版本信息：同一版本内不随每一屏重复，滚动时保持不动
-function VersionHeader({ version, page, isCurrent, device, setDevice }) {
+function VersionHeader({ version, page, device, setDevice }) {
   const shots = page?.screenshots || {};
   const hasDesktop = Boolean(shots.desktop);
   const hasMobile = Boolean(shots.mobile);
@@ -51,17 +51,17 @@ function VersionHeader({ version, page, isCurrent, device, setDevice }) {
 
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-ink lg:text-2xl">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <h1 className="shrink-0 text-[17px] font-semibold tracking-tight text-ink lg:text-[18px]">
                 {version.title}
               </h1>
-              {isCurrent && (
-                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-ink-muted dark:bg-white/10">
-                  当前
-                </span>
-              )}
             </div>
-            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+            {version.summary && (
+              <p className="mt-1 max-w-2xl text-[13px] leading-6 text-ink-soft">
+                {version.summary}
+              </p>
+            )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
               <span>{version.label || version.date}</span>
               <span aria-hidden="true">·</span>
               <span className="tabular-nums">{version.date}</span>
@@ -79,11 +79,6 @@ function VersionHeader({ version, page, isCurrent, device, setDevice }) {
                 </>
               )}
             </p>
-            {version.summary && (
-              <p className="mt-1.5 max-w-2xl text-[13px] leading-6 text-ink-soft">
-                {version.summary}
-              </p>
-            )}
           </div>
 
           <div className="inline-flex shrink-0 items-center self-start rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1]">
@@ -424,7 +419,6 @@ export default function HistoryPage() {
       <VersionHeader
         version={activeSection.version}
         page={activeSection.page}
-        isCurrent={activeSection.version.id === latest.id}
         device={device}
         setDevice={setDevice}
       />
