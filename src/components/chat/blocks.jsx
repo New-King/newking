@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { marked, Parser } from 'marked';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -6,7 +7,8 @@ import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
 import python from 'highlight.js/lib/languages/python';
 import xml from 'highlight.js/lib/languages/xml';
-import { IconArrowDown, IconCheck, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner, IconX } from '../icons';
+import { IconArrowDown, IconCheck, IconChevron, IconGlobe, IconLink, IconPause, IconPlay, IconSpinner, IconX } from '../icons';
+import { toInternalPath } from '../../utils/links';
 
 // 注册 highlight.js 语言（与 CodeBlock 一致）
 hljs.registerLanguage('javascript', javascript);
@@ -33,16 +35,28 @@ function highlightCode(text, lang) {
 /* ---------- 链接：小条样式（多条横排，放不下换行） ---------- */
 
 function LinkCard({ block }) {
-  return (
-    <a
-      href={block.url}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex max-w-full animate-fade-in-up items-center gap-1.5 rounded-full border border-black/[0.08] surface-chat px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-accent/40 hover:text-ink dark:border-white/[0.08]"
-    >
+  const to = toInternalPath(block.url);
+  const className =
+    'inline-flex max-w-full animate-fade-in-up items-center gap-1.5 rounded-full border border-black/[0.08] surface-chat px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-accent/40 hover:text-ink dark:border-white/[0.08]';
+  const content = (
+    <>
       <IconLink className="h-3 w-3 shrink-0 text-ink-faint" />
       <span className="truncate">{block.title || block.url}</span>
-      <span className="shrink-0 text-ink-faint">↗</span>
+      {!to && <span className="shrink-0 text-ink-faint">↗</span>}
+    </>
+  );
+
+  // 站内链接直接用 SPA 跳转，保留对话浮层
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <a href={block.url} target="_blank" rel="noreferrer" className={className}>
+      {content}
     </a>
   );
 }
@@ -135,19 +149,38 @@ function ToolCallCard({ block }) {
       {/* 展开的相关文章列表 */}
       {expandable && open && (
         <div className="mt-1 space-y-0.5 rounded-2xl border border-black/[0.06] surface-chat px-3 py-2 dark:border-white/[0.06]">
-          {related.map((r) => (
-            <a
-              key={r.url}
-              href={r.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-xs text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10"
-            >
-              <IconGlobe className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
-              <span className="min-w-0 flex-1 truncate">{r.title}</span>
-              <span className="text-ink-muted">↗</span>
-            </a>
-          ))}
+          {related.map((r) => {
+            const to = toInternalPath(r.url);
+            const className =
+              'flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-xs text-ink-soft transition-colors hover:bg-neutral-100 hover:text-ink dark:hover:bg-white/10';
+            const content = (
+              <>
+                {to ? (
+                  <IconChevron className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                ) : (
+                  <IconGlobe className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                {!to && <span className="text-ink-muted">↗</span>}
+              </>
+            );
+
+            return to ? (
+              <Link key={r.url} to={to} className={className}>
+                {content}
+              </Link>
+            ) : (
+              <a
+                key={r.url}
+                href={r.url}
+                target="_blank"
+                rel="noreferrer"
+                className={className}
+              >
+                {content}
+              </a>
+            );
+          })}
         </div>
       )}
     </div>
@@ -172,14 +205,18 @@ function TextSkeleton() {
 // 渲染对话文本：markdown（**加粗**、`代码`、[链接]、裸URL）用 marked 解析，
 // 链接/图片直接渲染，不再用 [N] 引用标注（模型已会直接输出真实链接）。
 function renderMarkdownWithRefs(text) {
-  // 自定义 renderer：给所有链接加"新标签页打开 + ↗ 图标"；代码块加高亮 + 复制按钮
+  // 自定义 renderer：站内链接用 SPA 路径（不新开页面），站外链接新标签页 + ↗ 图标；代码块加高亮 + 复制按钮
   const renderer = new marked.Renderer();
   renderer.link = (token) => {
     const href = token.href || '';
-    const title = token.title ? ` title="${token.title}"` : '';
+    const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
     const parser = new Parser({ renderer });
-    const content = token.tokens ? parser.parseInline(token.tokens) : (token.text || '');
-    return `<a href="${href}" target="_blank" rel="noreferrer"${title} class="article-link">↗ ${content}</a>`;
+    const content = token.tokens ? parser.parseInline(token.tokens) : escapeHtml(token.text || '');
+    const to = toInternalPath(href);
+    if (to) {
+      return `<a href="${escapeHtml(to)}"${title} class="article-link">${content}</a>`;
+    }
+    return `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer"${title} class="article-link">↗ ${content}</a>`;
   };
   renderer.code = (token) => {
     const lang = token.lang || '';
@@ -200,6 +237,7 @@ function renderMarkdownWithRefs(text) {
 }
 
 function TextBlock({ block, related }) {
+  const navigate = useNavigate();
   if (block.status === 'loading') return <TextSkeleton />;
   if (block.status === 'streaming') {
     // 真流式：后端增量追加到 content，这里直接渲染 + 闪烁光标（不再重新打字）
@@ -210,8 +248,19 @@ function TextBlock({ block, related }) {
       </div>
     );
   }
-  // 处理 markdown 代码块里的"复制"按钮点击（dangerouslySetInnerHTML 里的按钮用事件委托捕获）
+  // 处理 markdown 内的点击：站内链接走 SPA（保留对话浮层），代码块复制按钮走剪贴板
   const handleContainerClick = async (e) => {
+    const link = e.target.closest?.('a[href]');
+    if (link) {
+      // 普通左键才拦截；Cmd/Ctrl/Shift 点击仍交给浏览器（可主动新开标签）
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const to = toInternalPath(link.getAttribute('href'));
+      if (!to) return;
+      e.preventDefault();
+      navigate(to);
+      return;
+    }
+
     const btn = e.target.closest?.('.chat-codeblock-copy');
     if (!btn) return;
     try {

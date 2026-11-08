@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContent } from '../../hooks/useContent';
+import { sortNotes } from '../../utils/contentOrder';
 import { IconChevron, IconHistory, IconMail, IconX } from '../icons';
 import VersionNav from './VersionNav';
+
+const EMPTY = [];
+// 每个分类默认最多展示的条目数；更多内容进分类列表页
+const SECTION_LIMIT = 5;
 
 // 左侧目录：内容类型 → 条目（像编辑器的文件树），点击直接进内容
 export default function Sidebar({ mobileOpen = false, onClose }) {
@@ -44,10 +49,11 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const posts = data?.posts ?? [];
-  const notes = data?.notes ?? [];
-  const projects = data?.projects ?? [];
+  const posts = data?.posts ?? EMPTY;
+  const notes = data?.notes ?? EMPTY;
+  const projects = data?.projects ?? EMPTY;
   const contact = data?.contact;
+  const navNotes = useMemo(() => sortNotes(notes), [notes]);
 
   const q = query.trim().toLowerCase();
   const matches = (text) => !q || String(text || '').toLowerCase().includes(q);
@@ -69,12 +75,32 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           to: item.to || `${to}/${item.id}`,
         }));
       if (q && !sectionMatched && items.length === 0) return null;
-      return { key, label, to, total: list.length, items };
+
+      // 非搜索状态：每类只显示前 SECTION_LIMIT 条；
+      // 当前文章若排在后面，单独固定在顶部，保证定位可见
+      const visibleItems = q ? items : items.slice(0, SECTION_LIMIT);
+      const activeItem = q
+        ? null
+        : items.find(
+            (item) => item.to === pathname && !visibleItems.includes(item)
+          ) || null;
+      const hasMore = !q && items.length > SECTION_LIMIT;
+
+      return {
+        key,
+        label,
+        to,
+        total: list.length,
+        items,
+        visibleItems,
+        activeItem,
+        hasMore,
+      };
     };
 
     const writing = [
       buildSection('posts', '博客', '/blog', posts),
-      buildSection('notes', '笔记', '/notes', notes),
+      buildSection('notes', '笔记', '/notes', navNotes),
     ].filter(Boolean);
 
     const work = [buildSection('projects', '项目', '/projects', projects)].filter(Boolean);
@@ -85,7 +111,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
       ...(writing.length ? [{ key: 'writing', label: '写作', children: writing }] : []),
       ...(work.length ? [{ key: 'work', label: '作品', children: work }] : []),
     ];
-  }, [posts, notes, projects, q]); // matches 依赖 q，函数本身无需进依赖
+  }, [posts, navNotes, projects, q, pathname]); // matches 依赖 q，函数本身无需进依赖
 
   const goBack = () => {
     onClose?.();
@@ -99,6 +125,73 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     group.children?.some((child) =>
       child.items ? isSectionActive(child.to) : pathname === child.to
     );
+
+  // 路由变化（含聊天里点链接）时，自动展开当前文章所在的分组和分类。
+  // 只动这两层，不覆盖用户对其他分组的收起；搜索时由 isOpen 强制全开。
+  useEffect(() => {
+    if (historyMode || q) return;
+    const group = groups.find((g) => isGroupActive(g));
+    if (!group) return;
+    const keys = [
+      group.key,
+      ...(group.children ?? [])
+        .filter((child) =>
+          child.items ? isSectionActive(child.to) : pathname === child.to
+        )
+        .map((child) => child.key),
+    ];
+    setClosed((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const key of keys) {
+        if (next[key]) {
+          next[key] = false;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [pathname, groups, historyMode, q]);
+
+  // 把当前项滚到侧栏可视区；已经可见就不动，避免打断用户滚动。
+  // 用容器 scrollTo 而不是 scrollIntoView，避免和页面 ScrollToTop 抢窗口滚动。
+  useEffect(() => {
+    if (historyMode || q) return undefined;
+    const nav = historyNavRef.current;
+    if (!nav) return undefined;
+    const raf = window.requestAnimationFrame(() => {
+      const el = nav.querySelector('[data-nav-item][aria-current="page"]');
+      if (!el) return;
+      const navRect = nav.getBoundingClientRect();
+      const itemRect = el.getBoundingClientRect();
+      const pad = 12;
+      if (itemRect.top >= navRect.top + pad && itemRect.bottom <= navRect.bottom - pad) return;
+      const top =
+        nav.scrollTop + itemRect.top - navRect.top - nav.clientHeight / 2 + itemRect.height / 2;
+      nav.scrollTo({ top, behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [pathname, groups, closed, historyMode, q]);
+
+  const renderNavItem = (item) => {
+    const active = pathname === item.to;
+    return (
+      <Link
+        to={item.to}
+        onClick={onClose}
+        aria-current={active ? 'page' : undefined}
+        data-nav-item=""
+        className={`block truncate rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 transition-colors duration-200 ${
+          active
+            ? 'bg-black/[0.06] text-ink dark:bg-white/10'
+            : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+        }`}
+        title={item.label}
+      >
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <aside
@@ -190,6 +283,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           to="/"
           onClick={onClose}
           aria-current={pathname === '/' ? 'page' : undefined}
+          data-nav-item=""
           className={`block rounded-lg px-2 py-1 text-[13px] transition-colors duration-200 ${
             pathname === '/'
               ? 'bg-black/[0.06] font-medium text-ink dark:bg-white/10'
@@ -248,6 +342,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
                           to={child.to}
                           onClick={onClose}
                           aria-current={pathname === child.to ? 'page' : undefined}
+                          data-nav-item=""
                           className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
                             isSectionActive(child.to)
                               ? 'font-medium text-ink'
@@ -276,28 +371,33 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
 
                       {isOpen(child.key) && (
                         <ul className="ml-[13px] mt-0.5 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
-                          {child.items.map((item) => {
-                            const active = pathname === item.to;
-                            return (
-                              <li key={item.key}>
-                                <Link
-                                  to={item.to}
-                                  onClick={onClose}
-                                  aria-current={active ? 'page' : undefined}
-                                  className={`block truncate rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 transition-colors duration-200 ${
-                                    active
-                                      ? 'bg-black/[0.06] text-ink dark:bg-white/10'
-                                      : 'text-ink-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
-                                  }`}
-                                  title={item.label}
-                                >
-                                  {item.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
+                          {/* 当前文章被截断在显示上限之外时，固定在顶部 */}
+                          {child.activeItem && (
+                            <>
+                              <li>{renderNavItem(child.activeItem)}</li>
+                              <li
+                                aria-hidden="true"
+                                className="my-1 border-t border-black/[0.06] dark:border-white/[0.08]"
+                              />
+                            </>
+                          )}
+                          {child.visibleItems.map((item) => (
+                            <li key={item.key}>{renderNavItem(item)}</li>
+                          ))}
                           {child.items.length === 0 && (
                             <li className="px-2 py-1 text-[11px] text-ink-faint">暂无内容</li>
+                          )}
+                          {child.hasMore && (
+                            <li>
+                              <Link
+                                to={child.to}
+                                onClick={onClose}
+                                className="flex items-center justify-between rounded-md py-1 pl-2 pr-2 text-[12.5px] leading-5 text-ink-faint transition-colors duration-200 hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
+                              >
+                                <span>更多</span>
+                                <IconChevron className="h-3 w-3" />
+                              </Link>
+                            </li>
                           )}
                         </ul>
                       )}
@@ -308,6 +408,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
                       to={child.to}
                       onClick={onClose}
                       aria-current={pathname === child.to ? 'page' : undefined}
+                      data-nav-item=""
                       className={`block rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
                         pathname === child.to
                           ? 'bg-black/[0.06] font-medium text-ink dark:bg-white/10'
