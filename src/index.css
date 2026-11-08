@@ -53,6 +53,9 @@
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* 视口过窄时保持版式：到 320px 停止压缩，多出的部分横向裁剪/滚动，
+       避免文字逐字换行、卡片被挤成细条 */
+    min-width: 320px;
   }
   body {
     @apply text-ink;

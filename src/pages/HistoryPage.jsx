@@ -35,17 +35,22 @@ function PageSlide({ version, page, pages, pageIndex, device, onOpen }) {
     <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
       {/* 当前页面信息：每屏滚动时的主要视觉变化 */}
       <div className="shrink-0">
-        <div className="flex min-h-[35px] flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-h-[35px] flex-wrap items-center justify-between gap-x-3 gap-y-2 pr-28 sm:pr-0">
           <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
             <span>Page</span>
             <span aria-hidden="true" className="h-px w-5 bg-black/[0.12] dark:bg-white/[0.16]" />
             <span className="tabular-nums tracking-[0.12em]">
               {pageIndex + 1} / {pages.length}
             </span>
-            <span aria-hidden="true" className="text-black/20 dark:text-white/20">
+            <span
+              aria-hidden="true"
+              className="hidden text-black/20 min-[360px]:inline dark:text-white/20"
+            >
               ·
             </span>
-            <span className="tracking-[0.12em]">{version.label || version.date}</span>
+            <span className="hidden tracking-[0.12em] min-[360px]:inline">
+              {version.label || version.date}
+            </span>
           </p>
         </div>
 
@@ -64,7 +69,8 @@ function PageSlide({ version, page, pages, pageIndex, device, onOpen }) {
         </div>
       </div>
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
+      {/* 高度不足时停止压缩，裁掉溢出部分，避免截图卡片被压扁 */}
+      <div className="mt-4 flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
         <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
@@ -383,7 +389,7 @@ export default function HistoryPage() {
           <section
             key={id}
             id={id}
-            className="h-full snap-start"
+            className="h-full snap-start overflow-hidden"
           >
             <PageSlide
               version={version}
