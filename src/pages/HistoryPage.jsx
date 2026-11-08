@@ -24,109 +24,134 @@ function HistoryState({ children }) {
   );
 }
 
-function PageSlide({
-  version,
-  page,
-  pages,
-  pageIndex,
-  isCurrent,
-  device,
-  setDevice,
-  onOpen,
-}) {
-  const shots = page.screenshots || {};
+// 整页固定的版本信息：同一版本内不随每一屏重复，滚动时保持不动
+function VersionHeader({ version, page, isCurrent, device, setDevice }) {
+  const shots = page?.screenshots || {};
   const hasDesktop = Boolean(shots.desktop);
   const hasMobile = Boolean(shots.mobile);
   const effectiveDevice = shots[device] ? device : hasDesktop ? 'desktop' : 'mobile';
-  const src = shots[effectiveDevice];
   const commitUrl = version.commit
     ? `https://github.com/New-King/newking/commit/${version.commit}`
     : null;
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-0 pt-8 sm:px-8 lg:px-12 lg:pb-8 lg:pt-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
-          Version History
-        </p>
-        <Link
-          to="/"
-          className="text-[12px] text-ink-muted transition-colors hover:text-ink"
-        >
-          ← 返回当前站点
-        </Link>
-      </div>
+    <div className="shrink-0 border-b border-black/[0.06] dark:border-white/[0.08]">
+      <div className="mx-auto w-full max-w-5xl px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
+            Version History
+          </p>
+          <Link
+            to="/"
+            className="text-[12px] text-ink-muted transition-colors hover:text-ink"
+          >
+            ← 返回当前站点
+          </Link>
+        </div>
 
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-ink">{version.title}</h1>
-            {isCurrent && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-ink-muted dark:bg-white/10">
-                当前
-              </span>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-ink lg:text-2xl">
+                {version.title}
+              </h1>
+              {isCurrent && (
+                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-ink-muted dark:bg-white/10">
+                  当前
+                </span>
+              )}
+            </div>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+              <span>{version.label || version.date}</span>
+              <span aria-hidden="true">·</span>
+              <span className="tabular-nums">{version.date}</span>
+              {version.commit && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href={commitUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-ink-muted underline decoration-black/10 underline-offset-2 transition-colors hover:text-ink dark:decoration-white/15"
+                  >
+                    {version.commit}
+                  </a>
+                </>
+              )}
+            </p>
+            {version.summary && (
+              <p className="mt-1.5 max-w-2xl text-[13px] leading-6 text-ink-soft">
+                {version.summary}
+              </p>
             )}
           </div>
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
-            <span>{version.label || version.date}</span>
-            <span aria-hidden="true">·</span>
-            <span className="tabular-nums">{version.date}</span>
-            {version.commit && (
-              <>
-                <span aria-hidden="true">·</span>
-                <a
-                  href={commitUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono text-ink-muted underline decoration-black/10 underline-offset-2 transition-colors hover:text-ink dark:decoration-white/15"
+
+          <div className="inline-flex shrink-0 items-center self-start rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1]">
+            {DEVICES.map((item) => {
+              const available = Boolean(shots[item.key]);
+              const active = effectiveDevice === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setDevice(item.key)}
+                  disabled={!available}
+                  aria-pressed={active}
+                  className={`rounded-full px-3 py-1.5 text-[11px] transition-colors duration-200 ${
+                    active
+                      ? 'bg-accent text-white'
+                      : 'text-ink-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-30'
+                  }`}
                 >
-                  {version.commit}
-                </a>
-              </>
-            )}
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageSlide({ version, page, pages, pageIndex, device, onOpen }) {
+  const shots = page.screenshots || {};
+  const hasDesktop = Boolean(shots.desktop);
+  const hasMobile = Boolean(shots.mobile);
+  const effectiveDevice = shots[device] ? device : hasDesktop ? 'desktop' : 'mobile';
+  const src = shots[effectiveDevice];
+
+  return (
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
+      {/* 当前页面信息：每屏滚动时的主要视觉变化 */}
+      <div className="shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
+            <span>Page</span>
+            <span aria-hidden="true" className="h-px w-5 bg-black/[0.12] dark:bg-white/[0.16]" />
+            <span className="tabular-nums tracking-[0.12em]">
+              {pageIndex + 1} / {pages.length}
+            </span>
           </p>
-          {version.summary && (
-            <p className="mt-3 max-w-2xl text-[14px] leading-7 text-ink-soft">{version.summary}</p>
-          )}
+          <p className="text-[11px] text-ink-faint">
+            {!hasDesktop && !hasMobile
+              ? '该版本没有截图。'
+              : !hasDesktop || !hasMobile
+                ? `该版本只提供了${hasDesktop ? '桌面' : '手机'}截图。`
+                : null}
+          </p>
         </div>
 
-        <div className="inline-flex shrink-0 items-center self-start rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1] sm:self-auto">
-          {DEVICES.map((item) => {
-            const available = Boolean(shots[item.key]);
-            const active = effectiveDevice === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setDevice(item.key)}
-                disabled={!available}
-                aria-pressed={active}
-                className={`rounded-full px-3 py-1.5 text-[11px] transition-colors duration-200 ${
-                  active
-                    ? 'bg-accent text-white'
-                    : 'text-ink-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-30'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+        <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-[26px] font-bold leading-tight tracking-tight text-ink lg:text-[30px]">
+            {page.label}
+          </h2>
+          {page.note && <span className="text-[13px] text-ink-muted">{page.note}</span>}
         </div>
       </div>
 
-      <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.08] pb-3 dark:border-white/[0.08]">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-ink-faint">Page</span>
-          <span className="truncate text-[13px] font-medium text-ink">{page.label}</span>
-          {page.note && <span className="truncate text-[11px] text-ink-faint">· {page.note}</span>}
-          <span className="shrink-0 text-[11px] tabular-nums text-ink-faint">
-            {pageIndex + 1} / {pages.length}
-          </span>
-        </div>
-      </div>
-
-      <div className="mx-auto mt-5 w-full max-w-[760px] overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
-        <div className="flex h-10 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-card shadow-apple-lg dark:border-white/[0.08]">
+        <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-black/[0.06] px-4 dark:border-white/[0.08]">
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
           <span className="h-2 w-2 rounded-full bg-black/10 dark:bg-white/15" />
@@ -145,51 +170,43 @@ function PageSlide({
               onClick={onOpen}
               title="放大查看"
               aria-label={`放大查看：${version.title} · ${page.label} · 桌面端`}
-              className="block w-full cursor-zoom-in bg-page"
+              className="flex min-h-0 flex-1 cursor-zoom-in items-center justify-center overflow-hidden bg-page"
             >
               <img
                 src={src}
                 alt={`${version.title} · ${page.label} · 桌面端截图`}
-                className="mx-auto block h-auto max-h-[calc(100dvh-420px)] w-auto max-w-full"
+                className="mx-auto block h-auto w-auto max-h-full max-w-full"
               />
             </button>
           ) : (
-            <div className="flex h-[320px] items-center justify-center bg-page px-6 text-center text-sm text-ink-faint">
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-page px-6 text-center text-sm text-ink-faint">
               该版本没有桌面截图
             </div>
           )
         ) : (
-          <div className="flex justify-center bg-page px-5 py-6">
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-page px-5 py-4">
             {src ? (
               <button
                 type="button"
                 onClick={onOpen}
                 title="放大查看"
                 aria-label={`放大查看：${version.title} · ${page.label} · 手机端`}
-                className="block w-auto max-w-full cursor-zoom-in"
+                className="flex h-full w-full cursor-zoom-in items-center justify-center"
               >
                 <img
                   src={src}
                   alt={`${version.title} · ${page.label} · 手机端截图`}
-                  className="mx-auto h-auto max-h-[calc(100dvh-526px)] w-auto max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
+                  className="mx-auto block h-auto w-auto max-h-full max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
                 />
               </button>
             ) : (
-              <div className="flex h-[420px] w-[300px] items-center justify-center text-center text-sm text-ink-faint">
+              <div className="flex h-full w-full items-center justify-center text-center text-sm text-ink-faint">
                 该版本没有手机截图
               </div>
             )}
           </div>
         )}
       </div>
-
-      {!hasDesktop && !hasMobile ? (
-        <p className="mt-2 text-[11px] text-ink-faint">该版本没有截图。</p>
-      ) : !hasDesktop || !hasMobile ? (
-        <p className="mt-2 text-[11px] text-ink-faint">
-          该版本只提供了{hasDesktop ? '桌面' : '手机'}截图。
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -200,7 +217,7 @@ export default function HistoryPage() {
   const versionId = match?.[1];
   const pageId = match?.[2];
   const { versions, loading, error } = useVersions();
-  const { setActiveId } = useHistoryScroll();
+  const { activeId, setActiveId } = useHistoryScroll();
   const scrollRef = useRef(null);
   const targetIndexRef = useRef(0);
   const activeTimer = useRef(null);
@@ -389,6 +406,10 @@ export default function HistoryPage() {
     ? `https://github.com/New-King/newking/commit/${latest.commit}`
     : null;
 
+  // 顶部固定区跟随当前所在版本（滚到下一版本时自动切换）
+  const activeSection =
+    (activeId && sections.find((section) => section.id === activeId)) || sections[0];
+
   const selected = lightboxIndex !== null ? sections[lightboxIndex] : null;
   const selectedShots = selected?.page.screenshots || {};
   const selectedDevice = selectedShots[device]
@@ -400,6 +421,14 @@ export default function HistoryPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
+      <VersionHeader
+        version={activeSection.version}
+        page={activeSection.page}
+        isCurrent={activeSection.version.id === latest.id}
+        device={device}
+        setDevice={setDevice}
+      />
+
       <div
         ref={scrollRef}
         onScroll={onScroll}
@@ -416,9 +445,7 @@ export default function HistoryPage() {
               page={page}
               pages={version.pages}
               pageIndex={pageIndex}
-              isCurrent={version.id === latest.id}
               device={device}
-              setDevice={setDevice}
               onOpen={() => setLightboxIndex(index)}
             />
           </section>
