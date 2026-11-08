@@ -24,7 +24,7 @@ function HistoryState({ children }) {
   );
 }
 
-function PageSlide({ version, page, pages, pageIndex, device, setDevice, onOpen }) {
+function PageSlide({ version, page, pages, pageIndex, device, onOpen }) {
   const shots = page.screenshots || {};
   const hasDesktop = Boolean(shots.desktop);
   const hasMobile = Boolean(shots.mobile);
@@ -35,37 +35,18 @@ function PageSlide({ version, page, pages, pageIndex, device, setDevice, onOpen 
     <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
       {/* 当前页面信息：每屏滚动时的主要视觉变化 */}
       <div className="shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-h-[35px] flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
             <span>Page</span>
             <span aria-hidden="true" className="h-px w-5 bg-black/[0.12] dark:bg-white/[0.16]" />
             <span className="tabular-nums tracking-[0.12em]">
               {pageIndex + 1} / {pages.length}
             </span>
+            <span aria-hidden="true" className="text-black/20 dark:text-white/20">
+              ·
+            </span>
+            <span className="tracking-[0.12em]">{version.label || version.date}</span>
           </p>
-
-          <div className="inline-flex shrink-0 items-center rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1]">
-            {DEVICES.map((item) => {
-              const available = Boolean(shots[item.key]);
-              const active = effectiveDevice === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setDevice(item.key)}
-                  disabled={!available}
-                  aria-pressed={active}
-                  className={`rounded-full px-3 py-1 text-[10px] transition-colors duration-200 ${
-                    active
-                      ? 'bg-accent text-white'
-                      : 'text-ink-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-30'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -108,6 +89,7 @@ function PageSlide({ version, page, pages, pageIndex, device, setDevice, onOpen 
               <img
                 src={src}
                 alt={`${version.title} · ${page.label} · 桌面端截图`}
+                decoding="async"
                 className="mx-auto block h-auto w-auto max-h-full max-w-full"
               />
             </button>
@@ -129,6 +111,7 @@ function PageSlide({ version, page, pages, pageIndex, device, setDevice, onOpen 
                 <img
                   src={src}
                   alt={`${version.title} · ${page.label} · 手机端截图`}
+                  decoding="async"
                   className="mx-auto block h-auto w-auto max-h-full max-w-[300px] rounded-[26px] border border-black/10 shadow-apple-lg dark:border-white/10"
                 />
               </button>
@@ -150,7 +133,7 @@ export default function HistoryPage() {
   const versionId = match?.[1];
   const pageId = match?.[2];
   const { versions, loading, error } = useVersions();
-  const { setActiveId } = useHistoryScroll();
+  const { activeId, setActiveId } = useHistoryScroll();
   const scrollRef = useRef(null);
   const targetIndexRef = useRef(0);
   const activeTimer = useRef(null);
@@ -339,6 +322,18 @@ export default function HistoryPage() {
     ? `https://github.com/New-King/newking/commit/${latest.commit}`
     : null;
 
+  // 右上角固定的设备切换：可用性跟随当前所在页面
+  const activeSection =
+    (activeId && sections.find((section) => section.id === activeId)) || sections[0];
+  const activeShots = activeSection.page.screenshots || {};
+  const activeHasDesktop = Boolean(activeShots.desktop);
+  const activeHasMobile = Boolean(activeShots.mobile);
+  const activeDevice = activeShots[device]
+    ? device
+    : activeHasDesktop
+      ? 'desktop'
+      : 'mobile';
+
   const selected = lightboxIndex !== null ? sections[lightboxIndex] : null;
   const selectedShots = selected?.page.screenshots || {};
   const selectedDevice = selectedShots[device]
@@ -349,7 +344,36 @@ export default function HistoryPage() {
   const selectedSrc = selected ? selectedShots[selectedDevice] : undefined;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
+    <div className="relative flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
+      <h1 className="sr-only">历史版本</h1>
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10">
+        <div className="mx-auto flex w-full max-w-5xl justify-end px-6 pt-6 sm:px-8 lg:px-12 lg:pt-7">
+          <div className="inline-flex shrink-0 items-center rounded-full border border-black/[0.08] bg-card p-0.5 shadow-apple dark:border-white/[0.1]">
+            {DEVICES.map((item) => {
+              const available = Boolean(activeShots[item.key]);
+              const active = activeDevice === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setDevice(item.key)}
+                  disabled={!available}
+                  aria-pressed={active}
+                  className={`pointer-events-auto rounded-full px-3 py-1.5 text-[11px] transition-colors duration-200 ${
+                    active
+                      ? 'bg-accent text-white'
+                      : 'text-ink-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-30'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <div
         ref={scrollRef}
         onScroll={onScroll}
@@ -367,7 +391,6 @@ export default function HistoryPage() {
               pages={version.pages}
               pageIndex={pageIndex}
               device={device}
-              setDevice={setDevice}
               onOpen={() => setLightboxIndex(index)}
             />
           </section>
@@ -375,7 +398,7 @@ export default function HistoryPage() {
       </div>
 
       <div className="shrink-0 px-6 sm:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-[760px] flex-wrap items-center justify-between gap-3 border-t border-black/[0.08] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-[11px] leading-5 text-ink-faint dark:border-white/[0.08] lg:h-12 lg:flex-nowrap lg:py-0">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 border-t border-black/[0.08] pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-[11px] leading-5 text-ink-faint dark:border-white/[0.08] lg:h-12 lg:flex-nowrap lg:py-0">
           <p className="min-w-0">新故相推，日生不滞。</p>
           <div className="flex shrink-0 items-center gap-4">
             {latestCommitUrl && (
