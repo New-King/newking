@@ -67,8 +67,9 @@ export default function CanvasScene({ active = true }) {
   };
 
   // 灰阶图片占位（无状态，由父级条件渲染控制出现时机；暗色下用白叠加保证可见）
-  const tile = (size, label = null, extra = null) => (
+  const tile = (size, label = null, extra = null, key = undefined) => (
     <div
+      key={key}
       className={`relative shrink-0 rounded-[4px] border border-black/[0.08] bg-gradient-to-br from-black/[0.03] to-black/[0.07] dark:border-white/20 dark:from-white/[0.08] dark:to-white/[0.14] ${size}`}
     >
       {label && (
@@ -100,7 +101,7 @@ export default function CanvasScene({ active = true }) {
           {/* 3 张视觉参考图（设定图加载完成，画布同时出现） */}
           {block(phase >= 5, 0, (
             <div className="flex w-2/3 gap-2">
-              {[1, 2, 3].map((n) => tile('aspect-[4/3] flex-1', String(n).padStart(2, '0')))}
+              {[1, 2, 3].map((n) => tile('aspect-[4/3] flex-1', String(n).padStart(2, '0'), null, n))}
             </div>
           ))}
           {/* 3 个分镜图骨架（与对话区同步出现，横排） */}
@@ -162,7 +163,7 @@ export default function CanvasScene({ active = true }) {
           {/* 灵感九宫格：靠左紧凑排列 */}
           {block(phase >= 2, 300, (
             <div className="grid w-fit grid-cols-3 gap-1">
-              {Array.from({ length: 9 }, (_, i) => tile('h-8 w-8'))}
+              {Array.from({ length: 9 }, (_, i) => tile('h-8 w-8', null, null, i))}
             </div>
           ))}
           {msg('ai', phase >= 3, '我找到了一些关于 xxx 的图片', 200)}

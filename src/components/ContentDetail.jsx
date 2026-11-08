@@ -9,6 +9,8 @@ import bash from 'highlight.js/lib/languages/bash';
 import xml from 'highlight.js/lib/languages/xml';
 import { formatDate } from '../data/mockData';
 import { useContent } from '../hooks/useContent';
+import { useChatDock } from './chat/ChatDockContext';
+import { IconSparkle } from './icons';
 import PageShell from './PageShell';
 
 hljs.registerLanguage('python', python);
@@ -58,7 +60,8 @@ const LIST_ROUTE = { posts: '/blog', notes: '/notes', projects: '/projects' };
 export default function ContentDetail({ type }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, loading } = useContent();
+  const { data, loading, error } = useContent();
+  const { openChat } = useChatDock();
   const list = data?.[type] ?? [];
   const bodyRef = useRef(null);
 
@@ -103,20 +106,36 @@ export default function ContentDetail({ type }) {
     <PageShell
       eyebrow={EYEBROW[type]}
       headerRight={
-        <button
-          type="button"
-          onClick={() => {
-            if (window.history.length > 1) navigate(-1);
-            else navigate(LIST_ROUTE[type] || '/');
-          }}
-          className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
-        >
-          ← 返回列表
-        </button>
+        <div className="flex items-center gap-4">
+          {item && (
+            <button
+              type="button"
+              onClick={() =>
+                openChat(`请总结《${item.title}》这篇文章的核心内容，并列出 3 个要点。`)
+              }
+              className="inline-flex cursor-pointer items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              <IconSparkle className="h-3.5 w-3.5" />
+              AI 摘要
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) navigate(-1);
+              else navigate(LIST_ROUTE[type] || '/');
+            }}
+            className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
+          >
+            ← 返回列表
+          </button>
+        </div>
       }
     >
       {loading ? (
         <p className="py-8 text-sm text-ink-faint">加载中…</p>
+      ) : error ? (
+        <p className="py-8 text-sm text-ink-faint">内容加载失败，请确认后端服务已启动。</p>
       ) : !item ? (
         <div className="py-8">
           <p className="text-sm text-ink-faint">未找到该文章。</p>
