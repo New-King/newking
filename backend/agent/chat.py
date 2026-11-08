@@ -49,8 +49,8 @@ def _build_system_prompt():
    不要为了"查全"一次调用同一个工具多次——一次调用就够，关键词用英文逗号,分隔放在一个 keyword/query 里。
 2. 需要了解网站内容来回答时用工具，不要凭记忆编造网站没有的内容。但访客只是闲聊、问代码、问算法等与网站无关的问题时，不要调用工具，直接回答。
 3. 口语化、自然，像一个真实的人在聊天，不要用"作为AI模型""我是一个AI"这类口吻，直接以"我"自称。
-4. 谈到博客/笔记/项目时，自然地提到它们的标题和要点，显得了解自己的内容。
-5. 当你提到某一篇具体的文章/博客/笔记/项目时，**主动附上它的真实链接**（用 markdown 链接 [标题](url) 或裸 URL），不要等访客主动要。
+4. 谈到博客/笔记/作品时，自然地提到它们的标题和要点，显得了解自己的内容。
+5. 当你提到某一篇具体的文章/博客/笔记/作品时，**主动附上它的真实链接**（用 markdown 链接 [标题](url) 或裸 URL），不要等访客主动要。
    链接必须来自查询/检索结果里的真实 url，**严禁编造、臆造不存在的文章或假链接**（如 example.com）。
    不要在回复里一次性罗列一大堆链接；只在谈到某篇时附上那一篇的链接即可。
 6. 访客没提知识库/网站内容时，正常聊天即可，不必每次都提网站。
@@ -110,7 +110,7 @@ def _format_tool_result(context):
         title = md.get("title", "未命名")
         url = md.get("url", "")
         doc_id = md.get("doc_id", "")
-        type_name = {"posts": "博客", "notes": "笔记", "projects": "项目"}.get(doc_id.split("/")[0], "文章")
+        type_name = {"posts": "博客", "notes": "笔记", "projects": "作品"}.get(doc_id.split("/")[0], "文章")
         line = f"来源：《{title}》{type_name}"
         if url:
             line += f" {url}"
@@ -177,11 +177,11 @@ def _query_articles_result(args):
     type_map = {"blog": "posts", "note": "notes", "project": "projects", "all": None}
     sections = []
     if atype == "all":
-        sections = [("博客", data.get("posts") or []), ("笔记", data.get("notes") or []), ("项目", data.get("projects") or [])]
+        sections = [("博客", data.get("posts") or []), ("笔记", data.get("notes") or []), ("作品", data.get("projects") or [])]
     else:
         key = type_map.get(atype)
         if key:
-            label = {"posts": "博客", "notes": "笔记", "projects": "项目"}[key]
+            label = {"posts": "博客", "notes": "笔记", "projects": "作品"}[key]
             sections = [(label, data.get(key) or [])]
 
     results = []
@@ -230,7 +230,7 @@ def _query_articles_result(args):
 # 执行逻辑仍在 _stream_generator 里（需 SSE 卡片、context 结构化数据），此处仅声明模型可见的接口。
 @tool
 def search_knowledge(query: str) -> str:
-    """检索网站的知识库（博客/笔记/项目内容），返回与问题最相关的内容块。
+    """检索网站的知识库（博客/笔记/作品内容），返回与问题最相关的内容块。
     当问题涉及网站内容、或需要确认网站是否写过相关内容时调用。
 
     Args:
@@ -246,8 +246,8 @@ def query_articles(
     limit: int = 10,
     sort: Literal["date_desc", "date_asc"] = "date_desc",
 ) -> str:
-    """查询网站的文章清单（博客/笔记/项目），按条件筛选。
-    适合：有哪些文章/博客/笔记/项目、最近（最新）写了什么、有没有写过xxx、按类型筛选。
+    """查询网站的文章清单（博客/笔记/作品），按条件筛选。
+    适合：有哪些文章/博客/笔记/作品、最近（最新）写了什么、有没有写过xxx、按类型筛选。
     返回匹配文章的标题、日期、链接。
 
     Args:
