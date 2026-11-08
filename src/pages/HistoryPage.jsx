@@ -24,64 +24,27 @@ function HistoryState({ children }) {
   );
 }
 
-// 整页固定的版本信息：同一版本内不随每一屏重复，滚动时保持不动
-function VersionHeader({ version, page, device, setDevice }) {
-  const shots = page?.screenshots || {};
+function PageSlide({ version, page, pages, pageIndex, device, setDevice, onOpen }) {
+  const shots = page.screenshots || {};
   const hasDesktop = Boolean(shots.desktop);
   const hasMobile = Boolean(shots.mobile);
   const effectiveDevice = shots[device] ? device : hasDesktop ? 'desktop' : 'mobile';
-  const commitUrl = version.commit
-    ? `https://github.com/New-King/newking/commit/${version.commit}`
-    : null;
+  const src = shots[effectiveDevice];
 
   return (
-    <div className="shrink-0 border-b border-black/[0.06] dark:border-white/[0.08]">
-      <div className="mx-auto w-full max-w-5xl px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
-            Version History
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
+      {/* 当前页面信息：每屏滚动时的主要视觉变化 */}
+      <div className="shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
+            <span>Page</span>
+            <span aria-hidden="true" className="h-px w-5 bg-black/[0.12] dark:bg-white/[0.16]" />
+            <span className="tabular-nums tracking-[0.12em]">
+              {pageIndex + 1} / {pages.length}
+            </span>
           </p>
-          <Link
-            to="/"
-            className="text-[12px] text-ink-muted transition-colors hover:text-ink"
-          >
-            ← 返回当前站点
-          </Link>
-        </div>
 
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <h1 className="shrink-0 text-[17px] font-semibold tracking-tight text-ink lg:text-[18px]">
-                {version.title}
-              </h1>
-            </div>
-            {version.summary && (
-              <p className="mt-1 max-w-2xl text-[13px] leading-6 text-ink-soft">
-                {version.summary}
-              </p>
-            )}
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
-              <span>{version.label || version.date}</span>
-              <span aria-hidden="true">·</span>
-              <span className="tabular-nums">{version.date}</span>
-              {version.commit && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <a
-                    href={commitUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-ink-muted underline decoration-black/10 underline-offset-2 transition-colors hover:text-ink dark:decoration-white/15"
-                  >
-                    {version.commit}
-                  </a>
-                </>
-              )}
-            </p>
-          </div>
-
-          <div className="inline-flex shrink-0 items-center self-start rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1]">
+          <div className="inline-flex shrink-0 items-center rounded-full border border-black/[0.08] bg-card p-0.5 dark:border-white/[0.1]">
             {DEVICES.map((item) => {
               const available = Boolean(shots[item.key]);
               const active = effectiveDevice === item.key;
@@ -92,7 +55,7 @@ function VersionHeader({ version, page, device, setDevice }) {
                   onClick={() => setDevice(item.key)}
                   disabled={!available}
                   aria-pressed={active}
-                  className={`rounded-full px-3 py-1.5 text-[11px] transition-colors duration-200 ${
+                  className={`rounded-full px-3 py-1 text-[10px] transition-colors duration-200 ${
                     active
                       ? 'bg-accent text-white'
                       : 'text-ink-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-30'
@@ -104,44 +67,19 @@ function VersionHeader({ version, page, device, setDevice }) {
             })}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function PageSlide({ version, page, pages, pageIndex, device, onOpen }) {
-  const shots = page.screenshots || {};
-  const hasDesktop = Boolean(shots.desktop);
-  const hasMobile = Boolean(shots.mobile);
-  const effectiveDevice = shots[device] ? device : hasDesktop ? 'desktop' : 'mobile';
-  const src = shots[effectiveDevice];
-
-  return (
-    <div className="mx-auto flex h-full w-full max-w-5xl flex-col px-6 pb-4 pt-6 sm:px-8 lg:px-12 lg:pb-5 lg:pt-7">
-      {/* 当前页面信息：每屏滚动时的主要视觉变化 */}
-      <div className="shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-faint">
-            <span>Page</span>
-            <span aria-hidden="true" className="h-px w-5 bg-black/[0.12] dark:bg-white/[0.16]" />
-            <span className="tabular-nums tracking-[0.12em]">
-              {pageIndex + 1} / {pages.length}
-            </span>
-          </p>
-          <p className="text-[11px] text-ink-faint">
-            {!hasDesktop && !hasMobile
-              ? '该版本没有截图。'
-              : !hasDesktop || !hasMobile
-                ? `该版本只提供了${hasDesktop ? '桌面' : '手机'}截图。`
-                : null}
-          </p>
-        </div>
 
         <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="text-[26px] font-bold leading-tight tracking-tight text-ink lg:text-[30px]">
             {page.label}
           </h2>
           {page.note && <span className="text-[13px] text-ink-muted">{page.note}</span>}
+          {(!hasDesktop || !hasMobile) && (
+            <span className="text-[11px] text-ink-faint">
+              {!hasDesktop && !hasMobile
+                ? '该版本没有截图。'
+                : `该版本只提供了${hasDesktop ? '桌面' : '手机'}截图。`}
+            </span>
+          )}
         </div>
       </div>
 
@@ -212,7 +150,7 @@ export default function HistoryPage() {
   const versionId = match?.[1];
   const pageId = match?.[2];
   const { versions, loading, error } = useVersions();
-  const { activeId, setActiveId } = useHistoryScroll();
+  const { setActiveId } = useHistoryScroll();
   const scrollRef = useRef(null);
   const targetIndexRef = useRef(0);
   const activeTimer = useRef(null);
@@ -401,10 +339,6 @@ export default function HistoryPage() {
     ? `https://github.com/New-King/newking/commit/${latest.commit}`
     : null;
 
-  // 顶部固定区跟随当前所在版本（滚到下一版本时自动切换）
-  const activeSection =
-    (activeId && sections.find((section) => section.id === activeId)) || sections[0];
-
   const selected = lightboxIndex !== null ? sections[lightboxIndex] : null;
   const selectedShots = selected?.page.screenshots || {};
   const selectedDevice = selectedShots[device]
@@ -416,13 +350,6 @@ export default function HistoryPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
-      <VersionHeader
-        version={activeSection.version}
-        page={activeSection.page}
-        device={device}
-        setDevice={setDevice}
-      />
-
       <div
         ref={scrollRef}
         onScroll={onScroll}
@@ -440,6 +367,7 @@ export default function HistoryPage() {
               pages={version.pages}
               pageIndex={pageIndex}
               device={device}
+              setDevice={setDevice}
               onOpen={() => setLightboxIndex(index)}
             />
           </section>
