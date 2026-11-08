@@ -6,4 +6,5 @@ export const SITE_ABOUT = [
 export const SITE_CONTACT = {
   email: 'hello@example.com',
   phone: '138-0000-0000',
+  github: 'https://github.com/New-King',
 };

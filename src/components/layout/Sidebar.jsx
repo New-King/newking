@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContent } from '../../hooks/useContent';
 import { SITE_CONTACT } from '../../data/siteInfo';
 import { sortNotes } from '../../utils/contentOrder';
-import { IconChevron, IconHistory, IconMail, IconX } from '../icons';
+import { IconChevron, IconGithub, IconHistory, IconMail, IconX } from '../icons';
 import VersionNav from './VersionNav';
 
 const EMPTY = [];
@@ -367,13 +367,26 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           >
             {dark ? 'Light' : 'Dark'}
           </button>
-          <a
-            href={`mailto:${SITE_CONTACT.email}`}
-            className="flex min-w-0 items-center gap-1.5 text-[11px] text-ink-faint transition-colors hover:text-ink"
-          >
-            <IconMail className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{SITE_CONTACT.email}</span>
-          </a>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <a
+              href={SITE_CONTACT.github}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              title="GitHub"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconGithub className="h-4 w-4" />
+            </a>
+            <a
+              href={`mailto:${SITE_CONTACT.email}`}
+              aria-label="邮箱"
+              title="邮箱"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
+            >
+              <IconMail className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </aside>
