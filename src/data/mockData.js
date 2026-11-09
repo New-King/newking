@@ -4,12 +4,10 @@
 export const SITE_QUOTE =
   '道阻且长，行则将至。';
 
-// 短日期：详情页右上角、列表用（当年省略年份）
+// 列表/详情用：始终带年份
 export function formatDate(iso) {
   const [y, m, d] = String(iso || '').split('-');
   if (!y || !m || !d) return '';
-  const currentYear = String(new Date().getFullYear());
-  if (y === currentYear) return `${m}/${d}`;
   return `${y}/${m}/${d}`;
 }
 

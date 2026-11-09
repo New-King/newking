@@ -78,7 +78,8 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         items.some(
           (item) => item.to === pathname && !visibleItems.includes(item)
         );
-      const hasMore = !q && items.length > SECTION_LIMIT;
+      // 列表入口只保留「更多」；分类行本身只负责展开/收起
+      const hasMore = !q && items.length > 0;
 
       return {
         key,
@@ -282,37 +283,30 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         {!loading &&
           sections.map((section) => (
             <div key={section.key} className="mt-4">
-              <div className="flex items-center gap-1">
-                <Link
-                  to={section.to}
-                  onClick={onClose}
-                  aria-current={pathname === section.to ? 'page' : undefined}
-                  data-nav-item=""
-                  className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-[12.5px] transition-colors duration-200 ${
-                    isSectionActive(section.to)
-                      ? 'font-medium text-ink'
-                      : 'text-ink-soft hover:text-ink'
-                  }`}
-                >
+              <button
+                type="button"
+                onClick={() => toggle(section.key)}
+                aria-expanded={isOpen(section.key)}
+                aria-current={pathname === section.to ? 'page' : undefined}
+                data-nav-item=""
+                className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-[12.5px] transition-colors duration-200 ${
+                  isSectionActive(section.to)
+                    ? 'font-medium text-ink hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'
+                    : 'text-ink-soft hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate">{section.label}</span>
                   <span className="text-[10px] tabular-nums text-ink-faint">
                     {section.total}
                   </span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => toggle(section.key)}
-                  aria-label={isOpen(section.key) ? `收起${section.label}` : `展开${section.label}`}
-                  aria-expanded={isOpen(section.key)}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint transition-colors hover:bg-black/[0.05] hover:text-ink dark:hover:bg-white/10"
-                >
-                  <IconChevron
-                    className={`h-3 w-3 transition-transform duration-200 ${
-                      isOpen(section.key) ? 'rotate-90' : ''
-                    }`}
-                  />
-                </button>
-              </div>
+                </span>
+                <IconChevron
+                  className={`h-3 w-3 shrink-0 transition-transform duration-200 ${
+                    isOpen(section.key) ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
 
               {isOpen(section.key) && (
                 <ul className="ml-[13px] mt-0.5 space-y-px border-l border-black/[0.06] pl-2 dark:border-white/[0.08]">
