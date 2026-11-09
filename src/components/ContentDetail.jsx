@@ -55,6 +55,8 @@ marked.use({
 });
 
 const LIST_ROUTE = { posts: '/blog', notes: '/notes', projects: '/projects' };
+const TOOLBAR_BUTTON =
+  'inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-card/60 px-3 py-1.5 text-[12px] text-ink-muted transition-colors hover:bg-card hover:text-ink dark:border-white/[0.1] dark:bg-white/[0.04] dark:hover:bg-white/[0.08]';
 
 export default function ContentDetail({ type }) {
   const { id } = useParams();
@@ -108,7 +110,7 @@ export default function ContentDetail({ type }) {
           <button
             type="button"
             onClick={() => navigate(LIST_ROUTE[type] || '/')}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
+            className={`${TOOLBAR_BUTTON} -ml-1`}
           >
             <IconChevron className="h-3.5 w-3.5 rotate-180" />
             返回列表
@@ -119,7 +121,7 @@ export default function ContentDetail({ type }) {
               onClick={() =>
                 openChat(`请总结《${item.title}》这篇文章的核心内容，并列出 3 个要点。`)
               }
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
+              className={TOOLBAR_BUTTON}
             >
               <IconSparkle className="h-3.5 w-3.5" />
               AI 摘要
