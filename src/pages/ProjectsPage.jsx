@@ -169,7 +169,7 @@ export default function ProjectsPage() {
 
   if (loading) {
     return (
-      <PageShell eyebrow="Projects">
+      <PageShell eyebrow="Projects" wide>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
         <p className="py-8 text-sm text-ink-faint">加载中…</p>
       </PageShell>
@@ -178,7 +178,7 @@ export default function ProjectsPage() {
 
   if (error) {
     return (
-      <PageShell eyebrow="Projects">
+      <PageShell eyebrow="Projects" wide>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
         <p className="py-8 text-sm text-ink-faint">内容加载失败，请确认后端服务已启动。</p>
       </PageShell>
@@ -187,7 +187,7 @@ export default function ProjectsPage() {
 
   if (total === 0) {
     return (
-      <PageShell eyebrow="Projects">
+      <PageShell eyebrow="Projects" wide>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
         <p className="py-8 text-sm text-ink-faint">还没有作品。</p>
       </PageShell>
@@ -201,7 +201,7 @@ export default function ProjectsPage() {
   const item = { ...p, preview: PREVIEW_BY_ID[shortId] || { scene: 'list' } };
 
   return (
-    <PageShell eyebrow="Projects">
+    <PageShell eyebrow="Projects" wide>
       <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">作品</h1>
       {/* 相册式展示：当前作品 + 自动播放预览；左右箭头 / 滑动 / 缩略图切换 */}
       <div

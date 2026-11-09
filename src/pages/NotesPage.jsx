@@ -28,6 +28,7 @@ export default function NotesPage() {
   return (
     <PageShell
       eyebrow="Notes"
+      wide
       headerRight={
         <input
           type="text"
