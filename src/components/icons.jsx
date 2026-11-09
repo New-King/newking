@@ -113,6 +113,25 @@ export const IconGithub = ({ className }) => (
   </svg>
 );
 
+export const IconShare = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <path d="M12 16V4" />
+    <polyline points="7 9 12 4 17 9" />
+    <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </svg>
+);
+
+export const IconList = ({ className }) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
+    <line x1="8" y1="6" x2="21" y2="6" />
+    <line x1="8" y1="12" x2="21" y2="12" />
+    <line x1="8" y1="18" x2="21" y2="18" />
+    <line x1="3" y1="6" x2="3.01" y2="6" />
+    <line x1="3" y1="12" x2="3.01" y2="12" />
+    <line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+
 export const IconBubble = ({ className }) => (
   <svg viewBox="0 0 24 24" className={className} {...base} aria-hidden="true">
     <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />

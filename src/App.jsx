@@ -7,6 +7,8 @@ import HomePage from './pages/HomePage';
 import BlogPage from './pages/BlogPage';
 import ProjectsPage from './pages/ProjectsPage';
 import NotesPage from './pages/NotesPage';
+import NewsPage from './pages/NewsPage';
+import NewsDetailPage from './pages/NewsDetailPage';
 import HistoryPage from './pages/HistoryPage';
 
 function ScrollToTop() {
@@ -31,6 +33,8 @@ export default function App() {
             <Route path="/projects/:id" element={<ContentDetail type="projects" />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/notes/:id" element={<ContentDetail type="notes" />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/:id" element={<NewsDetailPage />} />
             <Route path="/history/*" element={<HistoryPage />} />
             <Route path="*" element={<HomePage />} />
           </Route>

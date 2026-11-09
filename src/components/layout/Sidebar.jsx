@@ -260,6 +260,20 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           概览
         </Link>
 
+        <Link
+          to="/news"
+          onClick={onClose}
+          aria-current={pathname === '/news' || pathname.startsWith('/news/') ? 'page' : undefined}
+          data-nav-item=""
+          className={`mt-0.5 block rounded-lg px-2 py-1 text-[13px] transition-colors duration-200 ${
+            pathname === '/news' || pathname.startsWith('/news/')
+              ? 'bg-black/[0.06] font-medium text-ink dark:bg-white/10'
+              : 'text-ink-soft hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]'
+          }`}
+        >
+          新闻
+        </Link>
+
         {loading && (
           <div className="mt-5 space-y-2 px-2">
             {[0, 1, 2, 3, 4].map((i) => (
