@@ -10,7 +10,7 @@ export default function BlogPage() {
   const groups = groupByYear(posts);
 
   return (
-    <PageShell eyebrow="Blog" wide>
+    <PageShell wide>
       <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">博客</h1>
       <div className="mt-6">
         {loading ? (

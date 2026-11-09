@@ -10,7 +10,7 @@ import xml from 'highlight.js/lib/languages/xml';
 import { formatDate } from '../data/mockData';
 import { useContent } from '../hooks/useContent';
 import { useChatDock } from './chat/ChatDockContext';
-import { IconSparkle } from './icons';
+import { IconChevron, IconSparkle } from './icons';
 import PageShell from './PageShell';
 
 hljs.registerLanguage('python', python);
@@ -54,12 +54,6 @@ marked.use({
   },
 });
 
-const EYEBROW = { posts: 'Blog', notes: 'Notes', projects: 'Projects' };
-const CATEGORY = {
-  posts: { label: '博客', to: '/blog' },
-  notes: { label: '笔记', to: '/notes' },
-  projects: { label: '作品', to: '/projects' },
-};
 const LIST_ROUTE = { posts: '/blog', notes: '/notes', projects: '/projects' };
 
 export default function ContentDetail({ type }) {
@@ -109,29 +103,29 @@ export default function ContentDetail({ type }) {
 
   return (
     <PageShell
-      eyebrow={EYEBROW[type]}
-      headerRight={
-        <div className="flex items-center gap-4">
+      toolbar={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate(LIST_ROUTE[type] || '/')}
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
+          >
+            <IconChevron className="h-3.5 w-3.5 rotate-180" />
+            返回列表
+          </button>
           {item && (
             <button
               type="button"
               onClick={() =>
                 openChat(`请总结《${item.title}》这篇文章的核心内容，并列出 3 个要点。`)
               }
-              className="inline-flex cursor-pointer items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink"
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
             >
               <IconSparkle className="h-3.5 w-3.5" />
               AI 摘要
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => navigate(LIST_ROUTE[type] || '/')}
-            className="cursor-pointer text-sm text-ink-soft underline underline-offset-4 transition-colors hover:text-ink"
-          >
-            ← 返回列表
-          </button>
-        </div>
+        </>
       }
     >
       {loading ? (
@@ -146,18 +140,7 @@ export default function ContentDetail({ type }) {
       ) : (
         <article className="mt-6" ref={bodyRef}>
           <div className="flex items-start justify-between gap-4">
-            <h1 className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-2xl font-bold tracking-tight text-ink">
-              <Link
-                to={CATEGORY[type]?.to || '/'}
-                className="shrink-0 text-[13px] font-medium text-ink-faint transition-colors hover:text-ink"
-              >
-                {CATEGORY[type]?.label}
-              </Link>
-              <span aria-hidden="true" className="shrink-0 text-[13px] font-normal text-ink-faint">
-                /
-              </span>
-              <span className="min-w-0">{item.title}</span>
-            </h1>
+            <h1 className="min-w-0 text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
             <p className="shrink-0 text-xs tabular-nums text-ink-muted">{formatDate(item.date)}</p>
           </div>
           {item.description && (
