@@ -69,6 +69,7 @@ export default function ContentDetail({ type }) {
   const bodyRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
+  const [articleLeft, setArticleLeft] = useState(null);
   const copyTimer = useRef(null);
   const tocWrapRef = useRef(null);
 
@@ -83,7 +84,7 @@ export default function ContentDetail({ type }) {
       (match, level, inner) => {
         if (!inner.replace(/<[^>]+>/g, '').trim()) return match;
         const hid = `heading-${index++}`;
-        return `<h${level} id="${hid}" class="scroll-mt-20 lg:scroll-mt-0">${inner}</h${level}>`;
+        return `<h${level} id="${hid}" class="scroll-mt-20 lg:scroll-mt-[13px]">${inner}</h${level}>`;
       }
     );
     // 从解析后的 DOM 收集目录，同时把每个标题到下一个 h2/h3 之间的正文存为预览摘要
@@ -133,6 +134,18 @@ export default function ContentDetail({ type }) {
     },
     []
   );
+
+  // 定位条跟随正文左边缘：切换文章 / 窗口缩放时重新测量
+  useEffect(() => {
+    const measure = () => {
+      const el = bodyRef.current;
+      if (!el) return;
+      setArticleLeft(Math.round(el.getBoundingClientRect().left));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [item]);
 
   // 移动端目录浮层：点击外部 / Esc 关闭
   useEffect(() => {
@@ -256,7 +269,7 @@ export default function ContentDetail({ type }) {
         </div>
       ) : (
         <>
-          {toc.length > 0 && <HeadingRail headings={toc} />}
+          {toc.length > 0 && <HeadingRail headings={toc} articleLeft={articleLeft} />}
 
           <article className="mt-6" ref={bodyRef}>
           <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>

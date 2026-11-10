@@ -11,17 +11,19 @@ const MAX_GAP = 13; // 条间距上限
 const PANEL_W = 260; // 预览面板宽度
 const PANEL_H = 140; // 预览面板估算高度（仅用于限制面板不超出视口）
 const H3_INDENT = 6; // h3 条缩进
-const RAIL_TOP = 168; // 条区距视口顶部的固定距离（对齐标题下方）
+const RAIL_TOP = 120; // 条区距视口顶部的固定距离
+const RAIL_GAP = 27; // 条区右边缘与正文左边缘的间距
 
 // 钟形递减：焦点最长，向两侧按系数平滑缩短
 const lenFor = (base, d) => Math.round(base + (MAX_LEN - base) * Math.pow(DECAY, d));
 
 /**
  * 文章详情左侧定位条：每条横杠对应一个 h2/h3。
+ * 条区锚定正文左边缘（articleLeft），宽屏下始终贴着正文，不会与内容脱节；
  * 悬停条区时焦点条变长，右侧浮出该节预览（标题 + 摘要），点击跳转；
  * 不悬停时用加深的条标出当前阅读位置。
  */
-export default function HeadingRail({ headings }) {
+export default function HeadingRail({ headings, articleLeft }) {
   const [hover, setHover] = useState(null);
   const [active, setActive] = useState(0);
   const [viewportH, setViewportH] = useState(() =>
@@ -45,8 +47,10 @@ export default function HeadingRail({ headings }) {
   const railH = count * BAR_H + (count - 1) * gap;
   const wrapH = railH + PAD * 2;
 
-  // 固定距顶 168px；视口太矮时下压，避免整根条超出底部
+  // 固定距顶 120px；视口太矮时下压，避免整根条超出底部
   const railTop = Math.min(RAIL_TOP, Math.max(16, viewportH - wrapH - 12));
+  const railWidth = PAD * 2 + MAX_LEN;
+  const railLeft = articleLeft - railWidth - RAIL_GAP;
 
   // 滚动位置 → 当前所在小节（最后一个越过注视线的标题）
   useEffect(() => {
@@ -74,14 +78,14 @@ export default function HeadingRail({ headings }) {
     };
   }, [headings]);
 
-  if (count === 0) return null;
+  if (count === 0 || articleLeft == null) return null;
 
   // 由鼠标在条区内的 Y 计算焦点条（最近邻）
   const indexAt = (rawY) =>
     Math.max(0, Math.min(count - 1, Math.round((rawY - PAD - BAR_H / 2) / step)));
 
   return (
-    <div className="fixed inset-y-0 left-[276px] z-40 hidden xl:block">
+    <div className="fixed inset-y-0 z-40 hidden xl:block" style={{ left: railLeft }}>
       <div
         className="absolute left-0"
         style={{ top: railTop, width: PAD * 2 + MAX_LEN, height: wrapH }}
@@ -148,7 +152,7 @@ export default function HeadingRail({ headings }) {
           className="pointer-events-none fixed surface-chat rounded-2xl border border-black/[0.06] p-3.5 dark:border-white/[0.06]"
           style={{
             width: PANEL_W,
-            left: 276 + PAD + MAX_LEN + 8,
+            left: railLeft + PAD + MAX_LEN + 8,
             top: `clamp(${PANEL_H / 2 + 12}px, ${
               railTop + PAD + hover * step + BAR_H / 2
             }px, calc(100dvh - ${PANEL_H / 2 + 12}px))`,
