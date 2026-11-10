@@ -12,6 +12,7 @@ import { sortNotes } from '../utils/contentOrder';
 import { useContent } from '../hooks/useContent';
 import { useChatDock } from './chat/ChatDockContext';
 import { IconCheck, IconChevron, IconCopy, IconList, IconShare, IconSparkle } from './icons';
+import HeadingRail from './HeadingRail';
 import PageShell from './PageShell';
 
 hljs.registerLanguage('python', python);
@@ -69,24 +70,43 @@ export default function ContentDetail({ type }) {
   const [copied, setCopied] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const copyTimer = useRef(null);
+  const tocWrapRef = useRef(null);
 
   const item = useMemo(() => list.find((i) => i.id === id), [list, id]);
 
   // 渲染正文，同时给 h2/h3 生成锚点并收集目录
   const { html, toc } = useMemo(() => {
     if (!item?.content) return { html: '', toc: [] };
-    const headings = [];
     let index = 0;
     const rendered = marked.parse(item.content).replace(
       /<h([23])>([\s\S]*?)<\/h\1>/g,
       (match, level, inner) => {
-        const text = inner.replace(/<[^>]+>/g, '').trim();
-        if (!text) return match;
+        if (!inner.replace(/<[^>]+>/g, '').trim()) return match;
         const hid = `heading-${index++}`;
-        headings.push({ id: hid, text, level: Number(level) });
         return `<h${level} id="${hid}" class="scroll-mt-20 lg:scroll-mt-0">${inner}</h${level}>`;
       }
     );
+    // 从解析后的 DOM 收集目录，同时把每个标题到下一个 h2/h3 之间的正文存为预览摘要
+    const doc = new DOMParser().parseFromString(rendered, 'text/html');
+    const headings = [];
+    let current = null;
+    for (const node of Array.from(doc.body.children)) {
+      if (node.tagName === 'H2' || node.tagName === 'H3') {
+        current = {
+          id: node.id,
+          text: (node.textContent || '').replace(/\s+/g, ' ').trim(),
+          level: Number(node.tagName.slice(1)),
+          excerpt: '',
+        };
+        headings.push(current);
+      } else if (current && !node.matches('pre, .chat-codeblock')) {
+        const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text) current.excerpt = `${current.excerpt} ${text}`.trim();
+      }
+    }
+    headings.forEach((heading) => {
+      if (heading.excerpt) heading.excerpt = heading.excerpt.slice(0, 140);
+    });
     return { html: rendered, toc: headings };
   }, [item]);
 
@@ -113,6 +133,23 @@ export default function ContentDetail({ type }) {
     },
     []
   );
+
+  // 移动端目录浮层：点击外部 / Esc 关闭
+  useEffect(() => {
+    if (!tocOpen) return undefined;
+    const onPointerDown = (e) => {
+      if (!tocWrapRef.current?.contains(e.target)) setTocOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setTocOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [tocOpen]);
 
   // 复制按钮：事件委托挂载到 article 容器
   const handleCopy = useCallback((e) => {
@@ -205,17 +242,6 @@ export default function ContentDetail({ type }) {
             <IconShare className="h-3.5 w-3.5" />
             分享
           </button>
-          {toc.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setTocOpen((v) => !v)}
-              aria-expanded={tocOpen}
-              className={`${TOOLBAR_BUTTON} ${tocOpen ? 'bg-card text-ink dark:bg-white/[0.08]' : ''}`}
-            >
-              <IconList className="h-3.5 w-3.5" />
-              目录
-            </button>
-          )}
         </>
       }
     >
@@ -230,39 +256,59 @@ export default function ContentDetail({ type }) {
         </div>
       ) : (
         <>
-          {tocOpen && toc.length > 0 && (
-            <nav className="mt-4 max-h-[50vh] overflow-y-auto rounded-2xl border border-black/[0.06] bg-card/60 p-3 dark:border-white/[0.08] dark:bg-white/[0.04]">
-              <ul className="space-y-0.5">
-                {toc.map((heading) => (
-                  <li
-                    key={heading.id}
-                    style={{ paddingLeft: heading.level === 3 ? 12 : 0 }}
-                  >
-                    <a
-                      href={`#${heading.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        document
-                          .getElementById(heading.id)
-                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="block truncate rounded-md px-2 py-1 text-[12.5px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
-                    >
-                      {heading.text}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
+          {toc.length > 0 && <HeadingRail headings={toc} />}
 
           <article className="mt-6" ref={bodyRef}>
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="min-w-0 text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
-            <p className="shrink-0 text-xs tabular-nums text-ink-muted">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
+          <div
+            ref={tocWrapRef}
+            className="relative mt-2 flex flex-wrap items-center gap-x-3 gap-y-2"
+          >
+            <p className="text-xs tabular-nums text-ink-muted">
               {formatDate(item.date)}
               {readingMinutes > 0 && <span> · 约 {readingMinutes} 分钟</span>}
             </p>
+            {/* 移动端目录：时间旁的轻量按钮，面板绝对定位浮出，不占正文高度 */}
+            {toc.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setTocOpen((v) => !v)}
+                aria-expanded={tocOpen}
+                aria-haspopup="true"
+                className={`inline-flex items-center gap-1 rounded-full border border-black/[0.08] bg-card/60 px-2 py-0.5 text-[11px] transition-colors hover:bg-card hover:text-ink xl:hidden dark:border-white/[0.1] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] ${
+                  tocOpen ? 'text-ink' : 'text-ink-muted'
+                }`}
+              >
+                <IconList className="h-3 w-3" />
+                目录
+              </button>
+            )}
+            {tocOpen && toc.length > 0 && (
+              <nav className="absolute left-0 top-full z-30 mt-2 max-h-[50vh] w-60 overflow-y-auto rounded-2xl border border-black/[0.06] bg-card p-2 shadow-apple-lg xl:hidden dark:border-white/[0.08]">
+                <ul className="space-y-0.5">
+                  {toc.map((heading) => (
+                    <li
+                      key={heading.id}
+                      style={{ paddingLeft: heading.level === 3 ? 12 : 0 }}
+                    >
+                      <a
+                        href={`#${heading.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setTocOpen(false);
+                          document
+                            .getElementById(heading.id)
+                            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="block truncate rounded-md px-2 py-1 text-[12.5px] text-ink-muted transition-colors hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/[0.05]"
+                      >
+                        {heading.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
           </div>
           {item.description && (
             <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{item.description}</p>
