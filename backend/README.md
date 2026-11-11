@@ -113,6 +113,12 @@ cp backend/.env.example backend/.env
 # 4. 开 SSH 隧道（开发期 Mac → 服务器数据库，必须）
 nohup ssh -N -L 5432:127.0.0.1:5432 -i ~/.ssh/newking_deploy -p 22 root@111.231.13.51 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 &
 # 保持隧道（部署到服务器后不需要，Python 和 Postgres 同机）
+
+# 快捷开关（推荐）：不带参数 = 切换，运行中就关、没运行就开
+./scripts/tunnel.sh            # 切换
+./scripts/tunnel.sh start      # 启动
+./scripts/tunnel.sh stop       # 关闭
+./scripts/tunnel.sh status     # 查看状态
 ```
 
 ## 8. 启动与常用操作
