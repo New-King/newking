@@ -93,7 +93,7 @@ export default function NewsPage() {
 
   return (
     <PageShell wide>
-      <div className="mt-4">
+      <div>
         <h1 className="text-2xl font-bold tracking-tight text-ink">新闻</h1>
         <p className="mt-1 text-[11px] font-medium tracking-[0.14em] text-ink-faint">
           AI 日报 · 按日期浏览

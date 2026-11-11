@@ -11,7 +11,7 @@ export default function BlogPage() {
 
   return (
     <PageShell wide>
-      <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">博客</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">博客</h1>
       <div className="mt-6">
         {loading ? (
           <p className="py-8 text-sm text-ink-faint">加载中…</p>

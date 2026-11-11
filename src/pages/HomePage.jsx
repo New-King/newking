@@ -42,9 +42,9 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 pb-28 pt-8 sm:px-8 lg:px-12 lg:pt-14">
+    <div className="mx-auto w-full max-w-4xl px-6 pb-28 pt-8 sm:px-8 lg:px-12 lg:pt-12">
       {/* 首屏：内容名片 + 极淡网格，保留原来的空间气质但不做对话入口 */}
-      <section className="relative -mx-6 overflow-hidden px-6 pb-12 pt-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
+      <section className="relative -mx-6 overflow-hidden px-6 pb-12 pt-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12 lg:pt-0">
         <div className="pointer-events-none absolute inset-0 opacity-70">
           <BgGrid />
         </div>

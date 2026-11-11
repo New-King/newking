@@ -14,6 +14,10 @@ import { useChatDock } from './chat/ChatDockContext';
 import { IconCheck, IconChevron, IconCopy, IconList, IconShare, IconSparkle } from './icons';
 import HeadingRail from './HeadingRail';
 import PageShell from './PageShell';
+import DemoPreview from './projects/DemoPreview';
+import CoverThumb from './projects/CoverThumb';
+import ProjectMeta from './projects/ProjectMeta';
+import { previewFor } from './projects/preview-config';
 
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('javascript', javascript);
@@ -77,7 +81,8 @@ export default function ContentDetail({ type }) {
 
   // 渲染正文，同时给 h2/h3 生成锚点并收集目录
   const { html, toc } = useMemo(() => {
-    if (!item?.content) return { html: '', toc: [] };
+    // 作品详情只展示动画，正文仅用于智能体 RAG，不渲染
+    if (!item?.content || type === 'projects') return { html: '', toc: [] };
     let index = 0;
     const rendered = marked.parse(item.content).replace(
       /<h([23])>([\s\S]*?)<\/h\1>/g,
@@ -109,7 +114,7 @@ export default function ContentDetail({ type }) {
       if (heading.excerpt) heading.excerpt = heading.excerpt.slice(0, 140);
     });
     return { html: rendered, toc: headings };
-  }, [item]);
+  }, [item, type]);
 
   // 上一篇/下一篇：笔记按系列顺序，其余按后端列表顺序
   const ordered = useMemo(() => {
@@ -225,6 +230,7 @@ export default function ContentDetail({ type }) {
 
   return (
     <PageShell
+      wide={type === 'projects'}
       toolbar={
         <>
           <button
@@ -269,9 +275,28 @@ export default function ContentDetail({ type }) {
         </div>
       ) : (
         <>
-          {toc.length > 0 && <HeadingRail headings={toc} articleLeft={articleLeft} />}
+          {type === 'projects' ? (
+            // 作品详情：标题区域 + 该作品的动画；正文留给智能体 RAG，不渲染
+            <div className="mt-6">
+              <h1 className="sr-only">{item.title}</h1>
+              <div className="surface-elevated rounded-2xl border border-black/[0.06] dark:border-white/[0.06]">
+                <div className="flex items-center gap-5 p-5">
+                  <CoverThumb shape={item.cover} active />
+                  <ProjectMeta
+                    title={item.title}
+                    date={item.date}
+                    description={item.description}
+                    url={item.url}
+                  />
+                </div>
+                <DemoPreview p={{ ...item, preview: previewFor(item.id) }} active />
+              </div>
+            </div>
+          ) : (
+            <>
+              {toc.length > 0 && <HeadingRail headings={toc} articleLeft={articleLeft} />}
 
-          <article className="mt-6" ref={bodyRef}>
+              <article className="mt-6" ref={bodyRef}>
           <h1 className="text-2xl font-bold tracking-tight text-ink">{item.title}</h1>
           <div
             ref={tocWrapRef}
@@ -359,6 +384,8 @@ export default function ContentDetail({ type }) {
                 </Link>
               ) : null}
             </nav>
+          )}
+            </>
           )}
         </>
       )}

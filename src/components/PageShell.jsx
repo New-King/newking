@@ -8,7 +8,7 @@ export default function PageShell({ toolbar, note, children, wide = false }) {
           </div>
         )}
         {/* 列表/概览铺满 4xl；文章详情保持 2xl 阅读宽度，但左边缘与 4xl 栏对齐 */}
-        {children && <div className="mt-2">{children}</div>}
+        {children && <div className={toolbar ? 'mt-2' : ''}>{children}</div>}
       </div>
       {note && (
         <div className="mt-16 flex items-center gap-3 text-sm text-ink-faint">
